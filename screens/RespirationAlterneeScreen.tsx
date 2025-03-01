@@ -8,6 +8,7 @@ import { useStats } from '../contexts/StatsContext';
 import useSound from '../hooks/useSound';
 import useHaptics from '../hooks/useHaptics';
 import { useTheme } from '../theme/ThemeContext';
+import { BreathingScreenProps } from '../App';
 
 
 const { width } = Dimensions.get('window');
@@ -15,7 +16,7 @@ const CIRCLE_SIZE = width * 0.55;
 
 
 
-const RespirationAlterneeScreen = () => {
+const RespirationAlterneeScreen = ({ route, navigation }: BreathingScreenProps) => {
   const { settings } = useSettings();
   const { addSession } = useStats();
   const { playInhale, playExhale, playHold, playComplete } = useSound(settings.soundEnabled);

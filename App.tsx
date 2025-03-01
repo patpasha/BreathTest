@@ -1,16 +1,15 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, View } from 'react-native';
 
+// Importations immédiates pour les écrans principaux
 import HomeScreen from './screens/HomeScreen';
 import SplashScreen from './screens/SplashScreen';
-import PhysiologicalSighScreen from './screens/PhysiologicalSighScreen';
-import CyclicHyperventilationScreen from './screens/CyclicHyperventilationScreen';
-import WimHofScreen from './screens/WimHofScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import InformationScreen from './screens/InformationScreen';
 import StatsScreen from './screens/StatsScreen';
@@ -18,21 +17,30 @@ import { SettingsProvider } from './contexts/SettingsContext';
 import { StatsProvider } from './contexts/StatsContext';
 import { ThemeProvider, useTheme, darkTheme } from './theme/ThemeContext';
 
-// Nouvelles importations pour les techniques de respiration supplémentaires
-import Respiration478Screen from './screens/Respiration478Screen';
-import RespirationCoherenteScreen from './screens/RespirationCoherenteScreen';
-import RespirationDiaphragmatiqueScreen from './screens/RespirationDiaphragmatiqueScreen';
-import RespirationAlterneeScreen from './screens/RespirationAlterneeScreen';
-import RespirationButeykoScreen from './screens/RespirationButeykoScreen';
-import RespirationUjjayiScreen from './screens/RespirationUjjayiScreen';
-import RespirationBoxScreen from './screens/RespirationBoxScreen';
-import RespirationTummoScreen from './screens/RespirationTummoScreen';
+// Chargement paresseux (lazy loading) pour les écrans de respiration
+const PhysiologicalSighScreen = lazy(() => import('./screens/PhysiologicalSighScreen'));
+const CyclicHyperventilationScreen = lazy(() => import('./screens/CyclicHyperventilationScreen'));
+const WimHofScreen = lazy(() => import('./screens/WimHofScreen'));
+const Respiration478Screen = lazy(() => import('./screens/Respiration478Screen'));
+const RespirationCoherenteScreen = lazy(() => import('./screens/RespirationCoherenteScreen'));
+const RespirationDiaphragmatiqueScreen = lazy(() => import('./screens/RespirationDiaphragmatiqueScreen'));
+const RespirationAlterneeScreen = lazy(() => import('./screens/RespirationAlterneeScreen'));
+const RespirationButeykoScreen = lazy(() => import('./screens/RespirationButeykoScreen'));
+const RespirationUjjayiScreen = lazy(() => import('./screens/RespirationUjjayiScreen'));
+const RespirationBoxScreen = lazy(() => import('./screens/RespirationBoxScreen'));
+const RespirationTummoScreen = lazy(() => import('./screens/RespirationTummoScreen'));
 
 // Types pour les navigateurs
 export type MainTabParamList = {
   HomeTab: undefined;
   StatsTab: undefined;
   SettingsTab: undefined;
+};
+
+// Type pour les props des écrans de respiration
+export type BreathingScreenProps = {
+  route: any;
+  navigation: any;
 };
 
 export type RootStackParamList = {
@@ -55,6 +63,16 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// Composant de chargement pour les écrans en lazy loading
+const LoadingScreen = () => {
+  const theme = useTheme();
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+      <ActivityIndicator size="large" color={theme.primary} />
+    </View>
+  );
+};
 
 // Composant pour le navigateur à onglets
 const MainTabNavigator = () => {
@@ -154,67 +172,132 @@ const AppNavigator = () => {
           options={{ headerShown: false }} 
         />
         <Stack.Screen 
-          name="PhysiologicalSigh" 
-          component={PhysiologicalSighScreen} 
-          options={{ title: 'Soupir Physiologique' }} 
-        />
-        <Stack.Screen 
-          name="CyclicHyperventilation" 
-          component={CyclicHyperventilationScreen} 
-          options={{ title: 'Hyperventilation Cyclique' }} 
-        />
-        <Stack.Screen 
-          name="WimHof" 
-          component={WimHofScreen} 
-          options={{ title: 'Méthode Wim Hof' }} 
-        />
-        <Stack.Screen 
           name="Info" 
           component={InformationScreen} 
           options={{ title: 'Informations' }} 
         />
         
-        {/* Nouvelles techniques de respiration */}
+        {/* Écrans de respiration avec lazy loading */}
+        <Stack.Screen 
+          name="PhysiologicalSigh" 
+          options={{ title: 'Soupir Physiologique' }} 
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <PhysiologicalSighScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
+        <Stack.Screen 
+          name="CyclicHyperventilation" 
+          options={{ title: 'Hyperventilation Cyclique' }} 
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <CyclicHyperventilationScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
+        <Stack.Screen 
+          name="WimHof" 
+          options={{ title: 'Méthode Wim Hof' }} 
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <WimHofScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="Respiration478" 
-          component={Respiration478Screen} 
           options={{ title: 'Respiration 4-7-8' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <Respiration478Screen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationCoherente" 
-          component={RespirationCoherenteScreen} 
           options={{ title: 'Respiration Cohérente' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationCoherenteScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationDiaphragmatique" 
-          component={RespirationDiaphragmatiqueScreen} 
           options={{ title: 'Respiration Diaphragmatique' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationDiaphragmatiqueScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationAlternee" 
-          component={RespirationAlterneeScreen} 
           options={{ title: 'Respiration Alternée' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationAlterneeScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationButeyko" 
-          component={RespirationButeykoScreen} 
           options={{ title: 'Méthode Buteyko' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationButeykoScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationUjjayi" 
-          component={RespirationUjjayiScreen} 
           options={{ title: 'Respiration Ujjayi' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationUjjayiScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationBox" 
-          component={RespirationBoxScreen} 
           options={{ title: 'Respiration Box' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationBoxScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
+        
         <Stack.Screen 
           name="RespirationTummo" 
-          component={RespirationTummoScreen} 
           options={{ title: 'Respiration Tummo' }} 
-        />
+        >
+          {props => (
+            <Suspense fallback={<LoadingScreen />}>
+              <RespirationTummoScreen {...props} />
+            </Suspense>
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );

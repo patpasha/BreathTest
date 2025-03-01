@@ -8,12 +8,13 @@ import { useStats } from '../contexts/StatsContext';
 import useSound from '../hooks/useSound';
 import useHaptics from '../hooks/useHaptics';
 import { useTheme } from '../theme/ThemeContext';
+import { BreathingScreenProps } from '../App';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.55;
 const BOX_SIZE = width * 0.4;
 
-const RespirationBoxScreen = () => {
+const RespirationBoxScreen = ({ route, navigation }: BreathingScreenProps) => {
   const { settings } = useSettings();
   const { addSession } = useStats();
   const { playInhale, playExhale, playHold, playComplete } = useSound(settings.soundEnabled);

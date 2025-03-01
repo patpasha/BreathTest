@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "optimize-images": "node scripts/optimize-images.js",
+    "analyze-bundle": "node scripts/analyze-bundle.js",
+    "clean": "node scripts/clean-project.js",
+    "update-breathing-screens": "node scripts/update-breathing-screens.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
@@ -30,6 +34,8 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
+    "rimraf": "^5.0.5",
+    "sharp": "^0.33.5",
     "typescript": "^5.3.3"
   },
   "private": true

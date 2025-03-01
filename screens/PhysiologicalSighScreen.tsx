@@ -8,11 +8,12 @@ import { useStats } from '../contexts/StatsContext';
 import useSound from '../hooks/useSound';
 import useHaptics from '../hooks/useHaptics';
 import { useTheme } from '../theme/ThemeContext';
+import { BreathingScreenProps } from '../App';
 
 const { width, height } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.55;
 
-const PhysiologicalSighScreen = () => {
+const PhysiologicalSighScreen = ({ route, navigation }: BreathingScreenProps) => {
   const { settings } = useSettings();
   const { addSession } = useStats();
   const { playInhale, playExhale } = useSound(settings.soundEnabled);
