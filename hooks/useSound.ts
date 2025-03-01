@@ -1,63 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Audio } from 'expo-av';
-
+/**
+ * Type pour les différents sons de respiration
+ */
 type SoundType = 'inhale' | 'exhale' | 'hold' | 'complete';
 
 /**
- * Custom hook for managing sounds in the breathing exercises
- * @param enabled Whether sound is enabled
- * @returns Functions to play different types of sounds
+ * Hook simplifié pour la gestion des sons dans les exercices de respiration
+ * Cette version n'utilise pas expo-av pour réduire la taille de l'application
+ * 
+ * @param enabled Indique si le son est activé
+ * @returns Fonctions pour jouer différents types de sons
  */
 const useSound = (enabled: boolean) => {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-  // Clean up sound on unmount
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
-
   /**
-   * Play a sound for a specific breathing action
-   * @param type The type of sound to play
+   * Simule la lecture d'un son
+   * @param type Le type de son à jouer
    */
-  const playSound = async (type: SoundType) => {
+  const playSound = (type: SoundType) => {
     if (!enabled) return;
-
-    try {
-      // For now, we'll just log the sound type
-      // This is a temporary solution until proper sound files are added
-      console.log(`Playing sound: ${type}`);
-      
-      // In a production app, we would use real sound files
-      // The code below is commented out to avoid errors
-      /*
-      // Unload previous sound if exists
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      // Create a sound from a file
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        require(`../assets/sounds/${type}.mp3`),
-        { shouldPlay: true, volume: 0.5 }
-      );
-      
-      setSound(newSound);
-      
-      // Automatically unload after playing
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          newSound.unloadAsync();
-        }
-      });
-      */
-    } catch (error) {
-      console.error('Error playing sound:', error);
-    }
+    
+    // Pour l'instant, on se contente de logger le type de son
+    // Dans une future version, on pourra ajouter de vrais sons
+    console.log(`Playing sound: ${type}`);
   };
 
   return {
