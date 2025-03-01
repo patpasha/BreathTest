@@ -3,6 +3,8 @@ import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions, Alert, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { useSettings } from '../contexts/SettingsContext';
+import DurationSelector from '../components/DurationSelector';
+import { useStats } from '../contexts/StatsContext';
 import useSound from '../hooks/useSound';
 import useHaptics from '../hooks/useHaptics';
 import { useTheme } from '../theme/ThemeContext';
@@ -12,6 +14,7 @@ const CIRCLE_SIZE = width * 0.55;
 
 const RespirationCoherenteScreen = () => {
   const { settings } = useSettings();
+  const { addSession } = useStats();
   const { playInhale, playExhale, playHold, playComplete } = useSound(settings.soundEnabled);
   const { lightImpact, mediumImpact, successNotification } = useHaptics(settings.hapticsEnabled);
   const theme = useTheme();
@@ -19,8 +22,10 @@ const RespirationCoherenteScreen = () => {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [currentCycle, setCurrentCycle] = useState(1);
-  const [duration, setDuration] = useState(settings.sessionDuration * 60); 
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(5); // Durée par défaut en minutes
+  const [duration, setDuration] = useState(sessionDurationMinutes * 60); 
   const [timeRemaining, setTimeRemaining] = useState(duration);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   
   const animatedValue = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,11 +40,15 @@ const RespirationCoherenteScreen = () => {
   }, []);
 
   useEffect(() => {
-    setDuration(settings.sessionDuration * 60);
+    setDuration(sessionDurationMinutes * 60);
     if (!isActive) {
-      setTimeRemaining(settings.sessionDuration * 60);
+      setTimeRemaining(sessionDurationMinutes * 60);
     }
-  }, [settings.sessionDuration, isActive]);
+  }, [sessionDurationMinutes, isActive]);
+  
+  const handleDurationChange = (newDuration: number) => {
+    setSessionDurationMinutes(newDuration);
+  };
 
   // Les étapes de la respiration cohérente (5.5 secondes par inspiration et expiration)
   const steps = [
@@ -115,21 +124,64 @@ const RespirationCoherenteScreen = () => {
     setCurrentStep(0);
     setCurrentCycle(1);
     setTimeRemaining(duration);
+    setSessionStartTime(new Date());
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     setIsActive(false);
     setCurrentStep(0);
     animatedValue.setValue(0);
+    
+    // Enregistrer la session interrompue dans les statistiques
+    if (sessionStartTime) {
+      const sessionDuration = Math.floor((duration - timeRemaining));
+      console.log('Session Respiration Cohérente interrompue après', sessionDuration, 'secondes'); // Debug
+      
+      // N'enregistrer que si la session a duré au moins 10 secondes
+      if (sessionDuration >= 10) {
+        try {
+          await addSession({
+            techniqueId: 'respiration-coherente',
+            techniqueName: 'Respiration Cohérente',
+            duration: sessionDuration,
+            date: new Date().toISOString(),
+            completed: false
+          });
+          console.log('Session Respiration Cohérente interrompue enregistrée avec succès'); // Debug
+        } catch (error) {
+          console.error('Erreur lors de l\'enregistrement de la session interrompue:', error);
+        }
+      }
+    }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsActive(false);
     setCurrentStep(0);
     animatedValue.setValue(0);
     
     playComplete();
     successNotification();
+    
+    // Enregistrer la session dans les statistiques
+    if (sessionStartTime) {
+      const sessionDuration = Math.floor((duration - timeRemaining));
+      console.log('Session Respiration Cohérente complétée après', sessionDuration, 'secondes'); // Debug
+      
+      try {
+        await addSession({
+          techniqueId: 'respiration-coherente',
+          techniqueName: 'Respiration Cohérente',
+          duration: sessionDuration,
+          date: new Date().toISOString(),
+          completed: true
+        });
+        console.log('Session Respiration Cohérente complète enregistrée avec succès'); // Debug
+      } catch (error) {
+        console.error('Erreur lors de l\'enregistrement de la session complète:', error);
+      }
+    }
+    
     Alert.alert(
       "Session terminée",
       `Vous avez complété ${currentCycle} cycles de respiration cohérente.`,
@@ -201,6 +253,17 @@ const RespirationCoherenteScreen = () => {
           </Text>
         </View>
 
+        {!isActive && (
+          <View style={styles.durationSelectorContainer}>
+            <DurationSelector
+              duration={sessionDurationMinutes}
+              onDurationChange={handleDurationChange}
+              minDuration={1}
+              maxDuration={60}
+              step={1}
+            />
+          </View>
+        )}
         
       </ScrollView>
         
@@ -228,6 +291,11 @@ const RespirationCoherenteScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  durationSelectorContainer: {
+    marginVertical: 15,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
   container: {
     flex: 1,
   },

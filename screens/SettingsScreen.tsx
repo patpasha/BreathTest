@@ -1,14 +1,72 @@
-import React from 'react';
-import { StyleSheet, View, Text, Switch, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, Text, Switch, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RootStackParamList, MainTabParamList } from '../App';
 import { useSettings } from '../contexts/SettingsContext';
 import { useTheme } from '../theme/ThemeContext';
+import TimeSelector from '../components/TimeSelector';
+import { registerForPushNotificationsAsync, scheduleReminderNotification, cancelAllScheduledNotifications } from '../services/NotificationService';
+
+type SettingsScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'SettingsTab'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 const SettingsScreen = () => {
   const { settings, setSetting, resetSettings } = useSettings();
   const theme = useTheme();
 
-  const sessionDurations = [3, 5, 10, 15, 20];
+  // Référence pour suivre si c'est le premier rendu
+  const isFirstRender = React.useRef(true);
+  
+  // Gestion des rappels - s'exécute uniquement lorsque les paramètres changent, pas au montage initial
+  useEffect(() => {
+    const setupNotifications = async () => {
+      try {
+        // Si c'est le premier rendu, ne pas programmer de notification
+        if (isFirstRender.current) {
+          isFirstRender.current = false;
+          return;
+        }
+        
+        if (settings.reminderEnabled) {
+          // Demande les permissions pour les notifications
+          const permissionGranted = await registerForPushNotificationsAsync();
+          
+          if (permissionGranted) {
+            // Programme le rappel quotidien
+            await scheduleReminderNotification(settings.reminderTime);
+          } else if (Platform.OS !== 'web') {
+            // Affiche une alerte si les permissions sont refusées
+            Alert.alert(
+              "Notifications désactivées",
+              "Veuillez activer les notifications dans les paramètres de votre appareil pour recevoir des rappels.",
+              [{ text: "OK" }]
+            );
+            // Désactive les rappels si les permissions sont refusées
+            setSetting('reminderEnabled', false);
+          }
+        } else {
+          // Annule tous les rappels si la fonctionnalité est désactivée
+          await cancelAllScheduledNotifications();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la configuration des notifications:', error);
+      }
+    };
+    
+    setupNotifications();
+  }, [settings.reminderEnabled, settings.reminderTime]);
+  
+  // Gère le changement d'heure de rappel
+  const handleTimeChange = (time: string) => {
+    setSetting('reminderTime', time);
+  };
+  
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -67,34 +125,19 @@ const SettingsScreen = () => {
               thumbColor={settings.reminderEnabled ? theme.switchThumbOn : theme.switchThumbOff}
             />
           </View>
+          
+          {settings.reminderEnabled && (
+            <View style={styles.timePickerContainer}>
+              <TimeSelector
+                time={settings.reminderTime}
+                onTimeChange={handleTimeChange}
+                label="Heure de rappel quotidien"
+              />
+            </View>
+          )}
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Durée de session</Text>
-          <View style={styles.durationContainer}>
-            {sessionDurations.map((duration) => (
-              <TouchableOpacity
-                key={duration}
-                style={[
-                  styles.durationButton,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                  settings.sessionDuration === duration && { backgroundColor: theme.primary },
-                ]}
-                onPress={() => setSetting('sessionDuration', duration)}
-              >
-                <Text
-                  style={[
-                    styles.durationButtonText,
-                    { color: theme.textSecondary },
-                    settings.sessionDuration === duration && { color: theme.textLight },
-                  ]}
-                >
-                  {duration} min
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Réinitialiser</Text>
@@ -117,6 +160,10 @@ const SettingsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  timePickerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
   container: {
     flex: 1,
   },
@@ -157,24 +204,7 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 14,
   },
-  durationContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  durationButton: {
-    width: '18%',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    marginBottom: 10,
-  },
-  durationButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
+
   resetButton: {
     paddingVertical: 15,
     borderRadius: 10,
@@ -184,6 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
   infoSection: {
     marginBottom: 30,
     padding: 15,

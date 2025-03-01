@@ -7,7 +7,7 @@ interface Settings {
   hapticsEnabled: boolean;
   darkMode: boolean;
   reminderEnabled: boolean;
-  sessionDuration: number; // in minutes
+  reminderTime: string; // Format: 'HH:MM'
 }
 
 // Default settings
@@ -16,7 +16,7 @@ const defaultSettings: Settings = {
   hapticsEnabled: true,
   darkMode: false,
   reminderEnabled: false,
-  sessionDuration: 5,
+  reminderTime: '20:00', // 8:00 PM par défaut
 };
 
 // Define the shape of our context

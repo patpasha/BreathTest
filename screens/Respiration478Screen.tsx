@@ -3,24 +3,33 @@ import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions, Alert, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { useSettings } from '../contexts/SettingsContext';
+import DurationSelector from '../components/DurationSelector';
+import { useStats } from '../contexts/StatsContext';
 import useSound from '../hooks/useSound';
 import useHaptics from '../hooks/useHaptics';
 import { useTheme } from '../theme/ThemeContext';
 
+
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.55;
 
+
+
 const Respiration478Screen = () => {
   const { settings } = useSettings();
+  const { addSession } = useStats();
   const { playInhale, playExhale, playHold, playComplete } = useSound(settings.soundEnabled);
   const { lightImpact, mediumImpact, successNotification } = useHaptics(settings.hapticsEnabled);
   const theme = useTheme();
 
+
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [currentCycle, setCurrentCycle] = useState(1);
-  const [duration, setDuration] = useState(settings.sessionDuration * 60); 
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(5); // Durée par défaut en minutes
+  const [duration, setDuration] = useState(sessionDurationMinutes * 60); 
   const [timeRemaining, setTimeRemaining] = useState(duration);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   
   const animatedValue = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -33,13 +42,19 @@ const Respiration478Screen = () => {
       if (cycleTimerRef.current) clearTimeout(cycleTimerRef.current);
     };
   }, []);
+  
+
 
   useEffect(() => {
-    setDuration(settings.sessionDuration * 60);
+    setDuration(sessionDurationMinutes * 60);
     if (!isActive) {
-      setTimeRemaining(settings.sessionDuration * 60);
+      setTimeRemaining(sessionDurationMinutes * 60);
     }
-  }, [settings.sessionDuration, isActive]);
+  }, [sessionDurationMinutes, isActive]);
+  
+  const handleDurationChange = (newDuration: number) => {
+    setSessionDurationMinutes(newDuration);
+  };
 
   // Les étapes de la respiration 4-7-8
   const steps = [
@@ -121,21 +136,64 @@ const Respiration478Screen = () => {
     setCurrentStep(0);
     setCurrentCycle(1);
     setTimeRemaining(duration);
+    setSessionStartTime(new Date());
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     setIsActive(false);
     setCurrentStep(0);
     animatedValue.setValue(0);
+    
+    // Enregistrer la session interrompue dans les statistiques
+    if (sessionStartTime) {
+      const sessionDuration = Math.floor((duration - timeRemaining));
+      console.log('Session 4-7-8 interrompue après', sessionDuration, 'secondes'); // Debug
+      
+      // N'enregistrer que si la session a duré au moins 10 secondes
+      if (sessionDuration >= 10) {
+        try {
+          await addSession({
+            techniqueId: 'respiration-478',
+            techniqueName: 'Respiration 4-7-8',
+            duration: sessionDuration,
+            date: new Date().toISOString(),
+            completed: false
+          });
+          console.log('Session 4-7-8 interrompue enregistrée avec succès'); // Debug
+        } catch (error) {
+          console.error('Erreur lors de l\'enregistrement de la session interrompue:', error);
+        }
+      }
+    }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsActive(false);
     setCurrentStep(0);
     animatedValue.setValue(0);
     
     playComplete();
     successNotification();
+    
+    // Enregistrer la session dans les statistiques
+    if (sessionStartTime) {
+      const sessionDuration = Math.floor((duration - timeRemaining));
+      console.log('Session 4-7-8 complétée après', sessionDuration, 'secondes'); // Debug
+      
+      try {
+        await addSession({
+          techniqueId: 'respiration-478',
+          techniqueName: 'Respiration 4-7-8',
+          duration: sessionDuration,
+          date: new Date().toISOString(),
+          completed: true
+        });
+        console.log('Session 4-7-8 complète enregistrée avec succès'); // Debug
+      } catch (error) {
+        console.error('Erreur lors de l\'enregistrement de la session complète:', error);
+      }
+    }
+    
     Alert.alert(
       "Session terminée",
       `Vous avez complété ${currentCycle} cycles de la respiration 4-7-8.`,
@@ -156,7 +214,7 @@ const Respiration478Screen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.mainContainer}>
+          <View style={styles.mainContainer}>
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
@@ -200,6 +258,18 @@ const Respiration478Screen = () => {
               4. Répétez ce cycle pour réduire l'anxiété et favoriser le sommeil.
             </Text>
           </View>
+
+          {!isActive && (
+            <View style={styles.durationSelectorContainer}>
+              <DurationSelector
+                duration={sessionDurationMinutes}
+                onDurationChange={handleDurationChange}
+                minDuration={1}
+                maxDuration={60}
+                step={1}
+              />
+            </View>
+          )}
         </ScrollView>
         
         {/* Bouton fixe en bas de l'écran */}
@@ -220,8 +290,8 @@ const Respiration478Screen = () => {
             </TouchableOpacity>
           )}
         </View>
-      </View>
-    </SafeAreaView>
+          </View>
+        </SafeAreaView>
   );
 };
 
@@ -320,6 +390,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  durationSelectorContainer: {
+    marginVertical: 15,
+    width: '100%',
+    paddingHorizontal: 20,
   },
 });
 
