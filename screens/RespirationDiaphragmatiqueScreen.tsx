@@ -27,9 +27,10 @@ const RespirationDiaphragmatiqueScreen = ({ route, navigation }: BreathingScreen
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [currentCycle, setCurrentCycle] = useState(1);
-  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(settings.sessionDuration);
-  const [duration, setDuration] = useState(sessionDurationMinutes * 60); 
-  const [timeRemaining, setTimeRemaining] = useState(duration);
+  const defaultDuration = settings.sessionDuration || 5; // Valeur par défaut de 5 minutes
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(defaultDuration);
+  const [duration, setDuration] = useState(defaultDuration * 60);
+  const [timeRemaining, setTimeRemaining] = useState(defaultDuration * 60);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [currentAnimValue, setCurrentAnimValue] = useState(0); 
   
@@ -47,9 +48,21 @@ const RespirationDiaphragmatiqueScreen = ({ route, navigation }: BreathingScreen
 
 
   useEffect(() => {
-    setDuration(sessionDurationMinutes * 60);
-    if (!isActive) {
-      setTimeRemaining(sessionDurationMinutes * 60);
+    // Mise à jour de la durée lorsque sessionDurationMinutes change
+    // Vérification que sessionDurationMinutes est un nombre valide
+    if (!isNaN(sessionDurationMinutes) && sessionDurationMinutes > 0) {
+      const newDuration = sessionDurationMinutes * 60;
+      setDuration(newDuration);
+      if (!isActive) {
+        setTimeRemaining(newDuration);
+      }
+    } else {
+      // Si sessionDurationMinutes est invalide, utiliser la valeur par défaut
+      const defaultSeconds = 5 * 60; // 5 minutes par défaut
+      setDuration(defaultSeconds);
+      if (!isActive) {
+        setTimeRemaining(defaultSeconds);
+      }
     }
   }, [sessionDurationMinutes, isActive]);
   
@@ -145,7 +158,14 @@ const RespirationDiaphragmatiqueScreen = ({ route, navigation }: BreathingScreen
     setIsActive(true);
     setCurrentStep(0);
     setCurrentCycle(1);
-    setTimeRemaining(duration);
+    // Vérification que duration est un nombre valide
+    if (isNaN(duration) || duration <= 0) {
+      // Si duration est invalide, utiliser 5 minutes par défaut
+      const defaultDuration = 5 * 60;
+      setTimeRemaining(defaultDuration);
+    } else {
+      setTimeRemaining(duration);
+    }
     setCurrentAnimValue(0);
     setSessionStartTime(new Date());
   };
@@ -194,6 +214,10 @@ const RespirationDiaphragmatiqueScreen = ({ route, navigation }: BreathingScreen
   };
 
   const formatTime = (seconds: number) => {
+    // Vérification que seconds est un nombre valide
+    if (isNaN(seconds) || seconds === undefined) {
+      return '05:00'; // Valeur par défaut si seconds est invalide
+    }
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
