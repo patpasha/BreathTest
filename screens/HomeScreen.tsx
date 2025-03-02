@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
+import { BreathingTechnique, getAllBreathingTechniques, getBreathingTechniquesByCategory, initDatabase } from '../services/DatabaseService';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'HomeTab'>,
@@ -19,15 +20,7 @@ type Category = {
   icon?: string; // Pour une future implémentation avec des icônes
 };
 
-// Type pour les techniques de respiration
-type BreathingTechnique = {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  route: string;
-  categories: string[]; // IDs des catégories auxquelles cette technique appartient
-};
+// Type pour les techniques de respiration est maintenant importé depuis DatabaseService
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -35,6 +28,18 @@ const HomeScreen = () => {
   
   // État pour stocker la catégorie sélectionnée (null = toutes les catégories)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // État pour stocker les techniques de respiration chargées depuis la base de données
+  const [breathingTechniques, setBreathingTechniques] = useState<BreathingTechnique[]>([]);
+  
+  // État pour stocker toutes les techniques (pour le filtrage côté client)
+  const [allTechniques, setAllTechniques] = useState<BreathingTechnique[]>([]);
+  
+  // État pour indiquer si les données sont en cours de chargement
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  // État pour indiquer si l'initialisation est terminée
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   // Définition des catégories
   const categories: Category[] = [
@@ -46,102 +51,77 @@ const HomeScreen = () => {
     { id: 'health', title: 'Santé' }
   ];
 
-  // Données pour les cartes de techniques de respiration avec catégories
-  const breathingTechniques: BreathingTechnique[] = [
-    {
-      id: 'physiological-sigh',
-      title: 'Soupir Physiologique',
-      description: 'Double inspiration suivie d\'une longue expiration pour réduire rapidement le stress et l\'anxiété.',
-      duration: '2-5 minutes',
-      route: 'PhysiologicalSigh',
-      categories: ['stress']
-    },
-    {
-      id: 'cyclic-hyperventilation',
-      title: 'Hyperventilation Cyclique',
-      description: 'Respirations rapides suivies de rétention du souffle courte pour augmenter l\'énergie et la concentration. Version simplifiée de la méthode Wim Hof.',
-      duration: '10-15 minutes',
-      route: 'CyclicHyperventilation',
-      categories: ['energy', 'focus']
-    },
-    {
-      id: 'wim-hof',
-      title: 'Méthode Wim Hof',
-      description: 'Version occidentale moderne de la respiration Tummo. Respirations profondes suivies de rétentions du souffle et d\'une phase de récupération pour renforcer le système immunitaire.',
-      duration: '15-20 minutes',
-      route: 'WimHof',
-      categories: ['energy', 'health', 'stress']
-    },
-    {
-      id: '4-7-8',
-      title: 'Respiration 4-7-8',
-      description: 'Inspirez 4s, retenez 7s, expirez 8s. Réduit l\'anxiété et favorise le sommeil.',
-      duration: '5-10 minutes',
-      route: 'Respiration478',
-      categories: ['sleep', 'stress']
-    },
-    {
-      id: 'coherente',
-      title: 'Respiration Cohérente',
-      description: 'Inspirez 5s, expirez 5s. Synchronise la variabilité de la fréquence cardiaque et réduit le stress.',
-      duration: '5-10 minutes',
-      route: 'RespirationCoherente',
-      categories: ['stress', 'health']
-    },
-    {
-      id: 'diaphragmatique',
-      title: 'Respiration Diaphragmatique',
-      description: 'Respirez profondément par le diaphragme. Améliore l\'oxygénation et réduit l\'anxiété.',
-      duration: '5-15 minutes',
-      route: 'RespirationDiaphragmatique',
-      categories: ['stress', 'sleep', 'health']
-    },
-    {
-      id: 'alternee',
-      title: 'Respiration Alternée',
-      description: 'Alternez la respiration entre les narines. Équilibre le système nerveux et améliore la concentration.',
-      duration: '5-10 minutes',
-      route: 'RespirationAlternee',
-      categories: ['stress', 'focus']
-    },
-    {
-      id: 'buteyko',
-      title: 'Méthode Buteyko',
-      description: 'Réduisez la respiration pour normaliser le CO2. Bénéfique pour l\'asthme et l\'hyperventilation.',
-      duration: '10-15 minutes',
-      route: 'RespirationButeyko',
-      categories: ['health', 'sleep']
-    },
-    {
-      id: 'ujjayi',
-      title: 'Respiration Ujjayi',
-      description: 'Respirez par le nez avec une légère constriction de la gorge. Calme l\'esprit et améliore la concentration.',
-      duration: '5-15 minutes',
-      route: 'RespirationUjjayi',
-      categories: ['focus', 'stress']
-    },
-    {
-      id: 'box',
-      title: 'Respiration Box',
-      description: 'Inspirez 4s, retenez 4s, expirez 4s, retenez 4s. Excellente pour la gestion du stress et la concentration.',
-      duration: '5-10 minutes',
-      route: 'RespirationBox',
-      categories: ['stress', 'focus']
-    },
-    {
-      id: 'tummo',
-      title: 'Respiration Tummo',
-      description: 'Technique tibétaine traditionnelle de chaleur intérieure. Version plus complète avec visualisation et techniques de concentration spécifiques.',
-      duration: '15-30 minutes',
-      route: 'RespirationTummo',
-      categories: ['energy', 'health']
-    }
-  ];
+  // Initialiser la base de données et charger les techniques de respiration
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Initialiser la base de données
+        await initDatabase();
+        
+        // Charger toutes les techniques de respiration
+        const techniques = await getAllBreathingTechniques();
+        setBreathingTechniques(techniques);
+        setAllTechniques(techniques); // Stocker toutes les techniques pour le filtrage côté client
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Erreur lors du chargement des techniques de respiration:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+  
+  // Filtrer les techniques côté client lorsque la catégorie change
+  useEffect(() => {
+    // Ne pas traiter si l'initialisation n'est pas terminée
+    if (!isInitialized) return;
+    
+    const filterTechniques = async () => {
+      try {
+        // Afficher l'indicateur de chargement uniquement pour les requêtes réseau
+        const needsServerRequest = !allTechniques.length;
+        if (needsServerRequest) setIsLoading(true);
+        
+        if (!selectedCategory || selectedCategory === 'all') {
+          // Si aucune catégorie n'est sélectionnée, utiliser toutes les techniques
+          if (allTechniques.length > 0) {
+            // Utiliser les données en mémoire si disponibles
+            setBreathingTechniques(allTechniques);
+          } else {
+            // Sinon, charger depuis la base de données
+            const techniques = await getAllBreathingTechniques();
+            setBreathingTechniques(techniques);
+            setAllTechniques(techniques);
+          }
+        } else {
+          // Filtrer côté client si possible
+          if (allTechniques.length > 0) {
+            // Filtrer les techniques en mémoire
+            const filteredTechniques = allTechniques.filter(
+              technique => technique.categories.includes(selectedCategory)
+            );
+            setBreathingTechniques(filteredTechniques);
+          } else {
+            // Sinon, charger depuis la base de données
+            const techniques = await getBreathingTechniquesByCategory(selectedCategory);
+            setBreathingTechniques(techniques);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du filtrage des techniques par catégorie:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    filterTechniques();
+  }, [selectedCategory, isInitialized, allTechniques]);
 
-  // Filtrer les techniques en fonction de la catégorie sélectionnée
-  const filteredTechniques = selectedCategory && selectedCategory !== 'all'
-    ? breathingTechniques.filter(technique => technique.categories.includes(selectedCategory))
-    : breathingTechniques;
+  // Les techniques sont déjà filtrées dans l'état breathingTechniques
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -171,20 +151,29 @@ const HomeScreen = () => {
         <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
           Techniques de respiration basées sur des méthodes scientifiquement reconnues
         </Text>
+        
+        {/* Indicateur de chargement (uniquement au chargement initial) */}
+        {isLoading && !isInitialized && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Chargement des techniques...</Text>
+          </View>
+        )}
 
         {/* Sélecteur de catégories avec design amélioré */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.categoryScrollView}
-          contentContainerStyle={styles.categoryContainer}
-        >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.categoryButton,
-                {
+        {isInitialized && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.categoryScrollView}
+            contentContainerStyle={styles.categoryContainer}
+          >
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryButton,
+                  {
                   borderRadius: theme.borderRadiusRound,
                   borderColor: theme.primary,
                   backgroundColor: selectedCategory === category.id 
@@ -213,9 +202,15 @@ const HomeScreen = () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
+        )}
 
         <View style={styles.cardContainer}>
-          {filteredTechniques.map((technique) => (
+          {isLoading && isInitialized && (
+            <View style={styles.miniLoadingContainer}>
+              <ActivityIndicator size="small" color={theme.primary} />
+            </View>
+          )}
+          {!isLoading && breathingTechniques.map((technique) => (
             <TouchableOpacity
               key={technique.id}
               style={[
@@ -232,7 +227,15 @@ const HomeScreen = () => {
                   borderColor: theme.border
                 }
               ]}
-              onPress={() => navigation.navigate(technique.route as keyof RootStackParamList)}
+              onPress={() => {
+                if (technique.route === 'GenericBreathingScreen') {
+                  navigation.navigate('GenericBreathingScreen', { techniqueId: technique.id, title: technique.title });
+                } else {
+                  // Pour les autres routes, utiliser directement le nom de la route
+                  // @ts-ignore - Nous savons que ces routes existent dans notre application
+                  navigation.navigate(technique.route);
+                }
+              }}
             >
               <View style={styles.cardContent}>
                 <Text style={[styles.cardTitle, { color: theme.primary }]}>{technique.title}</Text>
@@ -293,6 +296,22 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniLoadingContainer: {
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: 50,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
   container: {
     flex: 1,
   },
