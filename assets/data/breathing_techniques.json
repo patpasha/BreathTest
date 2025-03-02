@@ -1,0 +1,263 @@
+[
+  {
+    "id": "physiological-sigh",
+    "title": "Soupir Physiologique",
+    "description": "Double inspiration suivie d'une longue expiration pour réduire rapidement le stress et l'anxiété.",
+    "duration": "2-5 minutes",
+    "route": "GenericBreathingScreen",
+    "categories": [
+      "stress"
+    ],
+    "defaultDurationMinutes": 3,
+    "steps": [
+      {
+        "name": "Première inspiration",
+        "duration": 1500,
+        "instruction": "Inspirez profondément par le nez"
+      },
+      {
+        "name": "Seconde inspiration",
+        "duration": 1000,
+        "instruction": "Inspirez encore un peu plus pour remplir complètement vos poumons"
+      },
+      {
+        "name": "Expiration",
+        "duration": 4000,
+        "instruction": "Expirez lentement et complètement par la bouche"
+      },
+      {
+        "name": "Pause",
+        "duration": 2000,
+        "instruction": "Attendez quelques secondes avant le prochain cycle"
+      }
+    ],
+    "longDescription": [
+      "Le soupir physiologique est un mécanisme naturel que notre corps utilise pour réinitialiser la respiration et réduire le stress.",
+      "Cette technique, popularisée par le neuroscientifique Andrew Huberman, est extrêmement efficace pour une réduction rapide de l'anxiété.",
+      "1. Prenez une première inspiration profonde par le nez.",
+      "2. Sans expirer, prenez une seconde inspiration courte pour remplir complètement vos poumons.",
+      "3. Expirez lentement et complètement par la bouche.",
+      "4. Répétez ce cycle 1 à 5 fois pour un effet immédiat sur votre état émotionnel."
+    ]
+  },
+  {
+    "id": "cyclic-hyperventilation",
+    "title": "Hyperventilation Cyclique",
+    "description": "Respirations rapides suivies de rétention du souffle courte pour augmenter l'énergie et la concentration. Version simplifiée de la méthode Wim Hof.",
+    "duration": "10-15 minutes",
+    "route": "CyclicHyperventilation",
+    "categories": [
+      "energy",
+      "focus"
+    ]
+  },
+  {
+    "id": "wim-hof",
+    "title": "Méthode Wim Hof",
+    "description": "Version occidentale moderne de la respiration Tummo. Respirations profondes suivies de rétentions du souffle et d'une phase de récupération pour renforcer le système immunitaire.",
+    "duration": "15-20 minutes",
+    "route": "WimHof",
+    "categories": [
+      "energy",
+      "health",
+      "stress"
+    ]
+  },
+  {
+    "id": "4-7-8",
+    "title": "Respiration 4-7-8",
+    "description": "Inspirez 4s, retenez 7s, expirez 8s. Réduit l'anxiété et favorise le sommeil.",
+    "duration": "5-10 minutes",
+    "route": "GenericBreathingScreen",
+    "categories": [
+      "sleep",
+      "stress"
+    ],
+    "defaultDurationMinutes": 5,
+    "steps": [
+      {
+        "name": "Inspiration",
+        "duration": 4000,
+        "instruction": "Inspirez calmement par le nez"
+      },
+      {
+        "name": "Rétention",
+        "duration": 7000,
+        "instruction": "Retenez votre souffle"
+      },
+      {
+        "name": "Expiration",
+        "duration": 8000,
+        "instruction": "Expirez lentement par la bouche"
+      }
+    ],
+    "longDescription": [
+      "La respiration 4-7-8 est une technique développée par le Dr Andrew Weil, basée sur le pranayama yogique.",
+      "Cette méthode agit comme un tranquillisant naturel pour le système nerveux et peut aider à s'endormir rapidement.",
+      "1. Inspirez calmement par le nez pendant 4 secondes.",
+      "2. Retenez votre souffle pendant 7 secondes.",
+      "3. Expirez complètement par la bouche pendant 8 secondes, en faisant un son de souffle.",
+      "4. Répétez ce cycle pour induire un état de relaxation profonde."
+    ]
+  },
+  {
+    "id": "coherente",
+    "title": "Respiration Cohérente",
+    "description": "Inspirez 5s, expirez 5s. Synchronise la variabilité de la fréquence cardiaque et réduit le stress.",
+    "duration": "5-10 minutes",
+    "route": "GenericBreathingScreen",
+    "categories": [
+      "stress",
+      "health"
+    ],
+    "defaultDurationMinutes": 5,
+    "steps": [
+      {
+        "name": "Inspiration",
+        "duration": 5000,
+        "instruction": "Inspirez lentement et régulièrement par le nez"
+      },
+      {
+        "name": "Expiration",
+        "duration": 5000,
+        "instruction": "Expirez lentement et régulièrement par la bouche"
+      }
+    ],
+    "longDescription": [
+      "La respiration cohérente est une technique qui consiste à respirer à un rythme régulier de 6 respirations par minute.",
+      "Cette technique permet de synchroniser la variabilité de la fréquence cardiaque et d'activer le système nerveux parasympathique, responsable de la détente.",
+      "1. Inspirez lentement et régulièrement pendant 5 secondes.",
+      "2. Expirez lentement et régulièrement pendant 5 secondes.",
+      "3. Continuez ce rythme régulier pendant toute la durée de la session."
+    ]
+  },
+  {
+    "id": "diaphragmatique",
+    "title": "Respiration Diaphragmatique",
+    "description": "Respirez profondément par le diaphragme. Améliore l'oxygénation et réduit l'anxiété.",
+    "duration": "5-15 minutes",
+    "route": "GenericBreathingScreen",
+    "categories": [
+      "stress",
+      "sleep",
+      "health"
+    ],
+    "defaultDurationMinutes": 5,
+    "steps": [
+      {
+        "name": "Inspiration",
+        "duration": 4000,
+        "instruction": "Inspirez lentement par le nez en gonflant le ventre"
+      },
+      {
+        "name": "Pause",
+        "duration": 1000,
+        "instruction": "Pause brève"
+      },
+      {
+        "name": "Expiration",
+        "duration": 6000,
+        "instruction": "Expirez lentement par la bouche en rentrant le ventre"
+      },
+      {
+        "name": "Pause",
+        "duration": 1000,
+        "instruction": "Pause brève avant le prochain cycle"
+      }
+    ],
+    "longDescription": [
+      "La respiration diaphragmatique, aussi appelée respiration abdominale, est une technique fondamentale qui utilise le diaphragme pour une respiration profonde et efficace.",
+      "1. Inspirez lentement par le nez en gonflant le ventre (pas la poitrine).",
+      "2. Faites une courte pause.",
+      "3. Expirez lentement par la bouche en rentrant le ventre.",
+      "4. Répétez ce cycle pour réduire le stress, améliorer l'oxygénation et activer le système nerveux parasympathique."
+    ]
+  },
+  {
+    "id": "alternee",
+    "title": "Respiration Alternée",
+    "description": "Alternez la respiration entre les narines. Équilibre le système nerveux et améliore la concentration.",
+    "duration": "5-10 minutes",
+    "route": "RespirationAlternee",
+    "categories": [
+      "stress",
+      "focus"
+    ]
+  },
+  {
+    "id": "buteyko",
+    "title": "Méthode Buteyko",
+    "description": "Réduisez la respiration pour normaliser le CO2. Bénéfique pour l'asthme et l'hyperventilation.",
+    "duration": "10-15 minutes",
+    "route": "RespirationButeyko",
+    "categories": [
+      "health",
+      "sleep"
+    ]
+  },
+  {
+    "id": "ujjayi",
+    "title": "Respiration Ujjayi",
+    "description": "Respirez par le nez avec une légère constriction de la gorge. Calme l'esprit et améliore la concentration.",
+    "duration": "5-15 minutes",
+    "route": "RespirationUjjayi",
+    "categories": [
+      "focus",
+      "stress"
+    ]
+  },
+  {
+    "id": "box",
+    "title": "Respiration Box",
+    "description": "Inspirez 4s, retenez 4s, expirez 4s, retenez 4s. Excellente pour la gestion du stress et la concentration.",
+    "duration": "5-10 minutes",
+    "route": "GenericBreathingScreen",
+    "categories": [
+      "stress",
+      "focus"
+    ],
+    "defaultDurationMinutes": 5,
+    "steps": [
+      {
+        "name": "Inspiration",
+        "duration": 4000,
+        "instruction": "Inspirez lentement par le nez"
+      },
+      {
+        "name": "Rétention haute",
+        "duration": 4000,
+        "instruction": "Retenez votre souffle, poumons pleins"
+      },
+      {
+        "name": "Expiration",
+        "duration": 4000,
+        "instruction": "Expirez lentement par la bouche"
+      },
+      {
+        "name": "Rétention basse",
+        "duration": 4000,
+        "instruction": "Retenez votre souffle, poumons vides"
+      }
+    ],
+    "longDescription": [
+      "La respiration box (ou carrée) est une technique simple mais puissante pour calmer l'esprit et le corps.",
+      "Elle est particulièrement efficace en situation de stress aigu ou pour améliorer la concentration.",
+      "1. Inspirez lentement par le nez pendant 4 secondes.",
+      "2. Retenez votre souffle pendant 4 secondes.",
+      "3. Expirez lentement par la bouche pendant 4 secondes.",
+      "4. Retenez votre souffle, poumons vides, pendant 4 secondes.",
+      "5. Répétez ce cycle en visualisant un carré dont vous parcourez les côtés."
+    ]
+  },
+  {
+    "id": "tummo",
+    "title": "Respiration Tummo",
+    "description": "Technique tibétaine traditionnelle de chaleur intérieure. Version plus complète avec visualisation et techniques de concentration spécifiques.",
+    "duration": "15-30 minutes",
+    "route": "RespirationTummo",
+    "categories": [
+      "energy",
+      "health"
+    ]
+  }
+]

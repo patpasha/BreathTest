@@ -48,7 +48,8 @@ const HomeScreen = () => {
     { id: 'sleep', title: 'Sommeil' },
     { id: 'energy', title: 'Énergie' },
     { id: 'focus', title: 'Concentration' },
-    { id: 'health', title: 'Santé' }
+    { id: 'health', title: 'Santé' },
+    { id: 'performance', title: 'Performance' }
   ];
 
   // Initialiser la base de données et charger les techniques de respiration
@@ -282,12 +283,33 @@ const HomeScreen = () => {
                 shadowRadius: theme.shadowRadius / 2,
                 shadowOffset: { width: 0, height: 3 },
                 elevation: theme.elevation / 2,
-                flex: 1
+                flex: 1,
+                marginRight: 8
               }
             ]}
             onPress={() => navigation.navigate('Info')}
           >
             <Text style={[styles.buttonText, { color: theme.textLight }]}>Informations</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.infoButton, 
+              { 
+                backgroundColor: theme.primary,
+                borderRadius: theme.borderRadiusMedium,
+                shadowColor: theme.shadowColor,
+                shadowOpacity: theme.shadowOpacity,
+                shadowRadius: theme.shadowRadius / 2,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: theme.elevation / 2,
+                flex: 1,
+                marginLeft: 8
+              }
+            ]}
+            onPress={() => navigation.navigate('TestNewTechniques')}
+          >
+            <Text style={[styles.buttonText, { color: theme.textLight }]}>Nouvelles Techniques</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

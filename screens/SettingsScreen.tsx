@@ -18,6 +18,7 @@ type SettingsScreenNavigationProp = CompositeNavigationProp<
 const SettingsScreen = () => {
   const { settings, setSetting, resetSettings } = useSettings();
   const theme = useTheme();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
 
   // Référence pour suivre si c'est le premier rendu
   const isFirstRender = React.useRef(true);
@@ -137,7 +138,12 @@ const SettingsScreen = () => {
           )}
         </View>
 
-
+        <TouchableOpacity
+          style={styles.contactButton}
+          onPress={() => navigation.navigate('ContactDeveloper')}
+        >
+          <Text style={styles.contactButtonText}>Contacter le Développeur</Text>
+        </TouchableOpacity>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Réinitialiser</Text>
@@ -204,7 +210,18 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 14,
   },
-
+  contactButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#4CAF50',
+    marginBottom: 20,
+  },
+  contactButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   resetButton: {
     paddingVertical: 15,
     borderRadius: 10,
@@ -214,7 +231,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-
   infoSection: {
     marginBottom: 30,
     padding: 15,

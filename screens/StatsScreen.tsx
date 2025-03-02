@@ -8,7 +8,6 @@ import { RootStackParamList, MainTabParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
 import { useStats } from '../contexts/StatsContext';
 import ActivityCalendar from '../components/ActivityCalendar';
-import TestStatsButton from '../components/TestStatsButton';
 
 type StatsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'StatsTab'>,
@@ -582,9 +581,6 @@ const StatsScreen = () => {
         </View>
         
         <View style={styles.footer} />
-        
-        {/* Bouton de test des statistiques (visible uniquement en mode développement) */}
-        {__DEV__ && <TestStatsButton />}
       </ScrollView>
     </SafeAreaView>
   );

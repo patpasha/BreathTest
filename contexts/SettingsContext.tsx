@@ -8,6 +8,7 @@ interface Settings {
   darkMode: boolean;
   reminderEnabled: boolean;
   reminderTime: string; // Format: 'HH:MM'
+  sessionDuration: number; // Durée de session en minutes
 }
 
 // Default settings
@@ -17,6 +18,7 @@ const defaultSettings: Settings = {
   darkMode: false,
   reminderEnabled: false,
   reminderTime: '20:00', // 8:00 PM par défaut
+  sessionDuration: 5, // 5 minutes par défaut
 };
 
 // Define the shape of our context
