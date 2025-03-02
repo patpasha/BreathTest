@@ -7,6 +7,8 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
 import { useStats } from '../contexts/StatsContext';
+import ActivityCalendar from '../components/ActivityCalendar';
+import TestStatsButton from '../components/TestStatsButton';
 
 type StatsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'StatsTab'>,
@@ -43,31 +45,7 @@ const StatCard = ({ title, value, subtitle, color, icon }: { title: string; valu
   );
 };
 
-// Composant pour afficher un jour dans le calendrier d'activité
-const ActivityDay = ({ intensity, date, onPress }: { intensity: number; date: string; onPress: () => void }) => {
-  const theme = useTheme();
-  
-  // Calculer la couleur en fonction de l'intensité (0-3)
-  const getColor = () => {
-    if (intensity === 0) return theme.border;
-    if (intensity === 1) return theme.primaryLight;
-    if (intensity === 2) return theme.primary;
-    return theme.primaryDark;
-  };
-  
-  return (
-    <TouchableOpacity 
-      onPress={onPress}
-      style={[
-        styles.activityDay, 
-        { 
-          backgroundColor: getColor(),
-          borderRadius: theme.borderRadiusSmall / 2,
-        }
-      ]}
-    />
-  );
-};
+
 
 // Composant pour afficher une barre dans le graphique
 const BarGraph = ({ data }: { data: { label: string; value: number; maxValue: number }[] }) => {
@@ -580,89 +558,33 @@ const StatsScreen = () => {
         >
           <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>Calendrier d'activité</Text>
           <Text style={[styles.graphSubtitle, { color: theme.textTertiary }]}>
-            Votre activité des 30 derniers jours
+            Visualisez votre pratique quotidienne
           </Text>
           
-          <View style={styles.activityCalendar}>
-            {/* Afficher les 30 derniers jours pour le calendrier d'activité */}
-            {periodData.slice(-30).map((day, index) => {
-              // Calculer l'intensité en fonction de la durée
-              let intensity = 0;
-              if (day.duration > 0) intensity = 1;
-              if (day.duration >= 600) intensity = 2; // 10 minutes
-              if (day.duration >= 1800) intensity = 3; // 30 minutes
-              
-              // Formater la date pour l'affichage dans l'infobulle
-              const formattedDate = new Date(day.date).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              });
-              
-              // Formater la durée pour l'affichage
-              const formattedDuration = day.duration > 0 ? formatDuration(day.duration) : 'Aucune activité';
-              
-              return (
-                <ActivityDay 
-                  key={index} 
-                  intensity={intensity} 
-                  date={formattedDate} 
-                  onPress={() => {
-                    Alert.alert(
-                      formattedDate,
-                      `Durée totale: ${formattedDuration}`
-                    );
-                  }} 
-                />
-              );
-            })}
-          </View>
-          
-          <View style={styles.intensityLegend}>
-            <Text style={[styles.legendText, { color: theme.textTertiary }]}>Moins</Text>
-            <View style={styles.legendItems}>
-              <View 
-                style={[
-                  styles.legendItem, 
-                  { 
-                    backgroundColor: theme.border,
-                    borderRadius: theme.borderRadiusSmall / 2,
-                  }
-                ]} 
-              />
-              <View 
-                style={[
-                  styles.legendItem, 
-                  { 
-                    backgroundColor: theme.primaryLight,
-                    borderRadius: theme.borderRadiusSmall / 2,
-                  }
-                ]} 
-              />
-              <View 
-                style={[
-                  styles.legendItem, 
-                  { 
-                    backgroundColor: theme.primary,
-                    borderRadius: theme.borderRadiusSmall / 2,
-                  }
-                ]} 
-              />
-              <View 
-                style={[
-                  styles.legendItem, 
-                  { 
-                    backgroundColor: theme.primaryDark,
-                    borderRadius: theme.borderRadiusSmall / 2,
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={[styles.legendText, { color: theme.textTertiary }]}>Plus</Text>
-          </View>
+          <ActivityCalendar 
+            data={periodData.map(day => ({
+              date: day.date,
+              duration: day.duration,
+              // Récupérer les sessions pour ce jour
+              sessions: stats.sessions.filter(session => {
+                const sessionDate = new Date(session.date);
+                const dayDate = new Date(day.date);
+                return sessionDate.getFullYear() === dayDate.getFullYear() &&
+                       sessionDate.getMonth() === dayDate.getMonth() &&
+                       sessionDate.getDate() === dayDate.getDate();
+              })
+            }))}
+            onMonthChange={(month, year) => {
+              console.log(`Changement de mois: ${month + 1}/${year}`);
+              // Ici on pourrait charger des données spécifiques pour ce mois
+            }}
+          />
         </View>
         
         <View style={styles.footer} />
+        
+        {/* Bouton de test des statistiques (visible uniquement en mode développement) */}
+        {__DEV__ && <TestStatsButton />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -814,34 +736,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  activityCalendar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 10,
-  },
-  activityDay: {
-    width: (Dimensions.get('window').width - 60) / 7,
-    height: (Dimensions.get('window').width - 60) / 7,
-    margin: 1,
-  },
-  intensityLegend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 15,
-  },
-  legendText: {
-    fontSize: 12,
-  },
-  legendItems: {
-    flexDirection: 'row',
-    marginHorizontal: 10,
-  },
-  legendItem: {
-    width: 12,
-    height: 12,
-    marginHorizontal: 3,
-  },
+
   footer: {
     height: 20,
   },
