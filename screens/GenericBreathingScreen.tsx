@@ -131,28 +131,64 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     setSessionDurationMinutes(newDuration);
   };
 
+  // Fonction pour déterminer la couleur de l'étape actuelle
+  const getStepColor = (stepName: string) => {
+    const name = stepName.toLowerCase();
+    if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+      return theme.primary;
+    } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+      return theme.secondary || '#4CAF50';
+    } else if (name.includes('pause') || name.includes('hold') || name.includes('retention')) {
+      return theme.accent || '#FFC107';
+    }
+    return theme.primary;
+  };
+
+  // Fonction pour déterminer le type d'étape
+  const getStepType = (stepName: string) => {
+    const name = stepName.toLowerCase();
+    if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+      return 'inhale';
+    } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+      return 'exhale';
+    } else {
+      return 'hold';
+    }
+  };
+
   const playFeedback = (stepName: string) => {
-    switch (stepName.toLowerCase()) {
-      case 'inspiration':
-      case 'inhale':
-      case 'inhalation':
-        playInhale();
-        inhalePattern();
-        break;
-      case 'expiration':
-      case 'exhale':
-      case 'exhalation':
-        playExhale();
-        exhalePattern();
-        break;
-      case 'pause':
-      case 'hold':
-      case 'retention':
-        playHold();
-        holdPattern();
-        break;
-      default:
-        break;
+    if (!settings.hapticsEnabled && !settings.soundEnabled) return;
+    
+    const stepType = getStepType(stepName);
+    
+    // Retour haptique
+    if (settings.hapticsEnabled) {
+      switch (stepType) {
+        case 'inhale':
+          inhalePattern();
+          break;
+        case 'exhale':
+          exhalePattern();
+          break;
+        case 'hold':
+          holdPattern();
+          break;
+      }
+    }
+    
+    // Retour sonore
+    if (settings.soundEnabled) {
+      switch (stepType) {
+        case 'inhale':
+          playInhale();
+          break;
+        case 'exhale':
+          playExhale();
+          break;
+        case 'hold':
+          playHold();
+          break;
+      }
     }
   };
 
@@ -365,19 +401,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     inputRange: [0, 0.4, 0.6, 1],
     outputRange: [0.3, 1, 1, 0.3],
   });
-
-  // Fonction pour déterminer la couleur de l'étape actuelle
-  const getStepColor = (stepName: string) => {
-    const name = stepName.toLowerCase();
-    if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
-      return theme.primary;
-    } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
-      return theme.secondary || '#4CAF50';
-    } else if (name.includes('pause') || name.includes('hold') || name.includes('retention')) {
-      return theme.accent || '#FFC107';
-    }
-    return theme.primary;
-  };
 
   if (loading) {
     return (
