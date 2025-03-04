@@ -190,8 +190,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       }
     }
     
-    // Retour sonore
-    if (settings.soundEnabled) {
+    // Retour sonore - désactivé pour éviter les erreurs
+    if (settings.soundEnabled && false) { // Désactivé intentionnellement
       console.log('Lecture du retour sonore');
       switch (stepType) {
         case 'inhale':
