@@ -411,38 +411,42 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.timerContainer}>
-            <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
-            <Text style={[styles.cyclesText, { color: theme.textSecondary }]}>Cycle: {currentCycle}</Text>
+          {/* Conteneur principal pour le timer et les cycles */}
+          <View style={styles.headerContainer}>
+            <View style={styles.timerContainer}>
+              <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
+            </View>
+            <View style={styles.cyclesContainer}>
+              <Text style={[styles.cyclesText, { color: theme.textSecondary }]}>Cycle: {currentCycle}</Text>
+            </View>
           </View>
 
-          <View style={styles.circleContainer}>
-            {/* Utilisation du composant BreathingBubble pour une animation plus fluide */}
-            <BreathingBubble 
-              isActive={isActive}
-              currentStep={currentStepObj?.name || ''}
-              progress={stepProgress}
-              size={CIRCLE_SIZE * 0.8}
-              instruction={currentStepObj?.instruction || ''}
-            />
-            
-            {/* Les instructions sont maintenant à l'intérieur de la bulle */}
+          {/* Conteneur pour la bulle de respiration avec plus d'espace */}
+          <View style={styles.breathingSection}>
+            <View style={styles.circleContainer}>
+              <BreathingBubble 
+                isActive={isActive}
+                currentStep={currentStepObj?.name || ''}
+                progress={stepProgress}
+                size={CIRCLE_SIZE * 0.8}
+                instruction={currentStepObj?.instruction || ''}
+              />
+            </View>
           </View>
 
-          {/* Espace de séparation entre la bulle et le bouton */}
-          <View style={styles.spacer} />
-
-          {/* Bouton pour activer/désactiver le guide */}
-          {isActive && (
-            <TouchableOpacity 
-              style={[styles.guideButton, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]} 
-              onPress={() => setShowGuide(!showGuide)}
-            >
-              <Text style={{ color: theme.textSecondary }}>
-                {showGuide ? "Masquer le guide" : "Afficher le guide"}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {/* Section pour le bouton de guide avec plus d'espace */}
+          <View style={styles.guideSection}>
+            {isActive && (
+              <TouchableOpacity 
+                style={[styles.guideButton, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]} 
+                onPress={() => setShowGuide(!showGuide)}
+              >
+                <Text style={{ color: theme.textSecondary }}>
+                  {showGuide ? "Masquer le guide" : "Afficher le guide"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* Guide de la technique - affiché uniquement si showGuide est true */}
           {(!isActive || showGuide) && (
@@ -534,10 +538,22 @@ const styles = StyleSheet.create({
     paddingBottom: 80, // Espace pour le bouton fixe
     paddingHorizontal: 16, // Marge horizontale uniforme
   },
-  timerContainer: {
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 10,
+    paddingHorizontal: 16,
+  },
+  timerContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  cyclesContainer: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
   },
   timerText: {
     fontSize: 48,
@@ -545,30 +561,32 @@ const styles = StyleSheet.create({
   },
   cyclesText: {
     fontSize: 18,
-    marginTop: 5,
+  },
+  breathingSection: {
+    marginTop: 20,
+    marginBottom: 30,
+    paddingVertical: 20,
   },
   circleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
     position: 'relative',
   },
-  spacer: {
-    height: 20,
+  guideSection: {
+    marginBottom: 20,
+    paddingVertical: 10,
   },
   guideButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 20,
     alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 15,
     borderWidth: 1,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    shadowRadius: 2,
   },
   instructionTitle: {
     fontSize: 24,
