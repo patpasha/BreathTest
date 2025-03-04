@@ -18,7 +18,7 @@ interface SoundAssets {
 
 /**
  * Hook pour la gestion des sons dans les exercices de respiration
- * Utilise expo-av pour jouer des sons générés
+ * Utilise expo-av pour jouer des sons locaux
  * 
  * @param enabled Indique si le son est activé
  * @returns Fonctions pour jouer différents types de sons
@@ -45,6 +45,7 @@ const useSound = (enabled: boolean) => {
           staysActiveInBackground: true,
           shouldDuckAndroid: true,
         });
+        console.log('Audio initialisé avec succès');
       } catch (error) {
         console.error('Erreur lors de l\'initialisation de l\'audio:', error);
       }
@@ -62,26 +63,14 @@ const useSound = (enabled: boolean) => {
       if (!enabled) return;
       
       try {
-        console.log('Création des sons simples...');
+        console.log('Chargement des sons locaux...');
         
-        // Créer et charger chaque son
-        const sounds = {
-          // Son d'inhalation - note grave montante
-          inhale: {
-            uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/inhale-sound_z1y-rnu__PM.mp3'
-          },
-          // Son d'expiration - note aiguë descendante
-          exhale: {
-            uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/exhale-sound_z1dwr2u__PM.mp3'
-          },
-          // Son de rétention - note constante douce
-          hold: {
-            uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/meditation-bell_MJhF2rB__PM.mp3'
-          },
-          // Son de fin - cloche
-          complete: {
-            uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/bright-bell_M1QrCHB__PM.mp3'
-          }
+        // Définir les fichiers audio locaux
+        const soundFiles = {
+          inhale: require('../assets/sounds/inhale.mp3'),
+          exhale: require('../assets/sounds/exhale.mp3'),
+          hold: require('../assets/sounds/hold.mp3'),
+          complete: require('../assets/sounds/complete.mp3')
         };
         
         // Charger chaque son
@@ -89,9 +78,9 @@ const useSound = (enabled: boolean) => {
           if (!isMounted) return;
           
           try {
-            console.log(`Chargement du son: ${type}`);
+            console.log(`Chargement du son local: ${type}`);
             const { sound } = await Audio.Sound.createAsync(
-              sounds[type],
+              soundFiles[type],
               { shouldPlay: false, volume: type === 'hold' ? 0.5 : 0.8 }
             );
             
@@ -112,7 +101,7 @@ const useSound = (enabled: boolean) => {
           setSoundsReady(true);
         }
       } catch (error) {
-        console.error('Erreur lors de la création des sons:', error);
+        console.error('Erreur lors du chargement des sons:', error);
       }
     };
 
@@ -166,26 +155,15 @@ const useSound = (enabled: boolean) => {
         console.log(`Son ${type} non chargé, tentative de rechargement...`);
         // Tenter de recharger le son
         try {
-          const sounds = {
-            inhale: {
-              uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/inhale-sound_z1y-rnu__PM.mp3'
-            },
-            exhale: {
-              uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/exhale-sound_z1dwr2u__PM.mp3'
-            },
-            hold: {
-              uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/meditation-bell_MJhF2rB__PM.mp3'
-            },
-            complete: {
-              uri: 'https://d1490khl9dq1ow.cloudfront.net/audio/music/mp3preview/BsTwCwBHBjzwub4i4/bright-bell_M1QrCHB__PM.mp3'
-            }
-          };
-          
           const { sound: newSound } = await Audio.Sound.createAsync(
-            sounds[type],
+            type === 'inhale' ? require('../assets/sounds/inhale.mp3') :
+            type === 'exhale' ? require('../assets/sounds/exhale.mp3') :
+            type === 'hold' ? require('../assets/sounds/hold.mp3') :
+            require('../assets/sounds/complete.mp3'),
             { shouldPlay: true, volume: type === 'hold' ? 0.5 : 0.8 }
           );
           soundsRef.current[type] = newSound;
+          console.log(`Son ${type} rechargé avec succès`);
         } catch (reloadError) {
           console.error(`Erreur lors du rechargement du son ${type}:`, reloadError);
         }
