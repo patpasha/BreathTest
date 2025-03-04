@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { Vibration, Platform } from 'react-native';
 
 /**
  * Custom hook for managing haptic feedback in the breathing exercises
@@ -70,33 +71,43 @@ export const useHaptics = (enabled: boolean) => {
   };
 
   /**
-   * Trigger a pattern of haptic feedback for inhale
-   * Creates a gradual increase in intensity to guide the inhale
+   * Utilise l'API Vibration pour créer des motifs plus complexes
+   * qui fonctionnent sur iOS et Android
+   * @param pattern Le motif de vibration (alternance de temps d'attente et de vibration en ms)
    */
-  const inhalePattern = async () => {
+  const vibratePattern = (pattern: number[]) => {
     if (!enabled) return;
     
     try {
-      // Motif progressif plus doux et plus long pour l'inspiration
-      // Commence très doucement et s'intensifie graduellement
-      const pattern = [0, 10, 20, 30, 40, 50, 60, 50, 40];
-      const intensities = [
-        Haptics.ImpactFeedbackStyle.Light,
-        Haptics.ImpactFeedbackStyle.Light,
-        Haptics.ImpactFeedbackStyle.Light,
-        Haptics.ImpactFeedbackStyle.Medium,
-        Haptics.ImpactFeedbackStyle.Medium,
-        Haptics.ImpactFeedbackStyle.Heavy,
-        Haptics.ImpactFeedbackStyle.Medium,
-        Haptics.ImpactFeedbackStyle.Light
-      ];
+      // Annuler toute vibration en cours
+      Vibration.cancel();
       
-      // Créer une séquence progressive de vibrations avec intensité variable
-      for (let i = 0; i < pattern.length; i++) {
-        if (pattern[i] > 0) {
-          await Haptics.impactAsync(intensities[i-1] || Haptics.ImpactFeedbackStyle.Light);
-          await new Promise(resolve => setTimeout(resolve, pattern[i]));
-        }
+      // Appliquer le motif de vibration
+      Vibration.vibrate(pattern);
+    } catch (error) {
+      console.log('Erreur de vibration:', error);
+    }
+  };
+
+  /**
+   * Trigger a pattern of haptic feedback for inhale
+   * Creates a gradual increase in intensity to guide the inhale
+   */
+  const inhalePattern = () => {
+    if (!enabled) return;
+    
+    try {
+      // Motif d'inspiration: vibrations courtes qui s'intensifient
+      // [attente, vibration, attente, vibration, ...]
+      const pattern = Platform.OS === 'ios' 
+        ? [0, 100, 100, 200, 100, 300] // iOS a des limitations sur les motifs
+        : [0, 50, 50, 100, 50, 150, 50, 200]; // Android permet des motifs plus complexes
+      
+      vibratePattern(pattern);
+      
+      // Utiliser également Haptics pour un retour plus riche sur iOS
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (error) {
       console.log('Erreur haptic inhale:', error);
@@ -107,28 +118,21 @@ export const useHaptics = (enabled: boolean) => {
    * Trigger a pattern of haptic feedback for exhale
    * Creates a gradual decrease in intensity to guide the exhale
    */
-  const exhalePattern = async () => {
+  const exhalePattern = () => {
     if (!enabled) return;
     
     try {
-      // Motif dégressif plus doux pour l'expiration
-      // Commence fort et diminue progressivement
-      const pattern = [0, 60, 50, 40, 30, 20, 10];
-      const intensities = [
-        Haptics.ImpactFeedbackStyle.Heavy,
-        Haptics.ImpactFeedbackStyle.Medium,
-        Haptics.ImpactFeedbackStyle.Medium,
-        Haptics.ImpactFeedbackStyle.Light,
-        Haptics.ImpactFeedbackStyle.Light,
-        Haptics.ImpactFeedbackStyle.Light
-      ];
+      // Motif d'expiration: vibrations longues qui diminuent
+      // [attente, vibration, attente, vibration, ...]
+      const pattern = Platform.OS === 'ios'
+        ? [0, 400, 100, 300, 100, 200] // iOS a des limitations sur les motifs
+        : [0, 400, 50, 300, 50, 200, 50, 100]; // Android permet des motifs plus complexes
       
-      // Créer une séquence dégressive de vibrations avec intensité variable
-      for (let i = 0; i < pattern.length; i++) {
-        if (pattern[i] > 0) {
-          await Haptics.impactAsync(intensities[i-1] || Haptics.ImpactFeedbackStyle.Light);
-          await new Promise(resolve => setTimeout(resolve, pattern[i]));
-        }
+      vibratePattern(pattern);
+      
+      // Utiliser également Haptics pour un retour plus riche sur iOS
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
     } catch (error) {
       console.log('Erreur haptic exhale:', error);
@@ -139,22 +143,32 @@ export const useHaptics = (enabled: boolean) => {
    * Trigger a pattern of haptic feedback for hold
    * Creates a subtle, steady rhythm to help maintain the hold
    */
-  const holdPattern = async () => {
+  const holdPattern = () => {
     if (!enabled) return;
     
     try {
-      // Séquence de vibrations très subtiles et régulières pour la rétention
-      // Crée un rythme doux et constant
-      const pulseCount = 3;
-      const pulseInterval = 400; // Intervalle entre les pulsations
+      // Motif de rétention: vibrations régulières et courtes
+      // [attente, vibration, attente, vibration, ...]
+      const pattern = Platform.OS === 'ios'
+        ? [0, 50, 300, 50, 300, 50] // iOS a des limitations sur les motifs
+        : [0, 50, 300, 50, 300, 50, 300, 50]; // Android permet des motifs plus complexes
       
-      for (let i = 0; i < pulseCount; i++) {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        await new Promise(resolve => setTimeout(resolve, pulseInterval));
+      vibratePattern(pattern);
+      
+      // Utiliser également Haptics pour un retour plus riche sur iOS
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
       }
     } catch (error) {
       console.log('Erreur haptic hold:', error);
     }
+  };
+
+  /**
+   * Annule toutes les vibrations en cours
+   */
+  const cancelVibration = () => {
+    Vibration.cancel();
   };
 
   return {
@@ -168,6 +182,7 @@ export const useHaptics = (enabled: boolean) => {
     inhalePattern,
     exhalePattern,
     holdPattern,
+    cancelVibration
   };
 };
 

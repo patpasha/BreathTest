@@ -18,7 +18,7 @@ interface SoundAssets {
 
 /**
  * Hook pour la gestion des sons dans les exercices de respiration
- * Version désactivée pour éviter les erreurs
+ * Version désactivée pour éviter les erreurs - utilise les vibrations à la place
  * 
  * @param enabled Indique si le son est activé (ignoré dans cette version)
  * @returns Fonctions pour jouer différents types de sons (désactivées)
@@ -32,6 +32,7 @@ const useSound = (enabled: boolean) => {
     // Ne fait rien
   };
 
+  // Nous retournons les fonctions vides car nous utilisons les vibrations à la place
   return {
     playInhale: noOp,
     playExhale: noOp,
