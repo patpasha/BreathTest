@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
@@ -8,13 +8,15 @@ interface BreathingBubbleProps {
   currentStep: string;
   progress: number;
   size: number;
+  instruction?: string;
 }
 
 const BreathingBubble: React.FC<BreathingBubbleProps> = ({ 
   isActive, 
   currentStep, 
   progress, 
-  size 
+  size,
+  instruction = ''
 }) => {
   const theme = useTheme();
   const [prevStep, setPrevStep] = useState(currentStep);
@@ -23,6 +25,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(0.8)).current;
   const blurValue = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0.8)).current;
   
   // Référence pour la progression circulaire
   const progressRef = useRef({
@@ -100,6 +103,11 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           duration: 500,
           useNativeDriver: true,
         }),
+        Animated.timing(textOpacity, {
+          toValue: 0.9,
+          duration: 500,
+          useNativeDriver: true,
+        }),
         Animated.timing(blurValue, {
           toValue: 0,
           duration: 500,
@@ -122,6 +130,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     scaleValue.stopAnimation();
     opacityValue.stopAnimation();
     blurValue.stopAnimation();
+    textOpacity.stopAnimation();
     
     if (stepType === 'inhale') {
       // Animation d'inspiration: expansion, augmentation de l'opacité
@@ -135,6 +144,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         Animated.timing(opacityValue, {
           toValue: 1,
           duration: stepDuration * 0.7,
+          easing: Easing.bezier(0.2, 0, 0.4, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: stepDuration * 0.5,
           easing: Easing.bezier(0.2, 0, 0.4, 1),
           useNativeDriver: true,
         }),
@@ -156,6 +171,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         Animated.timing(opacityValue, {
           toValue: 0.6,
           duration: stepDuration * 0.8,
+          easing: Easing.bezier(0.4, 0, 0.6, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacity, {
+          toValue: 0.8,
+          duration: stepDuration * 0.5,
           easing: Easing.bezier(0.4, 0, 0.6, 1),
           useNativeDriver: true,
         }),
@@ -183,6 +204,11 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           })
         ]),
         Animated.timing(opacityValue, {
+          toValue: 0.9,
+          duration: stepDuration * 0.5,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacity, {
           toValue: 0.9,
           duration: stepDuration * 0.5,
           useNativeDriver: true,
@@ -317,7 +343,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         ]}
       />
       
-      {/* Cercle principal */}
+      {/* Cercle principal avec instructions à l'intérieur */}
       <Animated.View 
         style={[
           styles.bubble,
@@ -339,6 +365,18 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             fill={`url(#${gradientId})`}
           />
         </Svg>
+        
+        {/* Instructions à l'intérieur de la bulle */}
+        <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
+          <Text style={[styles.stepName, { color: '#FFFFFF' }]}>
+            {currentStep}
+          </Text>
+          {instruction ? (
+            <Text style={styles.instruction}>
+              {instruction}
+            </Text>
+          ) : null}
+        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -358,6 +396,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   halo: {
     position: 'absolute',
@@ -375,6 +415,30 @@ const styles = StyleSheet.create({
   },
   svg: {
     position: 'absolute',
+  },
+  textContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    width: '100%',
+    height: '100%',
+  },
+  stepName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  instruction: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   }
 });
 

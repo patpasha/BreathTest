@@ -423,15 +423,10 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               currentStep={currentStepObj?.name || ''}
               progress={stepProgress}
               size={CIRCLE_SIZE * 0.8}
+              instruction={currentStepObj?.instruction || ''}
             />
             
-            {/* Instructions séparées de la bulle pour éviter la superposition */}
-            <View style={styles.instructionContainer}>
-              <Text style={[styles.stepName, { color: currentStepObj ? getStepColor(currentStepObj.name) : theme.primary }]}>
-                {currentStepObj?.name || ''}
-              </Text>
-              <Text style={[styles.instruction, { color: theme.textSecondary }]}>{currentStepObj?.instruction || ''}</Text>
-            </View>
+            {/* Les instructions sont maintenant à l'intérieur de la bulle */}
           </View>
 
           {/* Bouton pour activer/désactiver le guide */}
@@ -554,23 +549,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 20,
     position: 'relative',
-  },
-  instructionContainer: {
-    marginTop: 20,
-    paddingHorizontal: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  stepName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 5,
   },
   guideButton: {
     paddingVertical: 8,
