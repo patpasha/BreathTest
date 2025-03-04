@@ -76,14 +76,20 @@ export const useHaptics = (enabled: boolean) => {
   const inhalePattern = async () => {
     if (!enabled) return;
     
-    // Série de vibrations légères qui s'intensifient pour guider l'inspiration
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setTimeout(async () => {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }, 300);
-    setTimeout(async () => {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }, 600);
+    try {
+      // Motif progressif pour l'inspiration - commence doucement et s'intensifie
+      const pattern = [0, 20, 30, 40, 30, 20];
+      
+      // Créer une séquence progressive de vibrations douces
+      for (let i = 0; i < pattern.length; i++) {
+        if (pattern[i] > 0) {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          await new Promise(resolve => setTimeout(resolve, pattern[i]));
+        }
+      }
+    } catch (error) {
+      console.log('Erreur haptic inhale:', error);
+    }
   };
 
   /**
@@ -93,14 +99,24 @@ export const useHaptics = (enabled: boolean) => {
   const exhalePattern = async () => {
     if (!enabled) return;
     
-    // Série de vibrations qui diminuent en intensité pour guider l'expiration
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setTimeout(async () => {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }, 400);
-    setTimeout(async () => {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }, 800);
+    try {
+      // Motif dégressif pour l'expiration - commence plus fort et diminue
+      const pattern = [0, 40, 30, 20, 10];
+      
+      // Créer une séquence dégressive de vibrations
+      for (let i = 0; i < pattern.length; i++) {
+        if (pattern[i] > 0) {
+          if (i === 0) {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          } else {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+          await new Promise(resolve => setTimeout(resolve, pattern[i]));
+        }
+      }
+    } catch (error) {
+      console.log('Erreur haptic exhale:', error);
+    }
   };
 
   /**
@@ -110,8 +126,14 @@ export const useHaptics = (enabled: boolean) => {
   const holdPattern = async () => {
     if (!enabled) return;
     
-    // Vibration unique pour indiquer le début de la rétention
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      // Vibration subtile et constante pour la rétention
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await new Promise(resolve => setTimeout(resolve, 30));
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.log('Erreur haptic hold:', error);
+    }
   };
 
   return {

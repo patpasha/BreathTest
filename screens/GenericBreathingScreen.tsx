@@ -10,6 +10,7 @@ import useHaptics from '../hooks/useHaptics';
 import { useTheme } from '../theme/ThemeContext';
 import { BreathingScreenProps } from '../App';
 import { getBreathingTechniqueById, BreathingTechnique, BreathingStep, getDefaultStepsForTechnique } from '../services/DatabaseService';
+import BreathingBubble from '../components/BreathingBubble';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.55;
@@ -194,12 +195,12 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         toValue = currentAnimValue; // Maintien pour les pauses
       }
       
-      // Animation plus fluide avec easeInOut
+      // Animation plus fluide avec easeInOut et une durée légèrement plus longue
       Animated.timing(animatedValue, {
         toValue,
-        duration: currentStepObj.duration,
+        duration: currentStepObj.duration * 0.95, // Légèrement plus court pour éviter les saccades entre les transitions
         useNativeDriver: true,
-        easing: Easing.inOut(Easing.cubic),
+        easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération plus douce
       }).start();
       
       // Animation de progression
@@ -209,17 +210,18 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         toValue: 1,
         duration: currentStepObj.duration,
         useNativeDriver: false,
+        easing: Easing.linear, // Progression linéaire pour le cercle de progression
       }).start();
       
       setCurrentAnimValue(toValue);
 
-      // Mettre à jour la progression toutes les 100ms
+      // Mettre à jour la progression toutes les 50ms pour une animation plus fluide
       const progressInterval = setInterval(() => {
         setStepProgress(prev => {
-          const newProgress = prev + (100 / (currentStepObj.duration / 100));
+          const newProgress = prev + (100 / (currentStepObj.duration / 50));
           return newProgress > 100 ? 100 : newProgress;
         });
-      }, 100);
+      }, 50);
 
       cycleTimerRef.current = setTimeout(() => {
         clearInterval(progressInterval);
@@ -337,6 +339,22 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     outputRange: [1, 1.15],
   });
 
+  // Interpolation pour l'opacité des instructions selon l'étape
+  const inhaleOpacity = animatedValue.interpolate({
+    inputRange: [0, 0.3, 1],
+    outputRange: [0.3, 1, 1],
+  });
+
+  const exhaleOpacity = animatedValue.interpolate({
+    inputRange: [0, 0.7, 1],
+    outputRange: [1, 1, 0.3],
+  });
+
+  const holdOpacity = animatedValue.interpolate({
+    inputRange: [0, 0.4, 0.6, 1],
+    outputRange: [0.3, 1, 1, 0.3],
+  });
+
   // Fonction pour déterminer la couleur de l'étape actuelle
   const getStepColor = (stepName: string) => {
     const name = stepName.toLowerCase();
@@ -388,69 +406,26 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           </View>
 
           <View style={styles.circleContainer}>
-            <Animated.View style={[styles.circleWrapper, { transform: [{ scale }] }]}>
-              <Svg height={CIRCLE_SIZE} width={CIRCLE_SIZE} viewBox={`0 0 ${CIRCLE_SIZE} ${CIRCLE_SIZE}`}>
-                {/* Cercle de fond */}
-                <Circle
-                  cx={CIRCLE_SIZE / 2}
-                  cy={CIRCLE_SIZE / 2}
-                  r={CIRCLE_SIZE / 2 - 10}
-                  stroke={theme.border}
-                  strokeWidth="2"
-                  fill={theme.surfaceLight}
-                />
-                
-                {/* Cercle de progression */}
-                {isActive && currentStepObj && (
-                  <Circle
-                    cx={CIRCLE_SIZE / 2}
-                    cy={CIRCLE_SIZE / 2}
-                    r={CIRCLE_SIZE / 2 - 10}
-                    stroke={getStepColor(currentStepObj.name)}
-                    strokeWidth="4"
-                    strokeDasharray={`${2 * Math.PI * (CIRCLE_SIZE / 2 - 10) * (stepProgress / 100)} ${2 * Math.PI * (CIRCLE_SIZE / 2 - 10)}`}
-                    strokeLinecap="round"
-                    fill="transparent"
-                    transform={`rotate(-90, ${CIRCLE_SIZE / 2}, ${CIRCLE_SIZE / 2})`}
-                  />
-                )}
-              </Svg>
-              <View style={styles.circleContent}>
-                <Text style={[styles.stepName, { color: currentStepObj ? getStepColor(currentStepObj.name) : theme.primary }]}>
-                  {currentStepObj?.name || ''}
-                </Text>
-                <Text style={[styles.instruction, { color: theme.textSecondary }]}>{currentStepObj?.instruction || ''}</Text>
-                
-                {/* Indicateur visuel pour guider l'utilisateur */}
-                {isActive && showGuide && (
-                  <View style={styles.guideContainer}>
-                    {currentStepObj && currentStepObj.name.toLowerCase().includes('inspir') && (
-                      <Text style={[styles.guideText, { color: theme.textSecondary }]}>
-                        Inspirez doucement ↑
-                      </Text>
-                    )}
-                    {currentStepObj && currentStepObj.name.toLowerCase().includes('expir') && (
-                      <Text style={[styles.guideText, { color: theme.textSecondary }]}>
-                        Expirez lentement ↓
-                      </Text>
-                    )}
-                    {currentStepObj && (currentStepObj.name.toLowerCase().includes('pause') || 
-                                        currentStepObj.name.toLowerCase().includes('hold') || 
-                                        currentStepObj.name.toLowerCase().includes('retention')) && (
-                      <Text style={[styles.guideText, { color: theme.textSecondary }]}>
-                        Retenez votre souffle ⏸
-                      </Text>
-                    )}
-                  </View>
-                )}
-              </View>
-            </Animated.View>
+            {/* Utilisation du composant BreathingBubble pour une animation plus fluide */}
+            <BreathingBubble 
+              isActive={isActive}
+              currentStep={currentStepObj?.name || ''}
+              progress={stepProgress}
+              size={CIRCLE_SIZE * 0.8}
+            />
+            
+            <View style={styles.instructionOverlay}>
+              <Text style={[styles.stepName, { color: currentStepObj ? getStepColor(currentStepObj.name) : theme.primary }]}>
+                {currentStepObj?.name || ''}
+              </Text>
+              <Text style={[styles.instruction, { color: theme.textSecondary }]}>{currentStepObj?.instruction || ''}</Text>
+            </View>
           </View>
 
           {/* Bouton pour activer/désactiver le guide */}
           {isActive && (
             <TouchableOpacity 
-              style={[styles.guideButton, { backgroundColor: theme.surfaceLight }]} 
+              style={[styles.guideButton, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]} 
               onPress={() => setShowGuide(!showGuide)}
             >
               <Text style={{ color: theme.textSecondary }}>
@@ -528,6 +503,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 80, // Espace pour le bouton fixe
+    paddingHorizontal: 16, // Marge horizontale uniforme
   },
   timerContainer: {
     alignItems: 'center',
@@ -546,18 +522,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 20,
+    position: 'relative',
   },
-  circleWrapper: {
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleContent: {
+  instructionOverlay: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
     width: '80%',
+    zIndex: 10,
   },
   stepName: {
     fontSize: 24,
@@ -570,8 +542,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 5,
   },
+  guideButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginTop: 5,
+    marginBottom: 15,
+    borderWidth: 1,
+  },
   instructionContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     marginBottom: 20,
   },
   instructionTitle: {
@@ -584,6 +565,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     lineHeight: 22,
+    textAlign: 'justify',
+  },
+  durationSelectorContainer: {
+    marginVertical: 15,
+    width: '100%',
   },
   fixedButtonContainer: {
     position: 'absolute',
@@ -592,6 +578,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     paddingVertical: 15,
+    borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -612,25 +599,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  durationSelectorContainer: {
-    marginVertical: 15,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  guideContainer: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  guideText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  guideButton: {
-    padding: 8,
-    borderRadius: 20,
-    alignSelf: 'center',
-    marginTop: 10,
   },
 });
 
