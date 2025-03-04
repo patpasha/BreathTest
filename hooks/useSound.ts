@@ -44,12 +44,12 @@ const useSound = (enabled: boolean) => {
     complete: `${FileSystem.documentDirectory}sounds/complete.mp3`
   };
 
-  // URLs des sons à télécharger
+  // URLs des sons à télécharger (hébergés sur GitHub pour une meilleure compatibilité iOS)
   const soundUrls = {
-    inhale: 'https://soundbible.com/mp3/Breathing-SoundBible.com-517261338.mp3',
-    exhale: 'https://soundbible.com/mp3/Exhale-SoundBible.com-800973395.mp3',
-    hold: 'https://soundbible.com/mp3/Slow%20Breathing-SoundBible.com-731740047.mp3',
-    complete: 'https://soundbible.com/mp3/service-bell_daniel_simion.mp3'
+    inhale: 'https://github.com/patpasha/breathing-sounds/raw/main/inhale.mp3',
+    exhale: 'https://github.com/patpasha/breathing-sounds/raw/main/exhale.mp3',
+    hold: 'https://github.com/patpasha/breathing-sounds/raw/main/hold.mp3',
+    complete: 'https://github.com/patpasha/breathing-sounds/raw/main/complete.mp3'
   };
 
   // Initialiser l'audio
@@ -96,27 +96,39 @@ const useSound = (enabled: boolean) => {
           const filePath = soundPaths[type];
           const fileInfo = await FileSystem.getInfoAsync(filePath);
 
-          // Télécharger le fichier s'il n'existe pas
-          if (!fileInfo.exists) {
+          // Forcer le téléchargement pour mettre à jour les sons
+          try {
             console.log(`Téléchargement du son: ${type} depuis ${soundUrls[type]}`);
+            // Supprimer le fichier existant s'il existe
+            if (fileInfo.exists) {
+              await FileSystem.deleteAsync(filePath, { idempotent: true });
+            }
+            // Télécharger le nouveau fichier
             await FileSystem.downloadAsync(soundUrls[type], filePath);
             console.log(`Son ${type} téléchargé avec succès à ${filePath}`);
+          } catch (downloadError) {
+            console.error(`Erreur lors du téléchargement du son ${type}:`, downloadError);
+            continue; // Passer au son suivant en cas d'erreur
           }
 
           // Charger le son
-          console.log(`Chargement du son: ${type} depuis ${filePath}`);
-          const { sound } = await Audio.Sound.createAsync(
-            { uri: filePath },
-            { shouldPlay: false, volume: type === 'hold' ? 0.5 : 0.8 }
-          );
-          
-          if (!isMounted) {
-            sound.unloadAsync();
-            return;
+          try {
+            console.log(`Chargement du son: ${type} depuis ${filePath}`);
+            const { sound } = await Audio.Sound.createAsync(
+              { uri: filePath },
+              { shouldPlay: false, volume: type === 'hold' ? 0.5 : 0.8 }
+            );
+            
+            if (!isMounted) {
+              sound.unloadAsync();
+              return;
+            }
+            
+            soundsRef.current[type] = sound;
+            console.log(`Son ${type} chargé avec succès`);
+          } catch (loadError) {
+            console.error(`Erreur lors du chargement du son ${type}:`, loadError);
           }
-          
-          soundsRef.current[type] = sound;
-          console.log(`Son ${type} chargé avec succès`);
         }
         
         if (isMounted) {
@@ -177,11 +189,15 @@ const useSound = (enabled: boolean) => {
       } else {
         console.log(`Son ${type} non chargé, tentative de rechargement...`);
         // Tenter de recharger le son
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: soundPaths[type] },
-          { shouldPlay: true, volume: type === 'hold' ? 0.5 : 0.8 }
-        );
-        soundsRef.current[type] = newSound;
+        try {
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            { uri: soundPaths[type] },
+            { shouldPlay: true, volume: type === 'hold' ? 0.5 : 0.8 }
+          );
+          soundsRef.current[type] = newSound;
+        } catch (reloadError) {
+          console.error(`Erreur lors du rechargement du son ${type}:`, reloadError);
+        }
       }
     } catch (error) {
       console.error(`Erreur lors de la lecture du son ${type}:`, error);
