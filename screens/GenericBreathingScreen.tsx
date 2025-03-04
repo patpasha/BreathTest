@@ -454,20 +454,36 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                 {technique.description}
               </Text>
               
-              {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => (
-                <Text 
-                  key={index} 
-                  style={[
-                    styles.instructionText, 
-                    { 
-                      color: paragraph.startsWith('⚠️ ATTENTION') ? theme.error : theme.textSecondary,
-                      fontWeight: paragraph.startsWith('⚠️ ATTENTION') ? 'bold' : 'normal'
-                    }
-                  ]}
-                >
-                  {paragraph}
-                </Text>
-              ))}
+              {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => {
+                // Détection des titres, des étapes numérotées et des avertissements
+                const isTitle = paragraph.includes('Comment pratiquer :') || 
+                               paragraph.includes('Effets :') || 
+                               paragraph.includes('Idéal pour :');
+                const isNumberedStep = /^\d+\./.test(paragraph);
+                const isWarning = paragraph.includes('⚠️ ATTENTION');
+                
+                return (
+                  <Text 
+                    key={index} 
+                    style={[
+                      styles.instructionText, 
+                      { 
+                        color: isWarning ? theme.error : 
+                               isTitle ? theme.primary : 
+                               theme.textSecondary,
+                        fontWeight: isWarning || isTitle ? 'bold' : 
+                                   isNumberedStep ? '500' : 'normal',
+                        marginTop: isTitle ? 15 : 5,
+                        marginBottom: isTitle ? 10 : 5,
+                        textAlign: 'left',
+                        paddingLeft: isNumberedStep ? 10 : 0,
+                      }
+                    ]}
+                  >
+                    {paragraph}
+                  </Text>
+                );
+              })}
             </View>
           )}
 
@@ -566,16 +582,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   instructionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 15,
     textAlign: 'center',
   },
   instructionText: {
     fontSize: 16,
-    marginBottom: 10,
-    lineHeight: 22,
-    textAlign: 'justify',
+    marginBottom: 8,
+    lineHeight: 24,
+    textAlign: 'left',
   },
   durationSelectorContainer: {
     marginVertical: 15,
@@ -611,8 +627,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   techniqueDescriptionContainer: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     marginBottom: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 10,
   },
 });
 

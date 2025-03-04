@@ -1,256 +1,185 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Easing, Text, useColorScheme } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import Svg, { Circle, Defs, LinearGradient, Stop, Filter, FeGaussianBlur, FeOffset, FeComposite, FeColorMatrix, FeMerge, FeMergeNode, FeBlend } from 'react-native-svg';
 
 interface BreathingBubbleProps {
   isActive: boolean;
   currentStep: string;
   progress: number;
-  size?: number;
+  size: number;
 }
 
-const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: BreathingBubbleProps) => {
+const BreathingBubble: React.FC<BreathingBubbleProps> = ({ 
+  isActive, 
+  currentStep, 
+  progress, 
+  size 
+}) => {
   const theme = useTheme();
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  
-  const animatedValue = useRef(new Animated.Value(0.5)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const [currentAnimation, setCurrentAnimation] = useState<Animated.CompositeAnimation | null>(null);
-  const [currentPulseAnimation, setCurrentPulseAnimation] = useState<Animated.CompositeAnimation | null>(null);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const animatedValue = new Animated.Value(0);
+  const scaleValue = new Animated.Value(1);
+  const pulseValue = new Animated.Value(0);
 
-  // Déterminer l'action en cours
-  const isInhale = currentStep.toLowerCase().includes('inspir') || 
-                  currentStep.toLowerCase().includes('inhale') || 
-                  currentStep.toLowerCase().includes('inhalation');
-  
-  const isExhale = currentStep.toLowerCase().includes('expir') || 
-                  currentStep.toLowerCase().includes('exhale') || 
-                  currentStep.toLowerCase().includes('exhalation');
-  
-  const isHold = currentStep.toLowerCase().includes('pause') || 
-                currentStep.toLowerCase().includes('hold') || 
-                currentStep.toLowerCase().includes('retention');
-
-  // Effet pour gérer les changements d'étape
-  useEffect(() => {
-    // Arrêter les animations en cours
-    if (currentAnimation) {
-      currentAnimation.stop();
+  // Déterminer la couleur en fonction de l'étape
+  const getStepColor = (stepName: string) => {
+    const name = stepName.toLowerCase();
+    if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+      return theme.primary;
+    } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+      return theme.secondary || '#4CAF50';
+    } else if (name.includes('pause') || name.includes('hold') || name.includes('retention')) {
+      return theme.accent || '#FFC107';
     }
-    if (currentPulseAnimation) {
-      currentPulseAnimation.stop();
-    }
+    return theme.primary;
+  };
 
-    if (isActive) {
-      let toValue = 0.5; // Valeur par défaut pour maintien
-      
-      if (isInhale) {
-        toValue = 1; // Expansion pour l'inspiration
-      } else if (isExhale) {
-        toValue = 0; // Contraction pour l'expiration
-      }
-      
-      // Animation principale de la bulle avec une durée adaptée à la progression
-      const animation = Animated.timing(animatedValue, {
-        toValue,
-        duration: 1500, // Durée fixe pour une animation fluide
-        useNativeDriver: true,
-        easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération douce
-      });
-      
-      setCurrentAnimation(animation);
-      animation.start();
-      
-      // Animation de pulsation subtile pour la rétention
-      if (isHold) {
-        const pulseAnimation = Animated.loop(
-          Animated.sequence([
-            Animated.timing(pulseAnim, {
-              toValue: 1.05,
-              duration: 1000,
-              useNativeDriver: true,
-              easing: Easing.inOut(Easing.sin),
-            }),
-            Animated.timing(pulseAnim, {
-              toValue: 1,
-              duration: 1000,
-              useNativeDriver: true,
-              easing: Easing.inOut(Easing.sin),
-            }),
-          ])
-        );
-        
-        setCurrentPulseAnimation(pulseAnimation);
-        pulseAnimation.start();
-      } else {
-        // Réinitialiser l'animation de pulsation
-        pulseAnim.setValue(1);
-      }
-    }
-
-    // Nettoyage lors du démontage ou du changement d'étape
-    return () => {
-      if (currentAnimation) {
-        currentAnimation.stop();
-      }
-      if (currentPulseAnimation) {
-        currentPulseAnimation.stop();
-      }
-    };
-  }, [isActive, currentStep, isInhale, isExhale, isHold]);
-
-  // Effet pour animer la progression
+  // Animation de pulsation continue
   useEffect(() => {
     if (isActive) {
-      Animated.timing(progressAnim, {
-        toValue: progress,
-        duration: 100, // Animation rapide mais pas instantanée
-        useNativeDriver: false,
-        easing: Easing.linear,
-      }).start();
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseValue, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseValue, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
     } else {
-      progressAnim.setValue(0);
+      pulseValue.setValue(0);
     }
-  }, [progress, isActive]);
+  }, [isActive]);
 
-  // Interpolations pour les animations
-  const scale = animatedValue.interpolate({
+  // Animation basée sur l'étape actuelle
+  useEffect(() => {
+    if (isActive) {
+      const name = currentStep.toLowerCase();
+      
+      if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+        // Animation d'expansion pour l'inspiration
+        Animated.timing(scaleValue, {
+          toValue: 1.3,
+          duration: 1000,
+          easing: Easing.bezier(0.2, 0, 0.4, 1),
+          useNativeDriver: true,
+        }).start();
+      } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+        // Animation de contraction pour l'expiration
+        Animated.timing(scaleValue, {
+          toValue: 0.85,
+          duration: 1000,
+          easing: Easing.bezier(0.6, 0, 0.8, 1),
+          useNativeDriver: true,
+        }).start();
+      } else {
+        // Animation de maintien pour les pauses
+        Animated.timing(scaleValue, {
+          toValue: 1.1,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0, 0.6, 1),
+          useNativeDriver: true,
+        }).start();
+      }
+    } else {
+      // État par défaut
+      scaleValue.setValue(1);
+    }
+  }, [currentStep, isActive]);
+
+  // Animation de progression
+  useEffect(() => {
+    animatedValue.setValue(progress);
+  }, [progress]);
+
+  // Effet de lueur
+  const glowOpacity = pulseValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.8, 1.3], // Augmenter le contraste entre les états
+    outputRange: [0.2, 0.5],
   });
-  
-  const combinedScale = Animated.multiply(scale, pulseAnim);
-  
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.7, 0.85, 1],
-  });
-  
-  // Couleur basée sur l'étape
-  let bubbleColor = theme.primary;
-  if (isExhale) {
-    bubbleColor = theme.secondary || '#4CAF50';
-  } else if (isHold) {
-    bubbleColor = theme.accent || '#FFC107';
-  }
 
-  // Couleurs pour le cercle de progression avec meilleur contraste en mode sombre
-  const progressBackgroundColor = isDarkMode ? '#2d3748' : theme.border;
-  const progressColor = bubbleColor;
-  
-  // Identifiants pour les gradients et filtres
-  const progressGradientId = `progressGradient-${bubbleColor.replace(/#/g, '')}`;
-  const glowFilterId = `glowFilter-${bubbleColor.replace(/#/g, '')}`;
-  
-  // Assurer un bon contraste pour le texte
-  const textColor = 'white';
-  
-  // Icône basée sur l'étape
-  const stepIcon = isInhale ? '↑' : isExhale ? '↓' : '⏸';
+  // Échelle combinée (animation d'étape + pulsation)
+  const combinedScale = Animated.add(
+    scaleValue,
+    pulseValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 0.05],
+    })
+  );
 
-  // Calcul de la taille du cercle de progression
-  const progressSize = size * 1.1; // Légèrement plus grand que la bulle
-  const strokeWidth = size * 0.04; // Épaisseur augmentée pour meilleure visibilité
-  const radius = (progressSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  
-  // Animation du strokeDashoffset pour le cercle SVG
-  const strokeDashoffset = progressAnim.interpolate({
-    inputRange: [0, 100],
-    outputRange: [circumference, 0],
-  });
+  // Couleur actuelle de l'étape
+  const currentColor = getStepColor(currentStep);
 
   return (
-    <View style={[styles.container, { width: progressSize, height: progressSize }]}>
-      {/* Cercle de progression avec SVG pour une animation plus fluide */}
-      {isActive && (
-        <View style={[styles.progressCircle, { width: progressSize, height: progressSize }]}>
-          <Svg width={progressSize} height={progressSize}>
-            <Defs>
-              {/* Gradient pour le cercle de progression */}
-              <LinearGradient id={progressGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor={progressColor} stopOpacity="1" />
-                <Stop offset="100%" stopColor={progressColor} stopOpacity="0.7" />
-              </LinearGradient>
-              
-              {/* Filtre pour l'effet de lueur (glow) */}
-              <Filter id={glowFilterId} x="-20%" y="-20%" width="140%" height="140%">
-                <FeGaussianBlur stdDeviation="3" result="blur" />
-                <FeColorMatrix
-                  in="blur"
-                  type="matrix"
-                  values="0 0 0 0 0
-                          0 0 0 0 0
-                          0 0 0 0 0
-                          0 0 0 1 0"
-                  result="glow"
-                />
-                <FeBlend in="SourceGraphic" in2="glow" mode="normal" />
-              </Filter>
-            </Defs>
-            
-            {/* Cercle de fond avec effet de lueur en mode sombre */}
-            <Circle
-              cx={progressSize / 2}
-              cy={progressSize / 2}
-              r={radius}
-              strokeWidth={strokeWidth}
-              stroke={progressBackgroundColor}
-              fill="transparent"
-              opacity={isDarkMode ? 0.5 : 0.3}
-            />
-            
-            {/* Cercle de progression animé avec effet de lueur */}
-            <AnimatedCircle
-              cx={progressSize / 2}
-              cy={progressSize / 2}
-              r={radius}
-              strokeWidth={strokeWidth}
-              stroke={`url(#${progressGradientId})`}
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              rotation="-90"
-              origin={`${progressSize / 2}, ${progressSize / 2}`}
-              opacity={1}
-              strokeOpacity={1}
-              filter={isDarkMode ? `url(#${glowFilterId})` : undefined}
-            />
-          </Svg>
-        </View>
-      )}
-      
-      {/* Bulle principale */}
+    <View style={[styles.container, { width: size * 1.5, height: size * 1.5 }]}>
+      {/* Effet de lueur */}
       <Animated.View 
         style={[
-          styles.bubble, 
-          { 
-            backgroundColor: bubbleColor,
+          styles.glow,
+          {
+            backgroundColor: currentColor,
+            opacity: glowOpacity,
+            width: size * 1.8,
+            height: size * 1.8,
+            borderRadius: size * 0.9,
+            transform: [{ scale: combinedScale }],
+          }
+        ]}
+      />
+      
+      {/* Cercle principal */}
+      <Animated.View 
+        style={[
+          styles.bubble,
+          {
+            backgroundColor: currentColor,
             width: size,
             height: size,
             borderRadius: size / 2,
             transform: [{ scale: combinedScale }],
-            opacity: opacity
           }
         ]}
-      >
-        {/* Texte indicatif au centre de la bulle */}
-        <View style={styles.bubbleIconContainer}>
-          <Text style={[styles.bubbleText, { color: textColor }]}>
-            {stepIcon}
-          </Text>
-        </View>
-      </Animated.View>
+      />
+      
+      {/* Cercle de progression */}
+      <View style={[
+        styles.progressCircle,
+        {
+          width: size * 1.3,
+          height: size * 1.3,
+          borderRadius: size * 0.65,
+          borderColor: currentColor,
+        }
+      ]}>
+        <Animated.View 
+          style={[
+            styles.progressArc,
+            {
+              width: size * 1.3,
+              height: size * 1.3,
+              borderRadius: size * 0.65,
+              borderColor: currentColor,
+              transform: [
+                { 
+                  rotate: animatedValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }) 
+                }
+              ],
+            }
+          ]}
+        />
+      </View>
     </View>
   );
 };
-
-// Composant Circle animé
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const styles = StyleSheet.create({
   container: {
@@ -258,34 +187,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
+  bubble: {
+    position: 'absolute',
+    zIndex: 2,
+  },
+  glow: {
+    position: 'absolute',
+    zIndex: 1,
+  },
   progressCircle: {
     position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: 'transparent',
+    zIndex: 0,
   },
-  bubble: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  bubbleIconContainer: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+  progressArc: {
     position: 'absolute',
+    borderWidth: 3,
+    borderTopColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
   },
-  bubbleText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  }
 });
 
 export default BreathingBubble; 
