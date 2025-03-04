@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 // Importer uniquement les icônes nécessaires
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions, Easing } from 'react-native';
 import { useTheme, darkTheme } from './theme/ThemeContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { StatsProvider } from './contexts/StatsContext';
@@ -191,6 +191,98 @@ const AppNavigator = () => {
     }
   };
   
+  // Configuration personnalisée pour les transitions entre écrans
+  const customTransitionSpec = {
+    open: {
+      animation: 'timing',
+      config: {
+        duration: 350,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+      },
+    },
+    close: {
+      animation: 'timing',
+      config: {
+        duration: 300,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+      },
+    },
+  };
+  
+  // Animation de fondu enchaîné améliorée
+  const enhancedFadeTransition = {
+    cardStyleInterpolator: ({ current, next, layouts }: {
+      current: { progress: any };
+      next?: { progress: any };
+      layouts: { screen: { width: number; height: number } };
+    }) => {
+      return {
+        cardStyle: {
+          opacity: current.progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1],
+            extrapolate: 'clamp',
+          }),
+          transform: [
+            {
+              scale: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.95, 1],
+                extrapolate: 'clamp',
+              }),
+            },
+          ],
+        },
+        overlayStyle: {
+          opacity: current.progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 0.5],
+            extrapolate: 'clamp',
+          }),
+        },
+      };
+    },
+    transitionSpec: customTransitionSpec,
+  };
+  
+  // Animation de glissement horizontal améliorée
+  const enhancedSlideTransition = {
+    cardStyleInterpolator: ({ current, next, layouts }: {
+      current: { progress: any };
+      next?: { progress: any };
+      layouts: { screen: { width: number; height: number } };
+    }) => {
+      return {
+        cardStyle: {
+          transform: [
+            {
+              translateX: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [layouts.screen.width, 0],
+                extrapolate: 'clamp',
+              }),
+            },
+            {
+              scale: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.95, 1],
+                extrapolate: 'clamp',
+              }),
+            },
+          ],
+        },
+        overlayStyle: {
+          opacity: current.progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 0.5],
+            extrapolate: 'clamp',
+          }),
+        },
+      };
+    },
+    transitionSpec: customTransitionSpec,
+  };
+  
   return (
     <NavigationContainer>
       <StatusBar style={theme === darkTheme ? "light" : "dark"} />
@@ -212,6 +304,7 @@ const AppNavigator = () => {
           contentStyle: {
             backgroundColor: theme.background,
           },
+          ...enhancedSlideTransition,
         }}
       >
         {/* Écrans principaux */}
@@ -220,8 +313,7 @@ const AppNavigator = () => {
           component={SplashScreen} 
           options={{ 
             headerShown: false,
-            animation: 'fade',
-            animationDuration: 250,
+            ...enhancedFadeTransition,
           }} 
         />
         <Stack.Screen 
@@ -229,8 +321,7 @@ const AppNavigator = () => {
           component={MainTabNavigator} 
           options={{ 
             headerShown: false,
-            animation: 'fade',
-            animationDuration: 250,
+            ...enhancedFadeTransition,
           }} 
         />
         <Stack.Screen 
