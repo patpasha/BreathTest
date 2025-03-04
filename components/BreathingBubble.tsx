@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, RadialGradient, Stop, LinearGradient } from 'react-native-svg';
 
 interface BreathingBubbleProps {
   isActive: boolean;
@@ -26,6 +26,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   const opacityValue = useRef(new Animated.Value(0.8)).current;
   const blurValue = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0.8)).current;
+  const rotateValue = useRef(new Animated.Value(0)).current;
   
   // Référence pour la progression circulaire
   const progressRef = useRef({
@@ -112,6 +113,11 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           toValue: 0,
           duration: 500,
           useNativeDriver: false,
+        }),
+        Animated.timing(rotateValue, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
         })
       ]).start();
       
@@ -131,13 +137,14 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     opacityValue.stopAnimation();
     blurValue.stopAnimation();
     textOpacity.stopAnimation();
+    rotateValue.stopAnimation();
     
     if (stepType === 'inhale') {
       // Animation d'inspiration: expansion, augmentation de l'opacité
       Animated.parallel([
         Animated.timing(scaleValue, {
-          toValue: 1.3,
-          duration: stepDuration * 0.9, // Légèrement plus rapide pour une meilleure perception
+          toValue: 1.4, // Expansion plus importante
+          duration: stepDuration * 0.9,
           easing: Easing.bezier(0.2, 0, 0.4, 1),
           useNativeDriver: true,
         }),
@@ -157,13 +164,19 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           toValue: 0,
           duration: stepDuration * 0.7,
           useNativeDriver: false,
+        }),
+        Animated.timing(rotateValue, {
+          toValue: 5, // Légère rotation dans le sens horaire
+          duration: stepDuration,
+          easing: Easing.bezier(0.2, 0, 0.4, 1),
+          useNativeDriver: true,
         })
       ]).start();
     } else if (stepType === 'exhale') {
       // Animation d'expiration: contraction, diminution de l'opacité
       Animated.parallel([
         Animated.timing(scaleValue, {
-          toValue: 0.85,
+          toValue: 0.8, // Contraction plus importante
           duration: stepDuration * 0.9,
           easing: Easing.bezier(0.4, 0, 0.6, 1),
           useNativeDriver: true,
@@ -184,6 +197,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           toValue: 2,
           duration: stepDuration * 0.8,
           useNativeDriver: false,
+        }),
+        Animated.timing(rotateValue, {
+          toValue: -5, // Légère rotation dans le sens anti-horaire
+          duration: stepDuration,
+          easing: Easing.bezier(0.4, 0, 0.6, 1),
+          useNativeDriver: true,
         })
       ]).start();
     } else {
@@ -191,7 +210,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       Animated.parallel([
         Animated.sequence([
           Animated.timing(scaleValue, {
-            toValue: 1.1,
+            toValue: 1.15, // Pulsation plus prononcée
             duration: stepDuration * 0.3,
             easing: Easing.bezier(0.4, 0, 0.6, 1),
             useNativeDriver: true,
@@ -217,7 +236,28 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           toValue: 1,
           duration: stepDuration * 0.5,
           useNativeDriver: false,
-        })
+        }),
+        // Petite oscillation pendant la rétention
+        Animated.sequence([
+          Animated.timing(rotateValue, {
+            toValue: 2,
+            duration: stepDuration * 0.3,
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateValue, {
+            toValue: -2,
+            duration: stepDuration * 0.3,
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateValue, {
+            toValue: 0,
+            duration: stepDuration * 0.4,
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          })
+        ])
       ]).start();
     }
   }, [currentStep, isActive]);
@@ -253,6 +293,53 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   // Couleur actuelle de l'étape
   const currentColor = getStepColor(currentStep);
   
+  // Couleur secondaire pour les gradients
+  const getSecondaryColor = (primaryColor: string) => {
+    // Créer une couleur plus claire ou plus foncée selon le type d'étape
+    const stepType = getStepType(currentStep);
+    if (stepType === 'inhale') {
+      // Couleur plus claire pour l'inspiration
+      return lightenColor(primaryColor, 30);
+    } else if (stepType === 'exhale') {
+      // Couleur plus foncée pour l'expiration
+      return darkenColor(primaryColor, 20);
+    } else {
+      // Couleur légèrement différente pour la rétention
+      return shiftHue(primaryColor, 15);
+    }
+  };
+  
+  // Fonction pour éclaircir une couleur
+  const lightenColor = (color: string, percent: number) => {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return `#${(0x1000000 + (R < 255 ? R : 255) * 0x10000 + (G < 255 ? G : 255) * 0x100 + (B < 255 ? B : 255)).toString(16).slice(1)}`;
+  };
+  
+  // Fonction pour assombrir une couleur
+  const darkenColor = (color: string, percent: number) => {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) - amt;
+    const G = (num >> 8 & 0x00FF) - amt;
+    const B = (num & 0x0000FF) - amt;
+    return `#${(0x1000000 + (R > 0 ? R : 0) * 0x10000 + (G > 0 ? G : 0) * 0x100 + (B > 0 ? B : 0)).toString(16).slice(1)}`;
+  };
+  
+  // Fonction pour décaler la teinte d'une couleur
+  const shiftHue = (color: string, degrees: number) => {
+    // Conversion simplifiée, pour une implémentation complète il faudrait convertir en HSL
+    const num = parseInt(color.replace('#', ''), 16);
+    const R = (num >> 16);
+    const G = (num >> 8 & 0x00FF);
+    const B = (num & 0x0000FF);
+    // Simple décalage des canaux pour simuler un changement de teinte
+    return `#${(0x1000000 + ((R + degrees) % 255) * 0x10000 + ((G + degrees) % 255) * 0x100 + ((B + degrees) % 255)).toString(16).slice(1)}`;
+  };
+  
   // Calcul de la circonférence pour l'arc de progression
   const circleSize = size * 1.2;
   const radius = circleSize / 2;
@@ -261,8 +348,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   // Création d'un composant Circle animé
   const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-  // ID unique pour le gradient
-  const gradientId = `gradient-${currentColor.replace('#', '')}`;
+  // ID unique pour les gradients
+  const radialGradientId = `radial-gradient-${currentColor.replace('#', '')}`;
+  const linearGradientId = `linear-gradient-${currentColor.replace('#', '')}`;
+  
+  // Couleur secondaire pour les gradients
+  const secondaryColor = getSecondaryColor(currentColor);
   
   // Effet de flou animé
   const blurRadius = blurValue.interpolate({
@@ -274,6 +365,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   const strokeDashoffset = progressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [circumference, 0],
+  });
+  
+  // Animation de rotation
+  const rotate = rotateValue.interpolate({
+    inputRange: [-5, 5],
+    outputRange: ['-5deg', '5deg'],
   });
   
   return (
@@ -303,18 +400,22 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       ]}>
         <Svg width={circleSize} height={circleSize} style={styles.svg}>
           <Defs>
-            <RadialGradient id={gradientId} cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-              <Stop offset="0%" stopColor={currentColor} stopOpacity="1" />
-              <Stop offset="80%" stopColor={currentColor} stopOpacity="0.8" />
-              <Stop offset="100%" stopColor={currentColor} stopOpacity="0.6" />
+            <RadialGradient id={radialGradientId} cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <Stop offset="0%" stopColor={secondaryColor} stopOpacity="1" />
+              <Stop offset="70%" stopColor={currentColor} stopOpacity="0.9" />
+              <Stop offset="100%" stopColor={currentColor} stopOpacity="0.7" />
             </RadialGradient>
+            <LinearGradient id={linearGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor={secondaryColor} stopOpacity="1" />
+              <Stop offset="100%" stopColor={currentColor} stopOpacity="1" />
+            </LinearGradient>
           </Defs>
           <AnimatedCircle
             cx={circleSize / 2}
             cy={circleSize / 2}
             r={radius - 2}
-            strokeWidth={3}
-            stroke={currentColor}
+            strokeWidth={4}
+            stroke={`url(#${linearGradientId})`}
             fill="transparent"
             strokeDasharray={`${circumference}`}
             strokeDashoffset={strokeDashoffset}
@@ -330,18 +431,30 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         style={[
           styles.halo,
           {
-            backgroundColor: currentColor,
-            width: size * 1.4,
-            height: size * 1.4,
-            borderRadius: size * 0.7,
+            backgroundColor: 'transparent',
+            width: size * 1.6,
+            height: size * 1.6,
+            borderRadius: size * 0.8,
             opacity: opacityValue.interpolate({
               inputRange: [0.6, 1],
-              outputRange: [0.1, 0.3],
+              outputRange: [0.1, 0.4],
             }),
-            transform: [{ scale: scaleValue }],
+            transform: [
+              { scale: scaleValue },
+              { rotate }
+            ],
           }
         ]}
-      />
+      >
+        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+          <Circle
+            cx="50%"
+            cy="50%"
+            r="48%"
+            fill={`url(#${radialGradientId})`}
+          />
+        </Svg>
+      </Animated.View>
       
       {/* Cercle principal avec instructions à l'intérieur */}
       <Animated.View 
@@ -352,7 +465,10 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             height: size,
             borderRadius: size / 2,
             opacity: opacityValue,
-            transform: [{ scale: scaleValue }],
+            transform: [
+              { scale: scaleValue },
+              { rotate }
+            ],
             backgroundColor: 'transparent',
           }
         ]}
@@ -362,7 +478,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             cx={size / 2}
             cy={size / 2}
             r={size / 2 - 1}
-            fill={`url(#${gradientId})`}
+            fill={`url(#${radialGradientId})`}
           />
         </Svg>
         
@@ -392,16 +508,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   halo: {
     position: 'absolute',
     zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   progressRing: {
     position: 'absolute',
@@ -430,7 +551,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
   instruction: {
     fontSize: 14,
@@ -438,7 +559,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   }
 });
 

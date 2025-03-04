@@ -90,24 +90,67 @@ export const useHaptics = (enabled: boolean) => {
   };
 
   /**
-   * Trigger a pattern of haptic feedback for inhale
-   * Creates a gradual increase in intensity to guide the inhale
+   * Crée une séquence de vibrations progressives pour l'inspiration
+   * @param duration Durée totale de l'inspiration en ms (par défaut 4000ms)
    */
-  const inhalePattern = () => {
+  const inhalePattern = (duration = 4000) => {
     if (!enabled) return;
     
     try {
-      // Motif d'inspiration: vibrations courtes qui s'intensifient
-      // [attente, vibration, attente, vibration, ...]
-      const pattern = Platform.OS === 'ios' 
-        ? [0, 100, 100, 200, 100, 300] // iOS a des limitations sur les motifs
-        : [0, 50, 50, 100, 50, 150, 50, 200]; // Android permet des motifs plus complexes
+      // Annuler toute vibration en cours
+      Vibration.cancel();
       
-      vibratePattern(pattern);
+      // Pour l'inspiration, on commence doucement et on augmente progressivement
+      // On divise la durée en plusieurs segments pour créer une sensation de progression
       
-      // Utiliser également Haptics pour un retour plus riche sur iOS
       if (Platform.OS === 'ios') {
+        // iOS a des limitations sur les motifs complexes, on utilise donc un motif plus simple
+        // mais on ajoute des retours haptiques pour enrichir l'expérience
+        
+        // Vibration initiale douce
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        
+        // Programmer des vibrations supplémentaires à intervalles réguliers
+        const interval = duration / 4;
+        
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }, interval);
+        
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }, interval * 2);
+        
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }, interval * 3);
+        
+      } else {
+        // Android permet des motifs plus complexes
+        // Format: [délai, durée, délai, durée, ...]
+        // On crée un motif qui s'intensifie progressivement
+        
+        const segmentCount = 5;
+        const segmentDuration = duration / segmentCount;
+        const pattern = [];
+        
+        // Délai initial
+        pattern.push(0);
+        
+        // Créer des vibrations de plus en plus longues
+        for (let i = 0; i < segmentCount; i++) {
+          // Durée de vibration qui augmente progressivement
+          const vibrationDuration = 20 + (i * 15);
+          pattern.push(vibrationDuration);
+          
+          // Délai entre les vibrations qui diminue progressivement
+          if (i < segmentCount - 1) {
+            const delay = segmentDuration - vibrationDuration;
+            pattern.push(delay);
+          }
+        }
+        
+        Vibration.vibrate(pattern);
       }
     } catch (error) {
       console.log('Erreur haptic inhale:', error);
@@ -115,24 +158,66 @@ export const useHaptics = (enabled: boolean) => {
   };
 
   /**
-   * Trigger a pattern of haptic feedback for exhale
-   * Creates a gradual decrease in intensity to guide the exhale
+   * Crée une séquence de vibrations dégressives pour l'expiration
+   * @param duration Durée totale de l'expiration en ms (par défaut 6000ms)
    */
-  const exhalePattern = () => {
+  const exhalePattern = (duration = 6000) => {
     if (!enabled) return;
     
     try {
-      // Motif d'expiration: vibrations longues qui diminuent
-      // [attente, vibration, attente, vibration, ...]
-      const pattern = Platform.OS === 'ios'
-        ? [0, 400, 100, 300, 100, 200] // iOS a des limitations sur les motifs
-        : [0, 400, 50, 300, 50, 200, 50, 100]; // Android permet des motifs plus complexes
+      // Annuler toute vibration en cours
+      Vibration.cancel();
       
-      vibratePattern(pattern);
+      // Pour l'expiration, on commence fort et on diminue progressivement
       
-      // Utiliser également Haptics pour un retour plus riche sur iOS
       if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        // iOS a des limitations sur les motifs complexes
+        // On utilise des retours haptiques à intervalles réguliers
+        
+        // Vibration initiale forte
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        
+        // Programmer des vibrations supplémentaires à intervalles réguliers
+        const interval = duration / 4;
+        
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }, interval);
+        
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }, interval * 2);
+        
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }, interval * 3);
+        
+      } else {
+        // Android permet des motifs plus complexes
+        // Format: [délai, durée, délai, durée, ...]
+        // On crée un motif qui diminue progressivement
+        
+        const segmentCount = 5;
+        const segmentDuration = duration / segmentCount;
+        const pattern = [];
+        
+        // Délai initial
+        pattern.push(0);
+        
+        // Créer des vibrations de plus en plus courtes
+        for (let i = 0; i < segmentCount; i++) {
+          // Durée de vibration qui diminue progressivement
+          const vibrationDuration = 80 - (i * 15);
+          pattern.push(Math.max(vibrationDuration, 10)); // Minimum 10ms
+          
+          // Délai entre les vibrations qui augmente progressivement
+          if (i < segmentCount - 1) {
+            const delay = segmentDuration - vibrationDuration;
+            pattern.push(delay);
+          }
+        }
+        
+        Vibration.vibrate(pattern);
       }
     } catch (error) {
       console.log('Erreur haptic exhale:', error);
@@ -140,24 +225,60 @@ export const useHaptics = (enabled: boolean) => {
   };
 
   /**
-   * Trigger a pattern of haptic feedback for hold
-   * Creates a subtle, steady rhythm to help maintain the hold
+   * Crée une séquence de vibrations régulières pour la rétention
+   * @param duration Durée totale de la rétention en ms (par défaut 2000ms)
    */
-  const holdPattern = () => {
+  const holdPattern = (duration = 2000) => {
     if (!enabled) return;
     
     try {
-      // Motif de rétention: vibrations régulières et courtes
-      // [attente, vibration, attente, vibration, ...]
-      const pattern = Platform.OS === 'ios'
-        ? [0, 50, 300, 50, 300, 50] // iOS a des limitations sur les motifs
-        : [0, 50, 300, 50, 300, 50, 300, 50]; // Android permet des motifs plus complexes
+      // Annuler toute vibration en cours
+      Vibration.cancel();
       
-      vibratePattern(pattern);
+      // Pour la rétention, on crée un rythme régulier et subtil
       
-      // Utiliser également Haptics pour un retour plus riche sur iOS
       if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+        // iOS a des limitations sur les motifs complexes
+        // On utilise des retours haptiques à intervalles réguliers
+        
+        // Vibration initiale moyenne
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        
+        // Nombre de pulsations basé sur la durée
+        const pulseCount = Math.max(Math.floor(duration / 500), 1);
+        const interval = duration / (pulseCount + 1);
+        
+        // Programmer des vibrations supplémentaires à intervalles réguliers
+        for (let i = 1; i <= pulseCount; i++) {
+          setTimeout(() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }, interval * i);
+        }
+        
+      } else {
+        // Android permet des motifs plus complexes
+        // Format: [délai, durée, délai, durée, ...]
+        // On crée un motif régulier pour la rétention
+        
+        const pulseCount = Math.max(Math.floor(duration / 500), 1);
+        const interval = duration / (pulseCount + 1);
+        const pattern = [];
+        
+        // Délai initial
+        pattern.push(0);
+        
+        // Créer des vibrations régulières
+        for (let i = 0; i < pulseCount; i++) {
+          // Durée de vibration constante
+          pattern.push(30);
+          
+          // Délai entre les vibrations constant
+          if (i < pulseCount - 1) {
+            pattern.push(interval - 30);
+          }
+        }
+        
+        Vibration.vibrate(pattern);
       }
     } catch (error) {
       console.log('Erreur haptic hold:', error);

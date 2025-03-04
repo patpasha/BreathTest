@@ -170,18 +170,22 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     const stepType = getStepType(stepName);
     console.log(`Lecture du feedback pour l'étape: ${stepName} (type: ${stepType})`);
     
+    // Obtenir la durée de l'étape actuelle
+    const currentStepObj = technique?.steps?.[currentStep];
+    const stepDuration = currentStepObj?.duration || 0;
+    
     // Retour haptique
     if (settings.hapticsEnabled) {
       console.log('Lecture du retour haptique');
       switch (stepType) {
         case 'inhale':
-          inhalePattern();
+          inhalePattern(stepDuration);
           break;
         case 'exhale':
-          exhalePattern();
+          exhalePattern(stepDuration);
           break;
         case 'hold':
-          holdPattern();
+          holdPattern(stepDuration);
           break;
       }
     }
