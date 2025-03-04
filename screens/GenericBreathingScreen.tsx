@@ -18,7 +18,7 @@ const CIRCLE_SIZE = width * 0.55;
 const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => {
   const { settings } = useSettings();
   const { addSession } = useStats();
-  const { playInhale, playExhale, playHold, playComplete } = useSound(settings.soundEnabled);
+  const { playInhale, playExhale, playHold, playComplete, soundsReady } = useSound(settings.soundEnabled);
   const { lightImpact, mediumImpact, successNotification, inhalePattern, exhalePattern, holdPattern } = useHaptics(settings.hapticsEnabled);
   const theme = useTheme();
 
@@ -156,13 +156,23 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     }
   };
 
+  // Ajouter un log pour vérifier l'état des sons
+  useEffect(() => {
+    console.log(`État des sons: activé=${settings.soundEnabled}, prêts=${soundsReady}`);
+  }, [settings.soundEnabled, soundsReady]);
+
   const playFeedback = (stepName: string) => {
-    if (!settings.hapticsEnabled && !settings.soundEnabled) return;
+    if (!settings.hapticsEnabled && !settings.soundEnabled) {
+      console.log('Retour haptique et sonore désactivés');
+      return;
+    }
     
     const stepType = getStepType(stepName);
+    console.log(`Lecture du feedback pour l'étape: ${stepName} (type: ${stepType})`);
     
     // Retour haptique
     if (settings.hapticsEnabled) {
+      console.log('Lecture du retour haptique');
       switch (stepType) {
         case 'inhale':
           inhalePattern();
@@ -178,6 +188,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     
     // Retour sonore
     if (settings.soundEnabled) {
+      console.log('Lecture du retour sonore');
       switch (stepType) {
         case 'inhale':
           playInhale();

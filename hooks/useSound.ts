@@ -1,5 +1,5 @@
 import { Audio } from 'expo-av';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 
 /**
@@ -32,6 +32,9 @@ const useSound = (enabled: boolean) => {
     hold: null,
     complete: null
   });
+  
+  // État pour suivre si les sons sont prêts
+  const [soundsReady, setSoundsReady] = useState(false);
 
   // Chemins des fichiers audio
   const soundPaths = {
@@ -41,7 +44,7 @@ const useSound = (enabled: boolean) => {
     complete: `${FileSystem.documentDirectory}sounds/complete.mp3`
   };
 
-  // URLs des sons à télécharger (à remplacer par vos propres URLs)
+  // URLs des sons à télécharger
   const soundUrls = {
     inhale: 'https://soundbible.com/mp3/Breathing-SoundBible.com-517261338.mp3',
     exhale: 'https://soundbible.com/mp3/Exhale-SoundBible.com-800973395.mp3',
@@ -49,36 +52,76 @@ const useSound = (enabled: boolean) => {
     complete: 'https://soundbible.com/mp3/service-bell_daniel_simion.mp3'
   };
 
+  // Initialiser l'audio
+  useEffect(() => {
+    const initAudio = async () => {
+      try {
+        // Configurer l'audio pour l'application
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: true,
+        });
+      } catch (error) {
+        console.error('Erreur lors de l\'initialisation de l\'audio:', error);
+      }
+    };
+
+    initAudio();
+  }, []);
+
   // Télécharger et préparer les sons
   useEffect(() => {
-    if (!enabled) return;
+    let isMounted = true;
+    setSoundsReady(false);
 
     const downloadAndLoadSounds = async () => {
+      if (!enabled) return;
+      
       try {
+        console.log('Début du chargement des sons...');
+        
         // Créer le dossier sounds s'il n'existe pas
         const soundsDir = `${FileSystem.documentDirectory}sounds`;
         const dirInfo = await FileSystem.getInfoAsync(soundsDir);
         if (!dirInfo.exists) {
+          console.log('Création du dossier sounds...');
           await FileSystem.makeDirectoryAsync(soundsDir, { intermediates: true });
         }
 
         // Télécharger et charger chaque son
         for (const type of ['inhale', 'exhale', 'hold', 'complete'] as SoundType[]) {
+          if (!isMounted) return;
+          
           const filePath = soundPaths[type];
           const fileInfo = await FileSystem.getInfoAsync(filePath);
 
           // Télécharger le fichier s'il n'existe pas
           if (!fileInfo.exists) {
-            console.log(`Téléchargement du son: ${type}`);
+            console.log(`Téléchargement du son: ${type} depuis ${soundUrls[type]}`);
             await FileSystem.downloadAsync(soundUrls[type], filePath);
+            console.log(`Son ${type} téléchargé avec succès à ${filePath}`);
           }
 
           // Charger le son
+          console.log(`Chargement du son: ${type} depuis ${filePath}`);
           const { sound } = await Audio.Sound.createAsync(
             { uri: filePath },
             { shouldPlay: false, volume: type === 'hold' ? 0.5 : 0.8 }
           );
+          
+          if (!isMounted) {
+            sound.unloadAsync();
+            return;
+          }
+          
           soundsRef.current[type] = sound;
+          console.log(`Son ${type} chargé avec succès`);
+        }
+        
+        if (isMounted) {
+          console.log('Tous les sons sont prêts');
+          setSoundsReady(true);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des sons:', error);
@@ -89,6 +132,8 @@ const useSound = (enabled: boolean) => {
 
     // Nettoyer les sons lors du démontage
     return () => {
+      isMounted = false;
+      console.log('Nettoyage des sons...');
       Object.values(soundsRef.current).forEach(sound => {
         if (sound) {
           sound.unloadAsync();
@@ -102,17 +147,41 @@ const useSound = (enabled: boolean) => {
    * @param type Le type de son à jouer
    */
   const playSound = async (type: SoundType) => {
-    if (!enabled || !soundsRef.current[type]) return;
+    if (!enabled || !soundsReady) {
+      console.log(`Son ${type} non joué: enabled=${enabled}, soundsReady=${soundsReady}`);
+      return;
+    }
+    
+    const sound = soundsRef.current[type];
+    if (!sound) {
+      console.log(`Son ${type} non disponible`);
+      return;
+    }
 
     try {
-      // Arrêter le son s'il est déjà en cours de lecture
-      const status = await soundsRef.current[type]?.getStatusAsync();
-      if (status && status.isLoaded) {
+      console.log(`Lecture du son: ${type}`);
+      
+      // Vérifier l'état du son
+      const status = await sound.getStatusAsync();
+      
+      if (status.isLoaded) {
+        // Arrêter le son s'il est déjà en cours de lecture
         if (status.isPlaying) {
-          await soundsRef.current[type]?.stopAsync();
+          await sound.stopAsync();
         }
-        await soundsRef.current[type]?.setPositionAsync(0);
-        await soundsRef.current[type]?.playAsync();
+        
+        // Réinitialiser la position et jouer
+        await sound.setPositionAsync(0);
+        await sound.playAsync();
+        console.log(`Son ${type} joué avec succès`);
+      } else {
+        console.log(`Son ${type} non chargé, tentative de rechargement...`);
+        // Tenter de recharger le son
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: soundPaths[type] },
+          { shouldPlay: true, volume: type === 'hold' ? 0.5 : 0.8 }
+        );
+        soundsRef.current[type] = newSound;
       }
     } catch (error) {
       console.error(`Erreur lors de la lecture du son ${type}:`, error);
@@ -144,6 +213,7 @@ const useSound = (enabled: boolean) => {
     playExhale,
     playHold,
     playComplete,
+    soundsReady
   };
 };
 
