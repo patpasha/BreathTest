@@ -18,178 +18,38 @@ interface SoundAssets {
 
 /**
  * Hook pour la gestion des sons dans les exercices de respiration
- * Utilise expo-av pour jouer des sons locaux
+ * Version simplifiée sans chargement de sons pour éviter les erreurs
  * 
- * @param enabled Indique si le son est activé
- * @returns Fonctions pour jouer différents types de sons
+ * @param enabled Indique si le son est activé (ignoré dans cette version)
+ * @returns Fonctions pour jouer différents types de sons (désactivées)
  */
 const useSound = (enabled: boolean) => {
-  // Référence aux sons préchargés
-  const soundsRef = useRef<SoundAssets>({
-    inhale: null,
-    exhale: null,
-    hold: null,
-    complete: null
-  });
-  
-  // État pour suivre si les sons sont prêts
+  // État pour suivre si les sons sont prêts (toujours false dans cette version)
   const [soundsReady, setSoundsReady] = useState(false);
 
-  // Initialiser l'audio
-  useEffect(() => {
-    const initAudio = async () => {
-      try {
-        // Configurer l'audio pour l'application
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-          shouldDuckAndroid: true,
-        });
-        console.log('Audio initialisé avec succès');
-      } catch (error) {
-        console.error('Erreur lors de l\'initialisation de l\'audio:', error);
-      }
-    };
-
-    initAudio();
-  }, []);
-
-  // Créer et charger les sons
-  useEffect(() => {
-    let isMounted = true;
-    setSoundsReady(false);
-
-    const createAndLoadSounds = async () => {
-      if (!enabled) return;
-      
-      try {
-        console.log('Chargement des sons locaux...');
-        
-        // Définir les fichiers audio locaux
-        const soundFiles = {
-          inhale: require('../assets/sounds/inhale.mp3'),
-          exhale: require('../assets/sounds/exhale.mp3'),
-          hold: require('../assets/sounds/hold.mp3'),
-          complete: require('../assets/sounds/complete.mp3')
-        };
-        
-        // Charger chaque son
-        for (const type of ['inhale', 'exhale', 'hold', 'complete'] as SoundType[]) {
-          if (!isMounted) return;
-          
-          try {
-            console.log(`Chargement du son local: ${type}`);
-            const { sound } = await Audio.Sound.createAsync(
-              soundFiles[type],
-              { shouldPlay: false, volume: type === 'hold' ? 0.5 : 0.8 }
-            );
-            
-            if (!isMounted) {
-              sound.unloadAsync();
-              return;
-            }
-            
-            soundsRef.current[type] = sound;
-            console.log(`Son ${type} chargé avec succès`);
-          } catch (loadError) {
-            console.error(`Erreur lors du chargement du son ${type}:`, loadError);
-          }
-        }
-        
-        if (isMounted) {
-          console.log('Tous les sons sont prêts');
-          setSoundsReady(true);
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des sons:', error);
-      }
-    };
-
-    createAndLoadSounds();
-
-    // Nettoyer les sons lors du démontage
-    return () => {
-      isMounted = false;
-      console.log('Nettoyage des sons...');
-      Object.values(soundsRef.current).forEach(sound => {
-        if (sound) {
-          sound.unloadAsync();
-        }
-      });
-    };
-  }, [enabled]);
-
-  /**
-   * Joue un son spécifique
-   * @param type Le type de son à jouer
-   */
+  // Fonctions de lecture de son désactivées
   const playSound = async (type: SoundType) => {
-    if (!enabled || !soundsReady) {
-      console.log(`Son ${type} non joué: enabled=${enabled}, soundsReady=${soundsReady}`);
-      return;
-    }
-    
-    const sound = soundsRef.current[type];
-    if (!sound) {
-      console.log(`Son ${type} non disponible`);
-      return;
-    }
-
-    try {
-      console.log(`Lecture du son: ${type}`);
-      
-      // Vérifier l'état du son
-      const status = await sound.getStatusAsync();
-      
-      if (status.isLoaded) {
-        // Arrêter le son s'il est déjà en cours de lecture
-        if (status.isPlaying) {
-          await sound.stopAsync();
-        }
-        
-        // Réinitialiser la position et jouer
-        await sound.setPositionAsync(0);
-        await sound.playAsync();
-        console.log(`Son ${type} joué avec succès`);
-      } else {
-        console.log(`Son ${type} non chargé, tentative de rechargement...`);
-        // Tenter de recharger le son
-        try {
-          const { sound: newSound } = await Audio.Sound.createAsync(
-            type === 'inhale' ? require('../assets/sounds/inhale.mp3') :
-            type === 'exhale' ? require('../assets/sounds/exhale.mp3') :
-            type === 'hold' ? require('../assets/sounds/hold.mp3') :
-            require('../assets/sounds/complete.mp3'),
-            { shouldPlay: true, volume: type === 'hold' ? 0.5 : 0.8 }
-          );
-          soundsRef.current[type] = newSound;
-          console.log(`Son ${type} rechargé avec succès`);
-        } catch (reloadError) {
-          console.error(`Erreur lors du rechargement du son ${type}:`, reloadError);
-        }
-      }
-    } catch (error) {
-      console.error(`Erreur lors de la lecture du son ${type}:`, error);
-    }
+    // Version simplifiée qui ne fait rien mais log l'intention
+    console.log(`[Son désactivé] Tentative de lecture du son: ${type}`);
   };
 
   /**
-   * Joue un son d'inspiration
+   * Joue un son d'inspiration (désactivé)
    */
   const playInhale = () => playSound('inhale');
 
   /**
-   * Joue un son d'expiration
+   * Joue un son d'expiration (désactivé)
    */
   const playExhale = () => playSound('exhale');
 
   /**
-   * Joue un son de rétention
+   * Joue un son de rétention (désactivé)
    */
   const playHold = () => playSound('hold');
 
   /**
-   * Joue un son de fin de session
+   * Joue un son de fin de session (désactivé)
    */
   const playComplete = () => playSound('complete');
 
