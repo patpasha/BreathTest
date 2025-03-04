@@ -34,10 +34,14 @@
     "longDescription": [
       "Le soupir physiologique est un mécanisme naturel que notre corps utilise pour réinitialiser la respiration et réduire le stress.",
       "Cette technique, popularisée par le neuroscientifique Andrew Huberman, est extrêmement efficace pour une réduction rapide de l'anxiété.",
+      "Comment pratiquer :",
       "1. Prenez une première inspiration profonde par le nez.",
       "2. Sans expirer, prenez une seconde inspiration courte pour remplir complètement vos poumons.",
       "3. Expirez lentement et complètement par la bouche.",
-      "4. Répétez ce cycle 1 à 5 fois pour un effet immédiat sur votre état émotionnel."
+      "4. Répétez ce cycle 1 à 5 fois pour un effet immédiat sur votre état émotionnel.",
+      "Effets : Calme, réduction du stress, diminution de l'anxiété, régulation émotionnelle.",
+      "Idéal pour : Moments de stress aigu, avant une présentation, lors d'une crise d'anxiété légère, ou pour retrouver rapidement son calme.",
+      "⚠️ ATTENTION : Si vous souffrez d'hypertension sévère ou de problèmes cardiaques, pratiquez avec modération et consultez votre médecin."
     ]
   },
   {
@@ -49,6 +53,41 @@
     "categories": [
       "energy",
       "focus"
+    ],
+    "defaultDurationMinutes": 10,
+    "steps": [
+      {
+        "name": "Respirations rapides",
+        "duration": 2000,
+        "instruction": "30-40 respirations rapides par la bouche"
+      },
+      {
+        "name": "Expiration finale",
+        "duration": 1000,
+        "instruction": "Expirez complètement"
+      },
+      {
+        "name": "Rétention poumons vides",
+        "duration": 15000,
+        "instruction": "Retenez votre souffle aussi longtemps que confortable"
+      },
+      {
+        "name": "Inspiration profonde",
+        "duration": 2000,
+        "instruction": "Inspirez profondément et retenez 15 secondes"
+      }
+    ],
+    "longDescription": [
+      "L'hyperventilation cyclique est une technique puissante qui combine des respirations rapides avec des périodes de rétention du souffle pour stimuler le système nerveux et augmenter l'énergie.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement dans un endroit calme.",
+      "2. Effectuez 30 à 40 respirations rapides et profondes par la bouche (comme si vous souffliez dans un ballon).",
+      "3. Après la dernière respiration, expirez complètement et retenez votre souffle poumons vides aussi longtemps que confortable.",
+      "4. Lorsque vous ressentez le besoin de respirer, prenez une inspiration profonde et retenez l'air pendant 15 secondes.",
+      "5. Répétez ce cycle 3 à 4 fois.",
+      "Effets : Augmentation de l'énergie, amélioration de la concentration, clarté mentale, sensation de vitalité.",
+      "Idéal pour : Combattre la fatigue, améliorer les performances physiques et mentales, renforcer le système immunitaire.",
+      "⚠️ ATTENTION : Ne pratiquez pas cette technique en conduisant ou en nageant. Contre-indiquée en cas d'épilepsie, d'hypertension sévère, de problèmes cardiaques, de glaucome, d'anévrisme ou pendant la grossesse. Des étourdissements temporaires sont normaux mais arrêtez si vous ressentez des symptômes graves."
     ]
   },
   {
@@ -61,6 +100,41 @@
       "energy",
       "health",
       "stress"
+    ],
+    "defaultDurationMinutes": 15,
+    "steps": [
+      {
+        "name": "Respirations profondes",
+        "duration": 2000,
+        "instruction": "30-40 respirations profondes"
+      },
+      {
+        "name": "Expiration",
+        "duration": 1000,
+        "instruction": "Expirez complètement"
+      },
+      {
+        "name": "Rétention",
+        "duration": 90000,
+        "instruction": "Retenez votre souffle aussi longtemps que possible"
+      },
+      {
+        "name": "Inspiration de récupération",
+        "duration": 15000,
+        "instruction": "Inspirez profondément et retenez 15 secondes"
+      }
+    ],
+    "longDescription": [
+      "La méthode Wim Hof, développée par le célèbre \"Iceman\" néerlandais, combine respiration profonde, exposition au froid et méditation pour renforcer le corps et l'esprit.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement dans un endroit calme.",
+      "2. Effectuez 30 à 40 respirations profondes et puissantes par la bouche, en inspirant profondément et en relâchant sans forcer.",
+      "3. Après la dernière respiration, expirez complètement et retenez votre souffle aussi longtemps que possible (poumons vides).",
+      "4. Lorsque vous ressentez le besoin de respirer, prenez une grande inspiration et retenez l'air pendant 15 secondes.",
+      "5. Répétez ce cycle 3 à 4 fois.",
+      "Effets : Renforcement du système immunitaire, réduction de l'inflammation, augmentation de l'énergie, amélioration de la résistance au stress, meilleure récupération après l'effort.",
+      "Idéal pour : Renforcer la santé globale, améliorer les performances sportives, réduire le stress chronique, augmenter la résistance physique et mentale.",
+      "⚠️ ATTENTION : Ne pratiquez pas cette technique en conduisant, en nageant ou dans un bain chaud. Contre-indiquée en cas d'épilepsie, d'hypertension sévère, de problèmes cardiaques, d'anévrisme, de glaucome ou pendant la grossesse. Des étourdissements temporaires sont normaux mais arrêtez immédiatement si vous ressentez des symptômes graves."
     ]
   },
   {
@@ -94,10 +168,15 @@
     "longDescription": [
       "La respiration 4-7-8 est une technique développée par le Dr Andrew Weil, basée sur le pranayama yogique.",
       "Cette méthode agit comme un tranquillisant naturel pour le système nerveux et peut aider à s'endormir rapidement.",
-      "1. Inspirez calmement par le nez pendant 4 secondes.",
-      "2. Retenez votre souffle pendant 7 secondes.",
-      "3. Expirez complètement par la bouche pendant 8 secondes, en faisant un son de souffle.",
-      "4. Répétez ce cycle pour induire un état de relaxation profonde."
+      "Comment pratiquer :",
+      "1. Placez le bout de votre langue contre le tissu situé juste derrière vos incisives supérieures.",
+      "2. Inspirez calmement par le nez pendant 4 secondes.",
+      "3. Retenez votre souffle pendant 7 secondes.",
+      "4. Expirez complètement par la bouche pendant 8 secondes, en faisant un son de souffle.",
+      "5. Répétez ce cycle 4 fois au début, puis augmentez progressivement jusqu'à 8 cycles.",
+      "Effets : Relaxation profonde, réduction de l'anxiété, facilitation de l'endormissement, diminution des tensions corporelles.",
+      "Idéal pour : Combattre l'insomnie, calmer l'anxiété, gérer le stress quotidien, se préparer au sommeil.",
+      "⚠️ ATTENTION : Si vous avez des problèmes respiratoires comme l'asthme, consultez votre médecin avant de pratiquer. Au début, vous pourriez ressentir des vertiges dus à l'hyperventilation - c'est normal, réduisez simplement la durée des cycles."
     ]
   },
   {
@@ -124,11 +203,15 @@
       }
     ],
     "longDescription": [
-      "La respiration cohérente est une technique qui consiste à respirer à un rythme régulier de 6 respirations par minute.",
-      "Cette technique permet de synchroniser la variabilité de la fréquence cardiaque et d'activer le système nerveux parasympathique, responsable de la détente.",
-      "1. Inspirez lentement et régulièrement pendant 5 secondes.",
-      "2. Expirez lentement et régulièrement pendant 5 secondes.",
-      "3. Continuez ce rythme régulier pendant toute la durée de la session."
+      "La respiration cohérente est une technique scientifiquement validée qui consiste à respirer à un rythme régulier de 6 respirations par minute (5 secondes d'inspiration, 5 secondes d'expiration).",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement dans un endroit calme.",
+      "2. Inspirez lentement et régulièrement par le nez pendant 5 secondes, en gonflant d'abord le ventre puis la poitrine.",
+      "3. Expirez lentement et régulièrement par la bouche ou le nez pendant 5 secondes, en vidant d'abord la poitrine puis le ventre.",
+      "4. Maintenez ce rythme régulier pendant toute la durée de la session.",
+      "Effets : Synchronisation de la variabilité de la fréquence cardiaque, activation du système nerveux parasympathique, réduction du stress, amélioration de la concentration et de l'équilibre émotionnel.",
+      "Idéal pour : Gérer le stress quotidien, se préparer à une situation stressante, améliorer la concentration, réguler les émotions, améliorer la santé cardiovasculaire.",
+      "⚠️ ATTENTION : Bien que cette technique soit sûre pour la plupart des personnes, commencez progressivement si vous avez des problèmes respiratoires. Si vous ressentez des vertiges, ralentissez votre rythme respiratoire."
     ]
   },
   {
@@ -167,10 +250,15 @@
     ],
     "longDescription": [
       "La respiration diaphragmatique, aussi appelée respiration abdominale, est une technique fondamentale qui utilise le diaphragme pour une respiration profonde et efficace.",
-      "1. Inspirez lentement par le nez en gonflant le ventre (pas la poitrine).",
-      "2. Faites une courte pause.",
-      "3. Expirez lentement par la bouche en rentrant le ventre.",
-      "4. Répétez ce cycle pour réduire le stress, améliorer l'oxygénation et activer le système nerveux parasympathique."
+      "Comment pratiquer :",
+      "1. Allongez-vous ou asseyez-vous confortablement, une main sur la poitrine et l'autre sur le ventre.",
+      "2. Inspirez lentement par le nez en gonflant le ventre (votre main sur le ventre doit se soulever, tandis que celle sur la poitrine doit rester relativement immobile).",
+      "3. Faites une courte pause.",
+      "4. Expirez lentement par la bouche en rentrant le ventre.",
+      "5. Répétez ce cycle pendant toute la durée de la session.",
+      "Effets : Réduction du stress, amélioration de l'oxygénation, activation du système nerveux parasympathique, diminution de la tension artérielle et du rythme cardiaque, amélioration de la digestion.",
+      "Idéal pour : Réduire l'anxiété quotidienne, améliorer la qualité du sommeil, renforcer le système immunitaire, préparer le corps à la méditation, améliorer les performances vocales et sportives.",
+      "⚠️ ATTENTION : Cette technique est généralement sûre pour tous. Si vous avez récemment subi une intervention chirurgicale abdominale, consultez votre médecin avant de pratiquer."
     ]
   },
   {
@@ -182,28 +270,139 @@
     "categories": [
       "stress",
       "focus"
+    ],
+    "defaultDurationMinutes": 5,
+    "steps": [
+      {
+        "name": "Préparation",
+        "duration": 3000,
+        "instruction": "Fermez la narine droite avec le pouce"
+      },
+      {
+        "name": "Inspiration gauche",
+        "duration": 4000,
+        "instruction": "Inspirez lentement par la narine gauche"
+      },
+      {
+        "name": "Changement",
+        "duration": 1000,
+        "instruction": "Fermez la narine gauche avec l'annulaire, ouvrez la droite"
+      },
+      {
+        "name": "Expiration droite",
+        "duration": 4000,
+        "instruction": "Expirez lentement par la narine droite"
+      },
+      {
+        "name": "Inspiration droite",
+        "duration": 4000,
+        "instruction": "Inspirez lentement par la narine droite"
+      },
+      {
+        "name": "Changement",
+        "duration": 1000,
+        "instruction": "Fermez la narine droite avec le pouce, ouvrez la gauche"
+      },
+      {
+        "name": "Expiration gauche",
+        "duration": 4000,
+        "instruction": "Expirez lentement par la narine gauche"
+      }
+    ],
+    "longDescription": [
+      "La respiration alternée (Nadi Shodhana en sanskrit) est une technique yogique ancestrale qui équilibre les deux hémisphères du cerveau et harmonise le système nerveux.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement avec le dos droit.",
+      "2. Placez votre main droite devant votre visage, pouce près de la narine droite, annulaire près de la narine gauche.",
+      "3. Fermez la narine droite avec le pouce et inspirez lentement par la narine gauche.",
+      "4. À la fin de l'inspiration, fermez la narine gauche avec l'annulaire, ouvrez la narine droite et expirez lentement.",
+      "5. Inspirez par la narine droite, puis fermez-la avec le pouce.",
+      "6. Expirez par la narine gauche et continuez ce cycle d'alternance.",
+      "Effets : Équilibre du système nerveux, amélioration de la concentration, réduction du stress et de l'anxiété, harmonisation des énergies, clarté mentale.",
+      "Idéal pour : Se préparer à la méditation, améliorer la concentration avant un travail intellectuel, équilibrer les émotions, réduire le stress.",
+      "⚠️ ATTENTION : Évitez cette pratique si vous souffrez de sinusite aiguë ou d'obstruction nasale. Si vous avez des problèmes cardiaques ou d'hypertension, pratiquez sans rétention du souffle."
     ]
   },
   {
     "id": "buteyko",
     "title": "Méthode Buteyko",
-    "description": "Réduisez la respiration pour normaliser le CO2. Bénéfique pour l'asthme et l'hyperventilation.",
+    "description": "Respirations légères avec pauses contrôlées pour normaliser les niveaux de CO2. Bénéfique pour l'asthme et l'hyperventilation.",
     "duration": "10-15 minutes",
-    "route": "RespirationButeyko",
+    "route": "GenericBreathingScreen",
     "categories": [
-      "health",
-      "sleep"
+      "health"
+    ],
+    "defaultDurationMinutes": 10,
+    "steps": [
+      {
+        "name": "Respiration normale",
+        "duration": 5000,
+        "instruction": "Respirez normalement, calmement"
+      },
+      {
+        "name": "Expiration douce",
+        "duration": 2000,
+        "instruction": "Expirez doucement par le nez"
+      },
+      {
+        "name": "Pause respiratoire",
+        "duration": 5000,
+        "instruction": "Retenez votre souffle confortablement"
+      },
+      {
+        "name": "Respiration réduite",
+        "duration": 10000,
+        "instruction": "Respirez légèrement, en réduisant le volume d'air"
+      }
+    ],
+    "longDescription": [
+      "La méthode Buteyko, développée par le Dr Konstantin Buteyko, vise à corriger les habitudes de surrespiration chronique en normalisant les niveaux de CO2 dans le sang.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement avec le dos droit.",
+      "2. Respirez normalement pendant quelques instants, en observant votre respiration.",
+      "3. Expirez doucement par le nez, sans forcer.",
+      "4. Pincez votre nez et retenez votre souffle aussi longtemps que confortable.",
+      "5. Reprenez une respiration légère et contrôlée, en réduisant consciemment le volume d'air.",
+      "6. Maintenez cette respiration réduite pendant 10 secondes, puis recommencez le cycle.",
+      "Effets : Normalisation des niveaux de CO2, réduction des symptômes d'asthme, amélioration de l'oxygénation des tissus, diminution de l'hyperventilation, meilleur sommeil.",
+      "Idéal pour : Personnes souffrant d'asthme, d'allergies respiratoires, d'apnée du sommeil, d'hyperventilation chronique ou de troubles respiratoires.",
+      "⚠️ ATTENTION : Cette méthode peut initialement provoquer une légère sensation de manque d'air - c'est normal et fait partie du processus de rééducation respiratoire. Si vous prenez des médicaments pour l'asthme ou d'autres conditions respiratoires, ne les arrêtez pas sans avis médical, même si vous constatez une amélioration."
     ]
   },
   {
     "id": "ujjayi",
     "title": "Respiration Ujjayi",
-    "description": "Respirez par le nez avec une légère constriction de la gorge. Calme l'esprit et améliore la concentration.",
+    "description": "Respiration nasale avec légère constriction de la gorge produisant un son océanique. Calme l'esprit et améliore la concentration.",
     "duration": "5-15 minutes",
-    "route": "RespirationUjjayi",
+    "route": "GenericBreathingScreen",
     "categories": [
       "focus",
       "stress"
+    ],
+    "defaultDurationMinutes": 5,
+    "steps": [
+      {
+        "name": "Inspiration Ujjayi",
+        "duration": 5000,
+        "instruction": "Inspirez lentement par le nez en créant un son doux dans la gorge"
+      },
+      {
+        "name": "Expiration Ujjayi",
+        "duration": 5000,
+        "instruction": "Expirez lentement par le nez en maintenant le son dans la gorge"
+      }
+    ],
+    "longDescription": [
+      "La respiration Ujjayi (prononcée \"ou-djaï\"), aussi appelée respiration océanique, est une technique yogique qui produit un son doux et régulier semblable aux vagues de l'océan.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement avec le dos droit.",
+      "2. Commencez par respirer normalement par le nez.",
+      "3. Contractez légèrement le fond de la gorge (comme lorsque vous chuchotez ou essayez d'embuer un miroir avec votre bouche fermée).",
+      "4. Inspirez et expirez lentement par le nez, en maintenant cette légère constriction de la gorge qui produit un son doux et régulier.",
+      "5. Gardez la respiration fluide, profonde et contrôlée.",
+      "Effets : Calme le système nerveux, améliore la concentration, augmente l'oxygénation, génère de la chaleur corporelle, favorise la présence mentale.",
+      "Idéal pour : La pratique du yoga, la méditation, la gestion du stress, l'amélioration de la concentration, la préparation au sommeil.",
+      "⚠️ ATTENTION : Si vous ressentez une gêne ou une tension dans la gorge, relâchez la constriction. Évitez cette technique si vous souffrez d'hypertension sévère ou de problèmes de thyroïde."
     ]
   },
   {
@@ -240,13 +439,17 @@
       }
     ],
     "longDescription": [
-      "La respiration box (ou carrée) est une technique simple mais puissante pour calmer l'esprit et le corps.",
-      "Elle est particulièrement efficace en situation de stress aigu ou pour améliorer la concentration.",
-      "1. Inspirez lentement par le nez pendant 4 secondes.",
-      "2. Retenez votre souffle pendant 4 secondes.",
-      "3. Expirez lentement par la bouche pendant 4 secondes.",
-      "4. Retenez votre souffle, poumons vides, pendant 4 secondes.",
-      "5. Répétez ce cycle en visualisant un carré dont vous parcourez les côtés."
+      "La respiration box (ou carrée) est une technique simple mais puissante pour calmer l'esprit et le corps en créant un rythme respiratoire parfaitement équilibré.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous confortablement avec le dos droit.",
+      "2. Inspirez lentement par le nez pendant 4 secondes, en comptant mentalement.",
+      "3. Retenez votre souffle pendant 4 secondes, poumons pleins.",
+      "4. Expirez lentement par la bouche pendant 4 secondes.",
+      "5. Retenez votre souffle pendant 4 secondes, poumons vides.",
+      "6. Répétez ce cycle en visualisant un carré dont vous parcourez les côtés.",
+      "Effets : Réduction immédiate du stress, amélioration de la concentration, régulation du système nerveux, clarté mentale, meilleure gestion des émotions.",
+      "Idéal pour : Situations de stress aigu, préparation à une tâche nécessitant de la concentration, gestion de l'anxiété, transition entre différentes activités de la journée.",
+      "⚠️ ATTENTION : Si vous trouvez les rétentions de 4 secondes difficiles au début, commencez par des durées plus courtes et augmentez progressivement. Évitez les rétentions prolongées si vous souffrez d'hypertension ou de problèmes cardiaques."
     ]
   },
   {
@@ -258,6 +461,41 @@
     "categories": [
       "energy",
       "health"
+    ],
+    "defaultDurationMinutes": 15,
+    "steps": [
+      {
+        "name": "Inspiration profonde",
+        "duration": 5000,
+        "instruction": "Inspirez profondément par le nez en gonflant l'abdomen"
+      },
+      {
+        "name": "Rétention",
+        "duration": 5000,
+        "instruction": "Retenez l'air en contractant légèrement l'abdomen"
+      },
+      {
+        "name": "Expiration",
+        "duration": 5000,
+        "instruction": "Expirez lentement par la bouche"
+      },
+      {
+        "name": "Visualisation",
+        "duration": 10000,
+        "instruction": "Visualisez la chaleur se répandre dans tout votre corps"
+      }
+    ],
+    "longDescription": [
+      "La respiration Tummo (ou 'chaleur intérieure') est une technique avancée issue des traditions yogiques tibétaines, pratiquée notamment par les moines pour générer de la chaleur corporelle dans des environnements extrêmement froids.",
+      "Comment pratiquer :",
+      "1. Asseyez-vous dans une position méditative confortable, dos droit.",
+      "2. Inspirez profondément par le nez en gonflant l'abdomen, puis la poitrine.",
+      "3. Retenez brièvement votre souffle en contractant légèrement les muscles abdominaux.",
+      "4. Expirez lentement et complètement par la bouche.",
+      "5. Pendant la pratique, visualisez une flamme ou une chaleur intense au niveau de votre plexus solaire qui se répand progressivement dans tout votre corps.",
+      "Effets : Augmentation de la température corporelle, stimulation du système immunitaire, augmentation de l'énergie vitale, amélioration de la concentration, réduction du stress.",
+      "Idéal pour : Renforcer le système immunitaire, augmenter l'énergie vitale, améliorer la résistance au froid, approfondir la pratique méditative.",
+      "⚠️ ATTENTION : Cette technique est avancée et ne devrait pas être pratiquée sans supervision appropriée si vous débutez. Évitez cette pratique si vous souffrez d'hypertension, de problèmes cardiaques, d'épilepsie, ou pendant la grossesse. Les sensations de chaleur intense sont normales, mais arrêtez si vous ressentez des vertiges ou malaises."
     ]
   }
 ]

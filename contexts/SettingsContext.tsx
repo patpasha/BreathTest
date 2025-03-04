@@ -8,6 +8,7 @@ interface Settings {
   darkMode: boolean;
   reminderEnabled: boolean;
   reminderTime: string; // Format: 'HH:MM'
+  reminderDays: number[]; // Jours de la semaine (0 = dimanche, 1 = lundi, etc.)
   sessionDuration: number; // Durée de session en minutes
 }
 
@@ -18,6 +19,7 @@ const defaultSettings: Settings = {
   darkMode: false,
   reminderEnabled: false,
   reminderTime: '20:00', // 8:00 PM par défaut
+  reminderDays: [1, 2, 3, 4, 5], // Lundi à vendredi par défaut
   sessionDuration: 5, // 5 minutes par défaut
 };
 
@@ -49,7 +51,14 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       try {
         const storedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (storedSettings) {
-          setSettings(JSON.parse(storedSettings));
+          // Fusionner les paramètres stockés avec les valeurs par défaut pour gérer les nouvelles propriétés
+          const parsedSettings = JSON.parse(storedSettings);
+          setSettings({
+            ...defaultSettings,
+            ...parsedSettings,
+            // S'assurer que reminderDays existe, sinon utiliser la valeur par défaut
+            reminderDays: parsedSettings.reminderDays || defaultSettings.reminderDays
+          });
         }
       } catch (error) {
         console.error('Failed to load settings:', error);

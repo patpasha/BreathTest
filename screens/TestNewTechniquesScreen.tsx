@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { getAllBreathingTechniques, updateBreathingTechniqueCategories } from '../services/DatabaseService';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 
 type BreathingTechnique = {
@@ -12,7 +12,7 @@ type BreathingTechnique = {
   categories: string[];
 };
 
-type TestNewTechniquesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type TestNewTechniquesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function TestNewTechniquesScreen() {
   const [techniques, setTechniques] = useState<BreathingTechnique[]>([]);
@@ -83,8 +83,6 @@ export default function TestNewTechniquesScreen() {
       </View>
     );
   }
-
-
 
   return (
     <ScrollView style={styles.container}>

@@ -14,7 +14,7 @@ import SplashScreen from './screens/SplashScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import InformationScreen from './screens/InformationScreen';
 import StatsScreen from './screens/StatsScreen';
-import TestNewTechniquesScreen from './screens/TestNewTechniquesScreen';
+import TestNewTechniques from './screens/TestNewTechniques';
 import ContactDeveloperScreen from './screens/ContactDeveloperScreen';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { StatsProvider } from './contexts/StatsContext';
@@ -319,7 +319,7 @@ const AppNavigator = () => {
         {/* Écran de test pour les nouvelles techniques */}
         <Stack.Screen 
           name="TestNewTechniques" 
-          component={TestNewTechniquesScreen}
+          component={TestNewTechniques}
           options={{ title: 'Test des nouvelles techniques' }}
         />
         

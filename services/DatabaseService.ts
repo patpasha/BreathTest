@@ -115,6 +115,9 @@ export const initDatabase = async (): Promise<void> => {
       
       // Vérifier et réparer toutes les techniques de respiration
       await fixAllBreathingTechniques();
+      
+      // Vérifier et réparer les descriptions longues manquantes
+      await fixLongDescriptions();
     }
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de la base de données:', error);
@@ -775,9 +778,6 @@ export const getDefaultStepsForTechnique = (techniqueId: string): BreathingStep[
 };
 
 /**
- * Ajoute les nouvelles techniques de respiration à la base de données
- */
-/**
  * Met à jour les catégories des techniques de respiration
  */
 export const updateBreathingTechniqueCategories = async (): Promise<void> => {
@@ -840,13 +840,15 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
         steps: getDefaultStepsForTechnique('apnee'),
         longDescription: [
           "L'apnée contrôlée est une technique puissante qui consiste à retenir volontairement sa respiration pendant une durée déterminée.",
-          "Pratiquée de manière sécuritaire et progressive, elle offre de nombreux bienfaits physiologiques et psychologiques.",
+          "Comment pratiquer :",
           "1. Commencez par vous détendre complètement pour réduire votre consommation d'oxygène.",
           "2. Prenez une inspiration profonde et naturelle, sans hyperventiler.",
           "3. Retenez votre souffle aussi longtemps que confortable, sans forcer.",
           "4. Expirez lentement et complètement, puis récupérez en respirant normalement.",
-          "Cette pratique améliore la capacité pulmonaire, renforce le diaphragme, stimule le système immunitaire et développe la résistance au stress. Elle est utilisée par les plongeurs, les athlètes et dans certaines pratiques méditatives.",
-          "ATTENTION : Ne pratiquez jamais l'apnée seul ou dans l'eau sans supervision. Arrêtez immédiatement si vous ressentez des étourdissements ou un inconfort."
+          "5. Répétez ce cycle après une période de récupération suffisante.",
+          "Effets : Amélioration de la capacité pulmonaire, renforcement du diaphragme, stimulation du système immunitaire, développement de la résistance au stress, augmentation de la concentration de CO2 bénéfique.",
+          "Idéal pour : Améliorer les performances sportives, renforcer la résistance mentale, préparer à des situations stressantes, développer la conscience corporelle.",
+          "⚠️ ATTENTION : Ne pratiquez jamais l'apnée seul ou dans l'eau sans supervision. Arrêtez immédiatement si vous ressentez des étourdissements ou un inconfort. Contre-indiqué pour les personnes souffrant de problèmes cardiaques, d'hypertension ou d'épilepsie."
         ]
       },
       {
@@ -859,12 +861,15 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
         defaultDurationMinutes: 5,
         steps: getDefaultStepsForTechnique('papillon'),
         longDescription: [
-          "La respiration papillon est une technique douce qui imite le battement d'ailes d'un papillon.",
-          "Cette méthode alterne entre des respirations courtes et longues, créant un rythme apaisant qui calme naturellement l'esprit.",
-          "1. Commencez par une inspiration courte suivie d'une expiration courte.",
-          "2. Enchaînez avec une inspiration longue suivie d'une expiration longue.",
-          "3. Répétez ce cycle en maintenant un rythme régulier et fluide.",
-          "Cette technique est particulièrement efficace pour les enfants anxieux ou les personnes sensibles et peut être pratiquée discrètement dans n'importe quelle situation."
+          "La respiration papillon est une technique douce qui imite le battement d'ailes d'un papillon, créant un rythme apaisant qui calme naturellement l'esprit.",
+          "Comment pratiquer :",
+          "1. Commencez par une inspiration courte par le nez suivie d'une expiration courte par la bouche.",
+          "2. Enchaînez avec une inspiration longue par le nez suivie d'une expiration longue par la bouche.",
+          "3. Répétez ce cycle en maintenant un rythme régulier et fluide, comme le battement des ailes d'un papillon.",
+          "4. Concentrez-vous sur la sensation de légèreté et de fluidité que ce rythme crée.",
+          "Effets : Réduction de l'anxiété légère, apaisement du système nerveux, amélioration de la concentration, sensation de calme et de légèreté.",
+          "Idéal pour : Les enfants anxieux, les personnes sensibles, les situations sociales stressantes, les moments de tension légère, ou comme technique discrète utilisable partout.",
+          "Cette technique peut être pratiquée discrètement dans n'importe quelle situation et convient particulièrement aux personnes qui trouvent les techniques plus intenses trop stimulantes."
         ]
       },
       {
@@ -877,13 +882,15 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
         defaultDurationMinutes: 3,
         steps: getDefaultStepsForTechnique('lion'),
         longDescription: [
-          "La respiration du lion (Simhasana en sanskrit) est une technique dynamique qui libère les tensions physiques et émotionnelles.",
-          "Cette pratique stimule les muscles du visage et de la gorge, relâchant le stress accumulé.",
-          "1. Asseyez-vous confortablement, les mains sur les genoux.",
-          "2. Inspirez profondément par le nez.",
-          "3. Ouvrez grand la bouche, tirez la langue vers le menton, écarquillez les yeux et expirez fortement avec un son 'haaa'.",
-          "4. Détendez votre visage et respirez normalement avant de répéter.",
-          "Cette technique aide à surmonter la timidité, renforce la confiance en soi et est particulièrement efficace pour libérer les émotions refoulées et la colère."
+          "La respiration du lion (Simhasana en sanskrit) est une technique dynamique issue du yoga qui libère les tensions physiques et émotionnelles accumulées.",
+          "Comment pratiquer :",
+          "1. Asseyez-vous confortablement, les mains sur les genoux ou en appui sur le sol devant vous.",
+          "2. Inspirez profondément par le nez en gonflant la poitrine.",
+          "3. Ouvrez grand la bouche, tirez la langue vers le menton le plus loin possible, écarquillez les yeux et expirez fortement avec un son 'haaa'.",
+          "4. Détendez votre visage et respirez normalement pendant quelques secondes avant de répéter.",
+          "Effets : Libération des tensions faciales et de la gorge, stimulation des muscles du visage, réduction du stress, augmentation de l'énergie, renforcement de la confiance en soi.",
+          "Idéal pour : Surmonter la timidité, préparer une prise de parole en public, libérer les émotions refoulées comme la colère ou la frustration, réveiller l'énergie en cas de fatigue mentale.",
+          "⚠️ ATTENTION : Pratiquez de préférence dans un environnement privé. Cette technique peut sembler intense pour les débutants, commencez doucement et augmentez progressivement l'intensité."
         ]
       },
       {
@@ -896,13 +903,16 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
         defaultDurationMinutes: 5,
         steps: getDefaultStepsForTechnique('3-4-5'),
         longDescription: [
-          "La technique 3-4-5 est une séquence progressive qui suit le rythme naturel de la respiration.",
-          "L'augmentation graduelle des temps crée un ralentissement doux du système nerveux.",
-          "1. Inspirez par le nez pendant 3 secondes.",
-          "2. Retenez votre souffle pendant 4 secondes.",
-          "3. Expirez lentement par la bouche pendant 5 secondes.",
-          "Plus facile que le 4-7-8 pour les débutants, elle offre des bienfaits similaires.",
-          "Cette technique est parfaite pour les moments de stress modéré ou comme préparation à des exercices plus avancés."
+          "La technique 3-4-5 est une séquence progressive qui suit le rythme naturel de la respiration, créant un ralentissement doux du système nerveux.",
+          "Comment pratiquer :",
+          "1. Installez-vous confortablement, assis ou allongé.",
+          "2. Inspirez par le nez pendant 3 secondes en comptant mentalement.",
+          "3. Retenez votre souffle pendant 4 secondes.",
+          "4. Expirez lentement par la bouche pendant 5 secondes.",
+          "5. Répétez ce cycle pendant toute la durée de la session.",
+          "Effets : Ralentissement du rythme cardiaque, activation du système nerveux parasympathique, réduction de l'anxiété, préparation au sommeil, amélioration de la concentration.",
+          "Idéal pour : Les moments de stress modéré, avant de dormir, comme préparation à la méditation, ou comme alternative plus accessible à la technique 4-7-8 pour les débutants.",
+          "Cette technique est particulièrement efficace pour les débutants car elle est facile à mémoriser et à pratiquer, tout en offrant des bienfaits similaires aux techniques plus avancées."
         ]
       },
       {
@@ -915,13 +925,16 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
         defaultDurationMinutes: 10,
         steps: getDefaultStepsForTechnique('pleine-conscience'),
         longDescription: [
-          "La respiration en pleine conscience combine les principes de la méditation avec une attention particulière portée au souffle.",
-          "Cette approche s'est révélée efficace pour réduire le stress, l'anxiété et améliorer le bien-être général.",
-          "1. Installez-vous confortablement et fermez les yeux.",
-          "2. Observez simplement votre respiration sans chercher à la modifier.",
-          "3. Portez attention aux sensations de l'air qui entre et sort de vos narines ou au mouvement de votre poitrine et de votre ventre.",
-          "4. Si votre esprit s'égare, ramenez doucement l'attention à votre respiration sans jugement.",
-          "Cette technique permet de développer une plus grande conscience du moment présent et de renforcer la capacité à gérer les pensées et les émotions."
+          "La respiration en pleine conscience combine les principes de la méditation avec une attention particulière portée au souffle, sans chercher à le modifier.",
+          "Comment pratiquer :",
+          "1. Installez-vous confortablement dans un endroit calme et fermez les yeux.",
+          "2. Observez simplement votre respiration naturelle sans chercher à la modifier.",
+          "3. Portez attention aux sensations de l'air qui entre et sort de vos narines, ou au mouvement de votre poitrine et de votre ventre.",
+          "4. Si votre esprit s'égare vers des pensées, des émotions ou des sensations, reconnaissez-le sans jugement et ramenez doucement l'attention à votre respiration.",
+          "5. Continuez cette observation attentive pendant toute la durée de la session.",
+          "Effets : Réduction du stress et de l'anxiété, amélioration de la concentration, développement de la conscience du moment présent, meilleure gestion des pensées et des émotions.",
+          "Idéal pour : Développer une pratique méditative, gérer le stress chronique, améliorer la concentration, cultiver la présence et la conscience de soi, préparer l'esprit à des tâches complexes.",
+          "Cette technique est à la base de nombreuses pratiques méditatives et peut être approfondie avec le temps pour des bénéfices durables sur la santé mentale."
         ]
       },
       {
@@ -934,13 +947,16 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
         defaultDurationMinutes: 5,
         steps: getDefaultStepsForTechnique('levres-pincees'),
         longDescription: [
-          "La respiration à lèvres pincées est une technique thérapeutique qui a démontré son efficacité pour réduire l'essoufflement et améliorer la ventilation.",
-          "Particulièrement bénéfique pour les personnes souffrant de problèmes respiratoires comme l'asthme ou la BPCO.",
-          "1. Détendez vos épaules et votre cou.",
-          "2. Inspirez lentement par le nez pendant 2 secondes.",
-          "3. Pincez les lèvres comme si vous alliez siffler ou souffler sur une bougie.",
+          "La respiration à lèvres pincées est une technique thérapeutique qui a démontré son efficacité pour réduire l'essoufflement et améliorer la ventilation pulmonaire.",
+          "Comment pratiquer :",
+          "1. Détendez vos épaules et votre cou pour éviter toute tension musculaire.",
+          "2. Inspirez lentement par le nez pendant 2 secondes, en gardant la bouche fermée.",
+          "3. Pincez les lèvres comme si vous alliez siffler ou souffler doucement sur une bougie sans l'éteindre.",
           "4. Expirez lentement à travers les lèvres pincées pendant 4 secondes, soit deux fois plus longtemps que l'inspiration.",
-          "Cette technique aide à vider complètement les poumons, prévient l'affaissement des voies respiratoires et améliore l'échange gazeux."
+          "5. Répétez ce cycle en maintenant un rythme régulier et contrôlé.",
+          "Effets : Amélioration de l'échange gazeux, prévention de l'affaissement des voies respiratoires, réduction de l'essoufflement, meilleur contrôle respiratoire, diminution de la fréquence respiratoire.",
+          "Idéal pour : Les personnes souffrant d'asthme, de BPCO (bronchopneumopathie chronique obstructive), d'emphysème, pendant l'effort physique, ou lors d'épisodes d'essoufflement.",
+          "⚠️ ATTENTION : Si vous souffrez de problèmes respiratoires chroniques, consultez votre médecin pour intégrer cette technique à votre plan de traitement global."
         ]
       }
     ];
@@ -1039,6 +1055,501 @@ export const fixPhysiologicalSighTechnique = async (): Promise<void> => {
     }
   } catch (error) {
     console.error('Erreur lors de la réparation de la technique physiological-sigh:', error);
+    throw error;
+  }
+};
+
+/**
+ * Répare les descriptions longues manquantes pour toutes les techniques
+ */
+export const fixLongDescriptions = async (): Promise<void> => {
+  try {
+    console.log('Vérification et réparation des descriptions longues...');
+    
+    // Charger les données directement depuis le fichier JSON
+    const techniquesFromJson: BreathingTechnique[] = require('../assets/data/breathing_techniques.json');
+    
+    // Créer un dictionnaire pour un accès rapide
+    const techniquesDict: Record<string, BreathingTechnique> = {};
+    techniquesFromJson.forEach(technique => {
+      techniquesDict[technique.id] = technique;
+    });
+    
+    // Récupérer toutes les techniques de la base de données
+    const techniques = await getAllBreathingTechniques();
+    
+    // Vérifier chaque technique
+    for (const technique of techniques) {
+      // Vérifier si la description longue est manquante ou null
+      if (!technique.longDescription || technique.longDescription === null) {
+        console.log(`Réparation de la description longue pour la technique ${technique.id}...`);
+        
+        // Vérifier si la technique existe dans le fichier JSON
+        if (techniquesDict[technique.id]?.longDescription) {
+          // Mettre à jour la technique avec la description longue du fichier JSON
+          await db.runAsync(
+            `UPDATE breathing_techniques SET longDescription = ? WHERE id = ?`,
+            [
+              JSON.stringify(techniquesDict[technique.id].longDescription),
+              technique.id
+            ]
+          );
+          
+          console.log(`Description longue de la technique ${technique.id} mise à jour avec succès depuis le fichier JSON`);
+        } else {
+          // Si la technique n'existe pas dans le fichier JSON, utiliser une description par défaut
+          // basée sur la description courte
+          const defaultLongDescription = [
+            `${technique.title} est une technique de respiration efficace.`,
+            `${technique.description}`,
+            "Pratiquez cette technique régulièrement pour en ressentir les bienfaits."
+          ];
+          
+          await db.runAsync(
+            `UPDATE breathing_techniques SET longDescription = ? WHERE id = ?`,
+            [
+              JSON.stringify(defaultLongDescription),
+              technique.id
+            ]
+          );
+          
+          console.log(`Description longue par défaut créée pour la technique ${technique.id}`);
+        }
+      } else {
+        // Vérifier si la description longue est un tableau vide ou une chaîne vide
+        if (Array.isArray(technique.longDescription) && technique.longDescription.length === 0) {
+          console.log(`La description longue de la technique ${technique.id} est un tableau vide, réparation...`);
+          
+          if (techniquesDict[technique.id]?.longDescription) {
+            await db.runAsync(
+              `UPDATE breathing_techniques SET longDescription = ? WHERE id = ?`,
+              [
+                JSON.stringify(techniquesDict[technique.id].longDescription),
+                technique.id
+              ]
+            );
+            
+            console.log(`Description longue de la technique ${technique.id} mise à jour avec succès`);
+          }
+        }
+      }
+    }
+    
+    // Vérifier si toutes les techniques du fichier JSON sont dans la base de données
+    for (const jsonTechnique of techniquesFromJson) {
+      const existingTechnique = techniques.find(t => t.id === jsonTechnique.id);
+      
+      if (!existingTechnique) {
+        console.log(`La technique ${jsonTechnique.id} existe dans le fichier JSON mais pas dans la base de données, ajout...`);
+        
+        // Ajouter la technique à la base de données
+        await db.runAsync(
+          `INSERT INTO breathing_techniques (id, title, description, duration, route, categories, steps, defaultDurationMinutes, longDescription) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            jsonTechnique.id,
+            jsonTechnique.title,
+            jsonTechnique.description,
+            jsonTechnique.duration,
+            jsonTechnique.route || "GenericBreathingScreen",
+            JSON.stringify(jsonTechnique.categories || []),
+            JSON.stringify(jsonTechnique.steps || getDefaultStepsForTechnique(jsonTechnique.id) || []),
+            jsonTechnique.defaultDurationMinutes || 5,
+            JSON.stringify(jsonTechnique.longDescription || [])
+          ]
+        );
+        
+        console.log(`Technique ${jsonTechnique.id} ajoutée avec succès`);
+      }
+    }
+    
+    // Invalider le cache pour forcer le rechargement des données
+    invalidateCache();
+    
+    console.log('Vérification et réparation des descriptions longues terminées');
+  } catch (error) {
+    console.error('Erreur lors de la réparation des descriptions longues:', error);
+    throw error;
+  }
+};
+
+/**
+ * Vérifie si les descriptions longues sont présentes dans le fichier JSON
+ */
+export const checkJsonLongDescriptions = (): void => {
+  try {
+    console.log('Vérification des descriptions longues dans le fichier JSON...');
+    
+    // Charger les données directement depuis le fichier JSON
+    const techniquesFromJson: BreathingTechnique[] = require('../assets/data/breathing_techniques.json');
+    
+    console.log(`Nombre total de techniques dans le fichier JSON: ${techniquesFromJson.length}`);
+    
+    // Vérifier chaque technique
+    let techniquesWithLongDescription = 0;
+    let techniquesWithoutLongDescription = 0;
+    
+    for (const technique of techniquesFromJson) {
+      if (technique.longDescription && Array.isArray(technique.longDescription) && technique.longDescription.length > 0) {
+        techniquesWithLongDescription++;
+        console.log(`✅ La technique ${technique.id} (${technique.title}) a une description longue de ${technique.longDescription.length} paragraphes.`);
+      } else {
+        techniquesWithoutLongDescription++;
+        console.warn(`⚠️ La technique ${technique.id} (${technique.title}) n'a pas de description longue!`);
+      }
+    }
+    
+    console.log(`Résumé: ${techniquesWithLongDescription} techniques avec description longue, ${techniquesWithoutLongDescription} sans description longue.`);
+    
+    // Vérifier les techniques dans la base de données
+    getAllBreathingTechniques().then(techniques => {
+      console.log(`Nombre total de techniques dans la base de données: ${techniques.length}`);
+      
+      // Créer un dictionnaire des techniques du JSON pour une recherche rapide
+      const jsonTechniquesDict: Record<string, boolean> = {};
+      techniquesFromJson.forEach(t => {
+        jsonTechniquesDict[t.id] = true;
+      });
+      
+      // Vérifier les techniques qui sont dans la base de données mais pas dans le JSON
+      const techniquesNotInJson = techniques.filter(t => !jsonTechniquesDict[t.id]);
+      
+      if (techniquesNotInJson.length > 0) {
+        console.warn(`⚠️ ${techniquesNotInJson.length} techniques sont dans la base de données mais pas dans le fichier JSON:`);
+        techniquesNotInJson.forEach(t => {
+          console.warn(`   - ${t.id} (${t.title})`);
+        });
+      } else {
+        console.log('✅ Toutes les techniques de la base de données sont présentes dans le fichier JSON.');
+      }
+      
+      // Vérifier les descriptions longues dans la base de données
+      let dbTechniquesWithLongDescription = 0;
+      let dbTechniquesWithoutLongDescription = 0;
+      
+      for (const technique of techniques) {
+        if (technique.longDescription && Array.isArray(technique.longDescription) && technique.longDescription.length > 0) {
+          dbTechniquesWithLongDescription++;
+        } else {
+          dbTechniquesWithoutLongDescription++;
+          console.warn(`⚠️ La technique ${technique.id} (${technique.title}) n'a pas de description longue dans la base de données!`);
+        }
+      }
+      
+      console.log(`Résumé base de données: ${dbTechniquesWithLongDescription} techniques avec description longue, ${dbTechniquesWithoutLongDescription} sans description longue.`);
+    }).catch(error => {
+      console.error('Erreur lors de la récupération des techniques de la base de données:', error);
+    });
+    
+  } catch (error) {
+    console.error('Erreur lors de la vérification des descriptions longues:', error);
+  }
+};
+
+/**
+ * Réinitialise complètement la base de données et réimporte toutes les techniques
+ */
+export const resetAndReimportAllTechniques = async (): Promise<void> => {
+  try {
+    console.log('Réinitialisation complète de la base de données et réimportation des techniques...');
+    
+    // Supprimer la table des techniques de respiration
+    await db.runAsync('DROP TABLE IF EXISTS breathing_techniques');
+    console.log('Table breathing_techniques supprimée');
+    
+    // Recréer la table
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS breathing_techniques (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        duration TEXT NOT NULL,
+        route TEXT NOT NULL,
+        categories TEXT NOT NULL
+      )
+    `);
+    console.log('Table breathing_techniques recréée');
+    
+    // Ajouter les colonnes nécessaires
+    try {
+      await db.runAsync('ALTER TABLE breathing_techniques ADD COLUMN steps TEXT');
+      console.log('Colonne steps ajoutée');
+    } catch (e) {
+      console.log('La colonne steps existe déjà');
+    }
+    
+    try {
+      await db.runAsync('ALTER TABLE breathing_techniques ADD COLUMN defaultDurationMinutes INTEGER');
+      console.log('Colonne defaultDurationMinutes ajoutée');
+    } catch (e) {
+      console.log('La colonne defaultDurationMinutes existe déjà');
+    }
+    
+    try {
+      await db.runAsync('ALTER TABLE breathing_techniques ADD COLUMN longDescription TEXT');
+      console.log('Colonne longDescription ajoutée');
+    } catch (e) {
+      console.log('La colonne longDescription existe déjà');
+    }
+    
+    // Charger les données depuis le fichier JSON
+    const techniquesFromJson: BreathingTechnique[] = require('../assets/data/breathing_techniques.json');
+    console.log(`${techniquesFromJson.length} techniques chargées depuis le fichier JSON`);
+    
+    // Importer toutes les techniques du fichier JSON
+    for (const technique of techniquesFromJson) {
+      console.log(`Importation de la technique ${technique.id}...`);
+      
+      // S'assurer que les étapes sont définies
+      const steps = technique.steps || getDefaultStepsForTechnique(technique.id) || [];
+      
+      // S'assurer que la route est définie
+      const route = technique.route || "GenericBreathingScreen";
+      
+      // S'assurer que les catégories sont définies
+      const categories = technique.categories || [];
+      
+      // S'assurer que la durée par défaut est définie
+      const defaultDurationMinutes = technique.defaultDurationMinutes || 5;
+      
+      // Insérer la technique dans la base de données
+      await db.runAsync(
+        `INSERT INTO breathing_techniques (id, title, description, duration, route, categories, steps, defaultDurationMinutes, longDescription) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          technique.id,
+          technique.title,
+          technique.description,
+          technique.duration,
+          route,
+          JSON.stringify(categories),
+          JSON.stringify(steps),
+          defaultDurationMinutes,
+          JSON.stringify(technique.longDescription || [])
+        ]
+      );
+      
+      console.log(`Technique ${technique.id} importée avec succès`);
+    }
+    
+    // Définir explicitement les techniques problématiques
+    const problematicTechniques: BreathingTechnique[] = [
+      {
+        id: "apnee",
+        title: "Apnée Contrôlée",
+        description: "Technique de rétention respiratoire pour améliorer la capacité pulmonaire et la résistance au stress.",
+        duration: "3-5 minutes",
+        route: "GenericBreathingScreen",
+        categories: ["performance", "stress", "health"],
+        defaultDurationMinutes: 5,
+        steps: getDefaultStepsForTechnique('apnee'),
+        longDescription: [
+          "L'apnée contrôlée est une technique puissante qui consiste à retenir volontairement sa respiration pendant une durée déterminée.",
+          "Comment pratiquer :",
+          "1. Commencez par vous détendre complètement pour réduire votre consommation d'oxygène.",
+          "2. Prenez une inspiration profonde et naturelle, sans hyperventiler.",
+          "3. Retenez votre souffle aussi longtemps que confortable, sans forcer.",
+          "4. Expirez lentement et complètement, puis récupérez en respirant normalement.",
+          "5. Répétez ce cycle après une période de récupération suffisante.",
+          "Effets : Amélioration de la capacité pulmonaire, renforcement du diaphragme, stimulation du système immunitaire, développement de la résistance au stress, augmentation de la concentration de CO2 bénéfique.",
+          "Idéal pour : Améliorer les performances sportives, renforcer la résistance mentale, préparer à des situations stressantes, développer la conscience corporelle.",
+          "⚠️ ATTENTION : Ne pratiquez jamais l'apnée seul ou dans l'eau sans supervision. Arrêtez immédiatement si vous ressentez des étourdissements ou un inconfort. Contre-indiqué pour les personnes souffrant de problèmes cardiaques, d'hypertension ou d'épilepsie."
+        ]
+      },
+      {
+        id: "papillon",
+        title: "Respiration Papillon",
+        description: "Technique douce alternant respirations courtes et longues, idéale pour l'anxiété légère.",
+        duration: "5-10 minutes",
+        route: "GenericBreathingScreen",
+        categories: ["stress", "focus"],
+        defaultDurationMinutes: 5,
+        steps: getDefaultStepsForTechnique('papillon'),
+        longDescription: [
+          "La respiration papillon est une technique douce qui imite le battement d'ailes d'un papillon, créant un rythme apaisant qui calme naturellement l'esprit.",
+          "Comment pratiquer :",
+          "1. Commencez par une inspiration courte par le nez suivie d'une expiration courte par la bouche.",
+          "2. Enchaînez avec une inspiration longue par le nez suivie d'une expiration longue par la bouche.",
+          "3. Répétez ce cycle en maintenant un rythme régulier et fluide, comme le battement des ailes d'un papillon.",
+          "4. Concentrez-vous sur la sensation de légèreté et de fluidité que ce rythme crée.",
+          "Effets : Réduction de l'anxiété légère, apaisement du système nerveux, amélioration de la concentration, sensation de calme et de légèreté.",
+          "Idéal pour : Les enfants anxieux, les personnes sensibles, les situations sociales stressantes, les moments de tension légère, ou comme technique discrète utilisable partout.",
+          "Cette technique peut être pratiquée discrètement dans n'importe quelle situation et convient particulièrement aux personnes qui trouvent les techniques plus intenses trop stimulantes."
+        ]
+      },
+      {
+        id: "lion",
+        title: "Respiration du Lion",
+        description: "Technique dynamique pour libérer les tensions et renforcer la confiance en soi.",
+        duration: "3-5 minutes",
+        route: "GenericBreathingScreen",
+        categories: ["stress", "energy"],
+        defaultDurationMinutes: 3,
+        steps: getDefaultStepsForTechnique('lion'),
+        longDescription: [
+          "La respiration du lion (Simhasana en sanskrit) est une technique dynamique issue du yoga qui libère les tensions physiques et émotionnelles accumulées.",
+          "Comment pratiquer :",
+          "1. Asseyez-vous confortablement, les mains sur les genoux ou en appui sur le sol devant vous.",
+          "2. Inspirez profondément par le nez en gonflant la poitrine.",
+          "3. Ouvrez grand la bouche, tirez la langue vers le menton le plus loin possible, écarquillez les yeux et expirez fortement avec un son 'haaa'.",
+          "4. Détendez votre visage et respirez normalement pendant quelques secondes avant de répéter.",
+          "Effets : Libération des tensions faciales et de la gorge, stimulation des muscles du visage, réduction du stress, augmentation de l'énergie, renforcement de la confiance en soi.",
+          "Idéal pour : Surmonter la timidité, préparer une prise de parole en public, libérer les émotions refoulées comme la colère ou la frustration, réveiller l'énergie en cas de fatigue mentale.",
+          "⚠️ ATTENTION : Pratiquez de préférence dans un environnement privé. Cette technique peut sembler intense pour les débutants, commencez doucement et augmentez progressivement l'intensité."
+        ]
+      },
+      {
+        id: "3-4-5",
+        title: "Technique 3-4-5",
+        description: "Séquence progressive qui suit le rythme naturel de la respiration pour un calme rapide.",
+        duration: "3-10 minutes",
+        route: "GenericBreathingScreen",
+        categories: ["stress", "sleep"],
+        defaultDurationMinutes: 5,
+        steps: getDefaultStepsForTechnique('3-4-5'),
+        longDescription: [
+          "La technique 3-4-5 est une séquence progressive qui suit le rythme naturel de la respiration, créant un ralentissement doux du système nerveux.",
+          "Comment pratiquer :",
+          "1. Installez-vous confortablement, assis ou allongé.",
+          "2. Inspirez par le nez pendant 3 secondes en comptant mentalement.",
+          "3. Retenez votre souffle pendant 4 secondes.",
+          "4. Expirez lentement par la bouche pendant 5 secondes.",
+          "5. Répétez ce cycle pendant toute la durée de la session.",
+          "Effets : Ralentissement du rythme cardiaque, activation du système nerveux parasympathique, réduction de l'anxiété, préparation au sommeil, amélioration de la concentration.",
+          "Idéal pour : Les moments de stress modéré, avant de dormir, comme préparation à la méditation, ou comme alternative plus accessible à la technique 4-7-8 pour les débutants.",
+          "Cette technique est particulièrement efficace pour les débutants car elle est facile à mémoriser et à pratiquer, tout en offrant des bienfaits similaires aux techniques plus avancées."
+        ]
+      },
+      {
+        id: "pleine-conscience",
+        title: "Respiration en Pleine Conscience",
+        description: "Technique méditative d'observation du souffle pour calmer l'esprit et développer la présence.",
+        duration: "5-20 minutes",
+        route: "GenericBreathingScreen",
+        categories: ["stress", "focus"],
+        defaultDurationMinutes: 10,
+        steps: getDefaultStepsForTechnique('pleine-conscience'),
+        longDescription: [
+          "La respiration en pleine conscience combine les principes de la méditation avec une attention particulière portée au souffle, sans chercher à le modifier.",
+          "Comment pratiquer :",
+          "1. Installez-vous confortablement dans un endroit calme et fermez les yeux.",
+          "2. Observez simplement votre respiration naturelle sans chercher à la modifier.",
+          "3. Portez attention aux sensations de l'air qui entre et sort de vos narines, ou au mouvement de votre poitrine et de votre ventre.",
+          "4. Si votre esprit s'égare vers des pensées, des émotions ou des sensations, reconnaissez-le sans jugement et ramenez doucement l'attention à votre respiration.",
+          "5. Continuez cette observation attentive pendant toute la durée de la session.",
+          "Effets : Réduction du stress et de l'anxiété, amélioration de la concentration, développement de la conscience du moment présent, meilleure gestion des pensées et des émotions.",
+          "Idéal pour : Développer une pratique méditative, gérer le stress chronique, améliorer la concentration, cultiver la présence et la conscience de soi, préparer l'esprit à des tâches complexes.",
+          "Cette technique est à la base de nombreuses pratiques méditatives et peut être approfondie avec le temps pour des bénéfices durables sur la santé mentale."
+        ]
+      },
+      {
+        id: "levres-pincees",
+        title: "Respiration à Lèvres Pincées",
+        description: "Technique thérapeutique pour améliorer la ventilation et réduire l'essoufflement.",
+        duration: "5-15 minutes",
+        route: "GenericBreathingScreen",
+        categories: ["health", "stress"],
+        defaultDurationMinutes: 5,
+        steps: getDefaultStepsForTechnique('levres-pincees'),
+        longDescription: [
+          "La respiration à lèvres pincées est une technique thérapeutique qui a démontré son efficacité pour réduire l'essoufflement et améliorer la ventilation pulmonaire.",
+          "Comment pratiquer :",
+          "1. Détendez vos épaules et votre cou pour éviter toute tension musculaire.",
+          "2. Inspirez lentement par le nez pendant 2 secondes, en gardant la bouche fermée.",
+          "3. Pincez les lèvres comme si vous alliez siffler ou souffler doucement sur une bougie sans l'éteindre.",
+          "4. Expirez lentement à travers les lèvres pincées pendant 4 secondes, soit deux fois plus longtemps que l'inspiration.",
+          "5. Répétez ce cycle en maintenant un rythme régulier et contrôlé.",
+          "Effets : Amélioration de l'échange gazeux, prévention de l'affaissement des voies respiratoires, réduction de l'essoufflement, meilleur contrôle respiratoire, diminution de la fréquence respiratoire.",
+          "Idéal pour : Les personnes souffrant d'asthme, de BPCO (bronchopneumopathie chronique obstructive), d'emphysème, pendant l'effort physique, ou lors d'épisodes d'essoufflement.",
+          "⚠️ ATTENTION : Si vous souffrez de problèmes respiratoires chroniques, consultez votre médecin pour intégrer cette technique à votre plan de traitement global."
+        ]
+      }
+    ];
+    
+    // Importer explicitement les techniques problématiques
+    for (const technique of problematicTechniques) {
+      console.log(`Importation explicite de la technique problématique ${technique.id}...`);
+      
+      // Vérifier si la technique existe déjà
+      const existingTechnique = await getBreathingTechniqueById(technique.id);
+      
+      if (existingTechnique) {
+        // Mettre à jour la technique existante
+        console.log(`La technique ${technique.id} existe déjà, mise à jour...`);
+        await db.runAsync(
+          `UPDATE breathing_techniques SET 
+           title = ?, 
+           description = ?, 
+           duration = ?, 
+           route = ?, 
+           categories = ?, 
+           steps = ?, 
+           defaultDurationMinutes = ?, 
+           longDescription = ? 
+           WHERE id = ?`,
+          [
+            technique.title,
+            technique.description,
+            technique.duration,
+            technique.route,
+            JSON.stringify(technique.categories),
+            JSON.stringify(technique.steps),
+            technique.defaultDurationMinutes || 5,
+            JSON.stringify(technique.longDescription || []),
+            technique.id
+          ]
+        );
+      } else {
+        // Insérer la nouvelle technique
+        console.log(`La technique ${technique.id} n'existe pas, insertion...`);
+        await db.runAsync(
+          `INSERT INTO breathing_techniques (id, title, description, duration, route, categories, steps, defaultDurationMinutes, longDescription) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            technique.id,
+            technique.title,
+            technique.description,
+            technique.duration,
+            technique.route,
+            JSON.stringify(technique.categories),
+            JSON.stringify(technique.steps),
+            technique.defaultDurationMinutes || 5,
+            JSON.stringify(technique.longDescription || [])
+          ]
+        );
+      }
+      
+      console.log(`Technique problématique ${technique.id} traitée avec succès`);
+    }
+    
+    // Mettre à jour les catégories
+    await updateBreathingTechniqueCategories();
+    
+    // Réparer les descriptions longues
+    await fixLongDescriptions();
+    
+    // Invalider le cache
+    invalidateCache();
+    
+    // Vérifier que toutes les techniques ont bien été importées
+    const allTechniques = await getAllBreathingTechniques();
+    console.log(`Nombre total de techniques après réinitialisation: ${allTechniques.length}`);
+    
+    // Vérifier spécifiquement les techniques problématiques
+    for (const technique of problematicTechniques) {
+      const importedTechnique = await getBreathingTechniqueById(technique.id);
+      if (importedTechnique && importedTechnique.longDescription) {
+        console.log(`✅ La technique ${technique.id} a été correctement importée avec sa description longue`);
+      } else if (importedTechnique) {
+        console.warn(`⚠️ La technique ${technique.id} a été importée mais sans description longue`);
+      } else {
+        console.error(`❌ La technique ${technique.id} n'a pas été importée correctement`);
+      }
+    }
+    
+    console.log('Réinitialisation et réimportation terminées avec succès');
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation et réimportation:', error);
     throw error;
   }
 };

@@ -1,7 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { SchedulableTriggerInputTypes } from 'expo-notifications';
 
 // Configure les notifications pour qu'elles s'affichent lorsque l'application est au premier plan
 Notifications.setNotificationHandler({
@@ -20,6 +19,14 @@ if (Platform.OS === 'android') {
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#FF231F7C',
   });
+}
+
+// Identifiant unique pour les notifications de rappel
+const REMINDER_NOTIFICATION_ID = 'breath-reminder';
+
+// Enum pour les types de triggers
+enum SchedulableTriggerInputTypes {
+  WEEKLY = 'weekly'
 }
 
 export async function registerForPushNotificationsAsync() {
@@ -45,122 +52,58 @@ export async function registerForPushNotificationsAsync() {
   }
 }
 
-// Identifiant pour la notification quotidienne
-const DAILY_REMINDER_ID = 'daily-reminder';
-
-export async function scheduleReminderNotification(time: string = '20:00') {
+export async function scheduleReminderNotification(time: string = '20:00', days: number[] = [0, 1, 2, 3, 4, 5, 6]) {
   try {
     // Annule tous les rappels précédents
     await cancelAllScheduledNotifications();
     
-    // Valeur par défaut si time est undefined ou mal formaté
-    const timeToUse = time && time.includes(':') ? time : '20:00';
-    
-    // Extrait les heures et les minutes du format 'HH:MM'
-    const [hours, minutes] = timeToUse.split(':').map(Number);
-    
-    // Utilise des valeurs par défaut si les valeurs extraites sont NaN
-    const validHours = isNaN(hours) ? 20 : hours;
-    const validMinutes = isNaN(minutes) ? 0 : minutes;
-    
-    // Vérifie si l'heure est déjà passée aujourd'hui
-    const now = new Date();
-    const today = new Date();
-    today.setHours(validHours, validMinutes, 0, 0);
-    
-    // Définit la date pour demain si l'heure est déjà passée aujourd'hui
-    let scheduledDate = new Date();
-    if (today < now) {
-      scheduledDate.setDate(scheduledDate.getDate() + 1);
-    } else {
-      scheduledDate.setDate(scheduledDate.getDate());
+    // Si aucun jour n'est sélectionné, ne pas programmer de notifications
+    if (days.length === 0) {
+      console.log('Aucun jour sélectionné pour les rappels, pas de notification programmée');
+      return false;
     }
-    scheduledDate.setHours(validHours, validMinutes, 0, 0);
     
-    // Programme une notification pour la prochaine occurrence (aujourd'hui ou demain)
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Rappel de respiration",
-        body: "N'oubliez pas votre session de respiration quotidienne !",
-        sound: true,
-      },
-      trigger: {
-        channelId: Platform.OS === 'android' ? 'breathflow-channel' : undefined,
-        date: scheduledDate,
-        type: SchedulableTriggerInputTypes.DATE
-      },
-      identifier: 'next-reminder',
-    });
+    // Extraire les heures et minutes du format "HH:MM"
+    const [hours, minutes] = time.split(':').map(Number);
     
-    // Programme également une notification avec date précise pour après-demain
-    const dayAfterTomorrow = new Date(scheduledDate);
-    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+    // Programmer une notification récurrente pour chaque jour sélectionné
+    for (const day of days) {
+      const identifier = `${REMINDER_NOTIFICATION_ID}-${day}`;
+      
+      // Note: Weekdays are specified with a number from 1 through 7, with 1 indicating Sunday
+      // Convertir notre format (0 = dimanche) au format d'Expo (1 = dimanche)
+      const weekday = day === 0 ? 1 : day + 1;
+      
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Rappel de respiration",
+          body: "C'est l'heure de votre exercice de respiration quotidien",
+          sound: true,
+        },
+        trigger: {
+          hour: hours,
+          minute: minutes,
+          weekday: weekday,
+          type: SchedulableTriggerInputTypes.WEEKLY
+        },
+        identifier: identifier,
+      });
+    }
     
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Rappel de respiration",
-        body: "N'oubliez pas votre session de respiration quotidienne !",
-        sound: true,
-      },
-      trigger: {
-        channelId: Platform.OS === 'android' ? 'breathflow-channel' : undefined,
-        date: dayAfterTomorrow,
-        type: SchedulableTriggerInputTypes.DATE
-      },
-      identifier: 'day-after-tomorrow-reminder',
-    });
-    
-    // Programme également une notification avec date précise pour dans 3 jours
-    const threeDaysLater = new Date(scheduledDate);
-    threeDaysLater.setDate(threeDaysLater.getDate() + 2);
-    
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Rappel de respiration",
-        body: "N'oubliez pas votre session de respiration quotidienne !",
-        sound: true,
-      },
-      trigger: {
-        channelId: Platform.OS === 'android' ? 'breathflow-channel' : undefined,
-        date: threeDaysLater,
-        type: SchedulableTriggerInputTypes.DATE
-      },
-      identifier: 'three-days-later-reminder',
-    });
-    
-    // Programme également une notification récurrente quotidienne (comme backup)
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Rappel de respiration",
-        body: "N'oubliez pas votre session de respiration quotidienne !",
-        sound: true,
-      },
-      trigger: {
-        channelId: Platform.OS === 'android' ? 'breathflow-channel' : undefined,
-        hour: validHours,
-        minute: validMinutes,
-        type: SchedulableTriggerInputTypes.DAILY
-      },
-      identifier: DAILY_REMINDER_ID,
-    });
-    
-    console.log(`Prochaine notification programmée pour: ${scheduledDate.toLocaleString()}`);
-    console.log(`Notification quotidienne programmée pour ${validHours}:${validMinutes.toString().padStart(2, '0')} tous les jours`);
-    
-    // Affiche les notifications programmées pour débogage
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    console.log(`Nombre de notifications programmées: ${scheduledNotifications.length}`);
-    scheduledNotifications.forEach((notification, index) => {
-      console.log(`Notification ${index + 1}:`, notification.identifier, notification.trigger);
-    });
+    console.log(`Notifications récurrentes programmées pour ${time} les jours: ${days.join(', ')}`);
+    return true;
   } catch (error) {
     console.error('Erreur lors de la programmation de la notification:', error);
+    return false;
   }
 }
 
 export async function cancelAllScheduledNotifications() {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
+
+// Identifiant unique pour les notifications de test
+const TEST_NOTIFICATION_ID = 'test-notification';
 
 // Fonction pour envoyer une notification de test immédiate
 export async function sendTestNotification() {
@@ -172,7 +115,18 @@ export async function sendTestNotification() {
       return false;
     }
     
-    // Envoie une notification immédiate
+    // Vérifier si une notification de test existe déjà
+    const existingNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const hasExistingTest = existingNotifications.some(
+      notification => notification.identifier === TEST_NOTIFICATION_ID
+    );
+    
+    // Si une notification de test existe déjà, l'annuler
+    if (hasExistingTest) {
+      await Notifications.cancelScheduledNotificationAsync(TEST_NOTIFICATION_ID);
+    }
+    
+    // Envoie une notification immédiate avec un identifiant unique
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Test de notification",
@@ -180,6 +134,7 @@ export async function sendTestNotification() {
         sound: true,
       },
       trigger: null, // null = notification immédiate
+      identifier: TEST_NOTIFICATION_ID,
     });
     
     console.log('Notification de test envoyée');

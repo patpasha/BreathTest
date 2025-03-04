@@ -372,7 +372,16 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             </Text>
             
             {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => (
-              <Text key={index} style={[styles.instructionText, { color: theme.textSecondary }]}>
+              <Text 
+                key={index} 
+                style={[
+                  styles.instructionText, 
+                  { 
+                    color: paragraph.startsWith('⚠️ ATTENTION') ? theme.error : theme.textSecondary,
+                    fontWeight: paragraph.startsWith('⚠️ ATTENTION') ? 'bold' : 'normal'
+                  }
+                ]}
+              >
                 {paragraph}
               </Text>
             ))}
