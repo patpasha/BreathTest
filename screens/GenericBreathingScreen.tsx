@@ -180,8 +180,11 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     if (isActive && technique?.steps) {
       const steps = technique.steps;
       const currentStepObj = steps[currentStep];
+      
+      // Jouer le retour haptique et sonore au début de chaque étape
       playFeedback(currentStepObj.name);
       
+      // Déterminer la valeur cible pour l'animation
       let toValue;
       if (currentStepObj.name.toLowerCase().includes('inspiration') || 
           currentStepObj.name.toLowerCase().includes('inhale') || 
@@ -203,7 +206,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération plus douce
       }).start();
       
-      // Animation de progression
+      // Réinitialiser la progression et démarrer l'animation
       setStepProgress(0);
       progressAnimation.setValue(0);
       Animated.timing(progressAnimation, {
@@ -215,26 +218,34 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       
       setCurrentAnimValue(toValue);
 
-      // Mettre à jour la progression toutes les 50ms pour une animation plus fluide
+      // Mettre à jour la progression toutes les 16ms (environ 60fps) pour une animation plus fluide
       const progressInterval = setInterval(() => {
         setStepProgress(prev => {
-          const newProgress = prev + (100 / (currentStepObj.duration / 50));
+          const newProgress = prev + (100 / (currentStepObj.duration / 16));
           return newProgress > 100 ? 100 : newProgress;
         });
-      }, 50);
+      }, 16);
 
+      // Programmer le passage à l'étape suivante
       cycleTimerRef.current = setTimeout(() => {
         clearInterval(progressInterval);
+        
+        // Passer à l'étape suivante
         const nextStep = (currentStep + 1) % steps.length;
         setCurrentStep(nextStep);
         
+        // Incrémenter le compteur de cycles si on revient à la première étape
         if (nextStep === 0) {
           setCurrentCycle(prev => prev + 1);
         }
       }, currentStepObj.duration);
 
+      // Nettoyer les timers lors du démontage ou du changement d'étape
       return () => {
         clearInterval(progressInterval);
+        if (cycleTimerRef.current) {
+          clearTimeout(cycleTimerRef.current);
+        }
       };
     } else if (cycleTimerRef.current) {
       clearTimeout(cycleTimerRef.current);

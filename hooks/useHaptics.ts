@@ -77,13 +77,24 @@ export const useHaptics = (enabled: boolean) => {
     if (!enabled) return;
     
     try {
-      // Motif progressif pour l'inspiration - commence doucement et s'intensifie
-      const pattern = [0, 20, 30, 40, 30, 20];
+      // Motif progressif plus doux et plus long pour l'inspiration
+      // Commence très doucement et s'intensifie graduellement
+      const pattern = [0, 10, 20, 30, 40, 50, 60, 50, 40];
+      const intensities = [
+        Haptics.ImpactFeedbackStyle.Light,
+        Haptics.ImpactFeedbackStyle.Light,
+        Haptics.ImpactFeedbackStyle.Light,
+        Haptics.ImpactFeedbackStyle.Medium,
+        Haptics.ImpactFeedbackStyle.Medium,
+        Haptics.ImpactFeedbackStyle.Heavy,
+        Haptics.ImpactFeedbackStyle.Medium,
+        Haptics.ImpactFeedbackStyle.Light
+      ];
       
-      // Créer une séquence progressive de vibrations douces
+      // Créer une séquence progressive de vibrations avec intensité variable
       for (let i = 0; i < pattern.length; i++) {
         if (pattern[i] > 0) {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          await Haptics.impactAsync(intensities[i-1] || Haptics.ImpactFeedbackStyle.Light);
           await new Promise(resolve => setTimeout(resolve, pattern[i]));
         }
       }
@@ -100,17 +111,22 @@ export const useHaptics = (enabled: boolean) => {
     if (!enabled) return;
     
     try {
-      // Motif dégressif pour l'expiration - commence plus fort et diminue
-      const pattern = [0, 40, 30, 20, 10];
+      // Motif dégressif plus doux pour l'expiration
+      // Commence fort et diminue progressivement
+      const pattern = [0, 60, 50, 40, 30, 20, 10];
+      const intensities = [
+        Haptics.ImpactFeedbackStyle.Heavy,
+        Haptics.ImpactFeedbackStyle.Medium,
+        Haptics.ImpactFeedbackStyle.Medium,
+        Haptics.ImpactFeedbackStyle.Light,
+        Haptics.ImpactFeedbackStyle.Light,
+        Haptics.ImpactFeedbackStyle.Light
+      ];
       
-      // Créer une séquence dégressive de vibrations
+      // Créer une séquence dégressive de vibrations avec intensité variable
       for (let i = 0; i < pattern.length; i++) {
         if (pattern[i] > 0) {
-          if (i === 0) {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          } else {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
+          await Haptics.impactAsync(intensities[i-1] || Haptics.ImpactFeedbackStyle.Light);
           await new Promise(resolve => setTimeout(resolve, pattern[i]));
         }
       }
@@ -121,16 +137,21 @@ export const useHaptics = (enabled: boolean) => {
 
   /**
    * Trigger a pattern of haptic feedback for hold
-   * Creates a steady rhythm to help maintain the hold
+   * Creates a subtle, steady rhythm to help maintain the hold
    */
   const holdPattern = async () => {
     if (!enabled) return;
     
     try {
-      // Vibration subtile et constante pour la rétention
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      await new Promise(resolve => setTimeout(resolve, 30));
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Séquence de vibrations très subtiles et régulières pour la rétention
+      // Crée un rythme doux et constant
+      const pulseCount = 3;
+      const pulseInterval = 400; // Intervalle entre les pulsations
+      
+      for (let i = 0; i < pulseCount; i++) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        await new Promise(resolve => setTimeout(resolve, pulseInterval));
+      }
     } catch (error) {
       console.log('Erreur haptic hold:', error);
     }

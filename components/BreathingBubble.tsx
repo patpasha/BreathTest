@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import Svg, { Circle } from 'react-native-svg';
 
 interface BreathingBubbleProps {
   isActive: boolean;
@@ -13,6 +14,9 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
   const theme = useTheme();
   const animatedValue = useRef(new Animated.Value(0.5)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [currentAnimation, setCurrentAnimation] = useState<Animated.CompositeAnimation | null>(null);
+  const [currentPulseAnimation, setCurrentPulseAnimation] = useState<Animated.CompositeAnimation | null>(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   // Déterminer l'action en cours
   const isInhale = currentStep.toLowerCase().includes('inspir') || 
@@ -27,7 +31,16 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
                 currentStep.toLowerCase().includes('hold') || 
                 currentStep.toLowerCase().includes('retention');
 
+  // Effet pour gérer les changements d'étape
   useEffect(() => {
+    // Arrêter les animations en cours
+    if (currentAnimation) {
+      currentAnimation.stop();
+    }
+    if (currentPulseAnimation) {
+      currentPulseAnimation.stop();
+    }
+
     if (isActive) {
       let toValue = 0.5; // Valeur par défaut pour maintien
       
@@ -37,17 +50,20 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
         toValue = 0; // Contraction pour l'expiration
       }
       
-      // Animation principale de la bulle
-      Animated.timing(animatedValue, {
+      // Animation principale de la bulle avec une durée adaptée à la progression
+      const animation = Animated.timing(animatedValue, {
         toValue,
-        duration: 1000,
+        duration: 1500, // Durée fixe pour une animation fluide
         useNativeDriver: true,
         easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération douce
-      }).start();
+      });
+      
+      setCurrentAnimation(animation);
+      animation.start();
       
       // Animation de pulsation subtile pour la rétention
       if (isHold) {
-        Animated.loop(
+        const pulseAnimation = Animated.loop(
           Animated.sequence([
             Animated.timing(pulseAnim, {
               toValue: 1.05,
@@ -62,18 +78,45 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
               easing: Easing.inOut(Easing.sin),
             }),
           ])
-        ).start();
+        );
+        
+        setCurrentPulseAnimation(pulseAnimation);
+        pulseAnimation.start();
       } else {
         // Réinitialiser l'animation de pulsation
         pulseAnim.setValue(1);
       }
     }
+
+    // Nettoyage lors du démontage ou du changement d'étape
+    return () => {
+      if (currentAnimation) {
+        currentAnimation.stop();
+      }
+      if (currentPulseAnimation) {
+        currentPulseAnimation.stop();
+      }
+    };
   }, [isActive, currentStep, isInhale, isExhale, isHold]);
+
+  // Effet pour animer la progression
+  useEffect(() => {
+    if (isActive) {
+      Animated.timing(progressAnim, {
+        toValue: progress,
+        duration: 100, // Animation rapide mais pas instantanée
+        useNativeDriver: false,
+        easing: Easing.linear,
+      }).start();
+    } else {
+      progressAnim.setValue(0);
+    }
+  }, [progress, isActive]);
 
   // Interpolations pour les animations
   const scale = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.8, 1.2],
+    outputRange: [0.8, 1.3], // Augmenter le contraste entre les états
   });
   
   const combinedScale = Animated.multiply(scale, pulseAnim);
@@ -96,42 +139,44 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
   const strokeWidth = size * 0.03; // Épaisseur proportionnelle
   const radius = (progressSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - progress / 100);
+  
+  // Animation du strokeDashoffset pour le cercle SVG
+  const strokeDashoffset = progressAnim.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
 
   return (
     <View style={[styles.container, { width: progressSize, height: progressSize }]}>
-      {/* Cercle de progression */}
+      {/* Cercle de progression avec SVG pour une animation plus fluide */}
       {isActive && (
-        <Animated.View style={[styles.progressCircle, { width: progressSize, height: progressSize }]}>
-          <View style={styles.progressContainer}>
-            <View style={[
-              styles.progressBackground, 
-              { 
-                width: progressSize, 
-                height: progressSize, 
-                borderRadius: progressSize / 2,
-                borderWidth: strokeWidth,
-                borderColor: theme.border
-              }
-            ]} />
-            <Animated.View style={[
-              styles.progressForeground,
-              {
-                width: progressSize,
-                height: progressSize,
-                borderRadius: progressSize / 2,
-                borderWidth: strokeWidth,
-                borderColor: bubbleColor,
-                opacity: 0.8,
-                // Utiliser strokeDasharray et strokeDashoffset pour l'animation de progression
-                borderTopWidth: progress < 25 ? 0 : strokeWidth,
-                borderRightWidth: progress < 50 ? 0 : strokeWidth,
-                borderBottomWidth: progress < 75 ? 0 : strokeWidth,
-                borderLeftWidth: progress < 100 ? 0 : strokeWidth,
-              }
-            ]} />
-          </View>
-        </Animated.View>
+        <View style={[styles.progressCircle, { width: progressSize, height: progressSize }]}>
+          <Svg width={progressSize} height={progressSize}>
+            {/* Cercle de fond */}
+            <Circle
+              cx={progressSize / 2}
+              cy={progressSize / 2}
+              r={radius}
+              strokeWidth={strokeWidth}
+              stroke={theme.border}
+              fill="transparent"
+            />
+            {/* Cercle de progression animé */}
+            <AnimatedCircle
+              cx={progressSize / 2}
+              cy={progressSize / 2}
+              r={radius}
+              strokeWidth={strokeWidth}
+              stroke={bubbleColor}
+              fill="transparent"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              rotation="-90"
+              origin={`${progressSize / 2}, ${progressSize / 2}`}
+            />
+          </Svg>
+        </View>
       )}
       
       {/* Bulle principale */}
@@ -157,6 +202,9 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
   );
 };
 
+// Composant Circle animé
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
@@ -167,19 +215,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  progressContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressBackground: {
-    position: 'absolute',
-    borderStyle: 'solid',
-  },
-  progressForeground: {
-    position: 'absolute',
-    borderStyle: 'solid',
   },
   bubble: {
     alignItems: 'center',
