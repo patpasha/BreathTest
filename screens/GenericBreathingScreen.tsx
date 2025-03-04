@@ -429,6 +429,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             {/* Les instructions sont maintenant à l'intérieur de la bulle */}
           </View>
 
+          {/* Espace de séparation entre la bulle et le bouton */}
+          <View style={styles.spacer} />
+
           {/* Bouton pour activer/désactiver le guide */}
           {isActive && (
             <TouchableOpacity 
@@ -550,14 +553,22 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     position: 'relative',
   },
+  spacer: {
+    height: 20,
+  },
   guideButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
     alignSelf: 'center',
-    marginTop: 5,
+    marginTop: 10,
     marginBottom: 15,
     borderWidth: 1,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   instructionTitle: {
     fontSize: 24,
