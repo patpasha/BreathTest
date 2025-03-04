@@ -36,22 +36,6 @@ const useSound = (enabled: boolean) => {
   // État pour suivre si les sons sont prêts
   const [soundsReady, setSoundsReady] = useState(false);
 
-  // Chemins des fichiers audio
-  const soundPaths = {
-    inhale: `${FileSystem.documentDirectory}sounds/inhale.mp3`,
-    exhale: `${FileSystem.documentDirectory}sounds/exhale.mp3`,
-    hold: `${FileSystem.documentDirectory}sounds/hold.mp3`,
-    complete: `${FileSystem.documentDirectory}sounds/complete.mp3`
-  };
-
-  // URLs des sons à télécharger (hébergés sur GitHub pour une meilleure compatibilité iOS)
-  const soundUrls = {
-    inhale: 'https://github.com/patpasha/breathing-sounds/raw/main/inhale.mp3',
-    exhale: 'https://github.com/patpasha/breathing-sounds/raw/main/exhale.mp3',
-    hold: 'https://github.com/patpasha/breathing-sounds/raw/main/hold.mp3',
-    complete: 'https://github.com/patpasha/breathing-sounds/raw/main/complete.mp3'
-  };
-
   // Initialiser l'audio
   useEffect(() => {
     const initAudio = async () => {
@@ -70,52 +54,33 @@ const useSound = (enabled: boolean) => {
     initAudio();
   }, []);
 
-  // Télécharger et préparer les sons
+  // Charger les sons depuis les ressources locales
   useEffect(() => {
     let isMounted = true;
     setSoundsReady(false);
 
-    const downloadAndLoadSounds = async () => {
+    const loadSounds = async () => {
       if (!enabled) return;
       
       try {
-        console.log('Début du chargement des sons...');
+        console.log('Début du chargement des sons locaux...');
         
-        // Créer le dossier sounds s'il n'existe pas
-        const soundsDir = `${FileSystem.documentDirectory}sounds`;
-        const dirInfo = await FileSystem.getInfoAsync(soundsDir);
-        if (!dirInfo.exists) {
-          console.log('Création du dossier sounds...');
-          await FileSystem.makeDirectoryAsync(soundsDir, { intermediates: true });
-        }
-
-        // Télécharger et charger chaque son
+        // Charger les sons depuis les ressources locales
+        const soundResources = {
+          inhale: require('../assets/sounds/inhale.mp3'),
+          exhale: require('../assets/sounds/exhale.mp3'),
+          hold: require('../assets/sounds/hold.mp3'),
+          complete: require('../assets/sounds/complete.mp3')
+        };
+        
+        // Charger chaque son
         for (const type of ['inhale', 'exhale', 'hold', 'complete'] as SoundType[]) {
           if (!isMounted) return;
           
-          const filePath = soundPaths[type];
-          const fileInfo = await FileSystem.getInfoAsync(filePath);
-
-          // Forcer le téléchargement pour mettre à jour les sons
           try {
-            console.log(`Téléchargement du son: ${type} depuis ${soundUrls[type]}`);
-            // Supprimer le fichier existant s'il existe
-            if (fileInfo.exists) {
-              await FileSystem.deleteAsync(filePath, { idempotent: true });
-            }
-            // Télécharger le nouveau fichier
-            await FileSystem.downloadAsync(soundUrls[type], filePath);
-            console.log(`Son ${type} téléchargé avec succès à ${filePath}`);
-          } catch (downloadError) {
-            console.error(`Erreur lors du téléchargement du son ${type}:`, downloadError);
-            continue; // Passer au son suivant en cas d'erreur
-          }
-
-          // Charger le son
-          try {
-            console.log(`Chargement du son: ${type} depuis ${filePath}`);
+            console.log(`Chargement du son local: ${type}`);
             const { sound } = await Audio.Sound.createAsync(
-              { uri: filePath },
+              soundResources[type],
               { shouldPlay: false, volume: type === 'hold' ? 0.5 : 0.8 }
             );
             
@@ -140,7 +105,7 @@ const useSound = (enabled: boolean) => {
       }
     };
 
-    downloadAndLoadSounds();
+    loadSounds();
 
     // Nettoyer les sons lors du démontage
     return () => {
@@ -190,8 +155,15 @@ const useSound = (enabled: boolean) => {
         console.log(`Son ${type} non chargé, tentative de rechargement...`);
         // Tenter de recharger le son
         try {
+          const soundResources = {
+            inhale: require('../assets/sounds/inhale.mp3'),
+            exhale: require('../assets/sounds/exhale.mp3'),
+            hold: require('../assets/sounds/hold.mp3'),
+            complete: require('../assets/sounds/complete.mp3')
+          };
+          
           const { sound: newSound } = await Audio.Sound.createAsync(
-            { uri: soundPaths[type] },
+            soundResources[type],
             { shouldPlay: true, volume: type === 'hold' ? 0.5 : 0.8 }
           );
           soundsRef.current[type] = newSound;
