@@ -134,6 +134,12 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
     bubbleColor = theme.accent || '#FFC107';
   }
 
+  // Assurer un bon contraste pour le texte
+  const textColor = 'white';
+  
+  // Icône basée sur l'étape
+  const stepIcon = isInhale ? '↑' : isExhale ? '↓' : '⏸';
+
   // Calcul de la taille du cercle de progression
   const progressSize = size * 1.1; // Légèrement plus grand que la bulle
   const strokeWidth = size * 0.03; // Épaisseur proportionnelle
@@ -194,9 +200,11 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
         ]}
       >
         {/* Texte indicatif au centre de la bulle */}
-        <Text style={styles.bubbleText}>
-          {isInhale ? '↑' : isExhale ? '↓' : '⏸'}
-        </Text>
+        <View style={styles.bubbleIconContainer}>
+          <Text style={[styles.bubbleText, { color: textColor }]}>
+            {stepIcon}
+          </Text>
+        </View>
       </Animated.View>
     </View>
   );
@@ -225,10 +233,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
+  bubbleIconContainer: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+  },
   bubbleText: {
-    color: 'white',
     fontSize: 32,
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   }
 });
 

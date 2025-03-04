@@ -425,7 +425,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               size={CIRCLE_SIZE * 0.8}
             />
             
-            <View style={styles.instructionOverlay}>
+            {/* Instructions séparées de la bulle pour éviter la superposition */}
+            <View style={styles.instructionContainer}>
               <Text style={[styles.stepName, { color: currentStepObj ? getStepColor(currentStepObj.name) : theme.primary }]}>
                 {currentStepObj?.name || ''}
               </Text>
@@ -445,7 +446,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             </TouchableOpacity>
           )}
 
-          <View style={styles.instructionContainer}>
+          <View style={styles.techniqueDescriptionContainer}>
             <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
             <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
               {technique.description}
@@ -535,12 +536,11 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     position: 'relative',
   },
-  instructionOverlay: {
-    position: 'absolute',
+  instructionContainer: {
+    marginTop: 20,
+    paddingHorizontal: 10,
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '80%',
-    zIndex: 10,
   },
   stepName: {
     fontSize: 24,
@@ -561,10 +561,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginBottom: 15,
     borderWidth: 1,
-  },
-  instructionContainer: {
-    paddingHorizontal: 10,
-    marginBottom: 20,
   },
   instructionTitle: {
     fontSize: 22,
@@ -610,6 +606,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  techniqueDescriptionContainer: {
+    paddingHorizontal: 10,
+    marginBottom: 20,
   },
 });
 
