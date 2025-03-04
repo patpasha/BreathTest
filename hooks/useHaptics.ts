@@ -69,6 +69,51 @@ export const useHaptics = (enabled: boolean) => {
     }
   };
 
+  /**
+   * Trigger a pattern of haptic feedback for inhale
+   * Creates a gradual increase in intensity to guide the inhale
+   */
+  const inhalePattern = async () => {
+    if (!enabled) return;
+    
+    // Série de vibrations légères qui s'intensifient pour guider l'inspiration
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTimeout(async () => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 300);
+    setTimeout(async () => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }, 600);
+  };
+
+  /**
+   * Trigger a pattern of haptic feedback for exhale
+   * Creates a gradual decrease in intensity to guide the exhale
+   */
+  const exhalePattern = async () => {
+    if (!enabled) return;
+    
+    // Série de vibrations qui diminuent en intensité pour guider l'expiration
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setTimeout(async () => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 400);
+    setTimeout(async () => {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 800);
+  };
+
+  /**
+   * Trigger a pattern of haptic feedback for hold
+   * Creates a steady rhythm to help maintain the hold
+   */
+  const holdPattern = async () => {
+    if (!enabled) return;
+    
+    // Vibration unique pour indiquer le début de la rétention
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
   return {
     lightImpact,
     mediumImpact,
@@ -77,6 +122,9 @@ export const useHaptics = (enabled: boolean) => {
     warningNotification,
     errorNotification,
     selection,
+    inhalePattern,
+    exhalePattern,
+    holdPattern,
   };
 };
 

@@ -9,7 +9,10 @@ import {
   fixAllBreathingTechniques,
   fixLongDescriptions,
   checkJsonLongDescriptions,
-  resetAndReimportAllTechniques
+  resetAndReimportAllTechniques,
+  getAllBreathingTechniques,
+  verifyBreathingTechniqueRhythm,
+  fixBreathingTechniqueRhythm
 } from '../services/DatabaseService';
 
 const TestNewTechniques = () => {
@@ -17,6 +20,23 @@ const TestNewTechniques = () => {
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [rhythmResults, setRhythmResults] = useState<{
+    techniqueId: string;
+    techniqueName: string;
+    isValid: boolean;
+    recommendations?: string[];
+    details?: {
+      totalCycleDuration: number;
+      recommendedRatio?: string;
+      actualRatio?: string;
+    };
+  }[]>([]);
+  const [correctionResults, setCorrectionResults] = useState<{
+    techniqueId: string;
+    techniqueName: string;
+    success: boolean;
+    message: string;
+  }[]>([]);
 
   const handleAddNewTechniques = async () => {
     try {
@@ -135,65 +155,244 @@ const TestNewTechniques = () => {
     }
   };
 
+  const handleVerifyAllRhythms = async () => {
+    try {
+      setIsLoading(true);
+      const techniques = await getAllBreathingTechniques();
+      const results = [];
+      
+      for (const technique of techniques) {
+        const result = await verifyBreathingTechniqueRhythm(technique.id);
+        results.push({
+          techniqueId: technique.id,
+          techniqueName: technique.title,
+          ...result
+        });
+      }
+      
+      setRhythmResults(results);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la vérification des rythmes:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleFixAllRhythms = async () => {
+    try {
+      setIsLoading(true);
+      const techniques = await getAllBreathingTechniques();
+      const results = [];
+      
+      for (const technique of techniques) {
+        // Vérifier d'abord si le rythme est valide
+        const checkResult = await verifyBreathingTechniqueRhythm(technique.id);
+        
+        if (!checkResult.isValid) {
+          // Si le rythme n'est pas valide, le corriger
+          const fixResult = await fixBreathingTechniqueRhythm(technique.id);
+          results.push({
+            techniqueId: technique.id,
+            techniqueName: technique.title,
+            success: fixResult.success,
+            message: fixResult.message
+          });
+        } else {
+          // Si le rythme est déjà valide, l'indiquer
+          results.push({
+            techniqueId: technique.id,
+            techniqueName: technique.title,
+            success: true,
+            message: 'Le rythme est déjà conforme aux recommandations.'
+          });
+        }
+      }
+      
+      setCorrectionResults(results);
+      setIsLoading(false);
+      
+      // Rafraîchir les résultats de vérification
+      handleVerifyAllRhythms();
+    } catch (error) {
+      console.error('Erreur lors de la correction des rythmes:', error);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>Test des nouvelles fonctionnalités</Text>
         
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.primary }]}
-            onPress={handleAddNewTechniques}
-            disabled={isLoading}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Ajouter nouvelles techniques</Text>
-          </TouchableOpacity>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Test des nouvelles techniques
+          </Text>
           
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.secondary }]}
-            onPress={handleUpdateCategories}
-            disabled={isLoading}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Mettre à jour catégories</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.primary }]}
+              onPress={handleAddNewTechniques}
+              disabled={isLoading}
+            >
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Ajouter nouvelles techniques</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.secondary }]}
+              onPress={handleUpdateCategories}
+              disabled={isLoading}
+            >
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Mettre à jour catégories</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.accent }]}
+              onPress={handleFixAllTechniques}
+              disabled={isLoading}
+            >
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Réparer toutes les techniques</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.success }]}
+              onPress={handleFixLongDescriptions}
+              disabled={isLoading}
+            >
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Réparer descriptions longues</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.error }]}
+              onPress={handleResetAndReimport}
+              disabled={isLoading}
+            >
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Réinitialiser base de données</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.primary }]}
+              onPress={handleVerifyAllRhythms}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>Vérifier tous les rythmes</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.secondary || '#4CAF50' }]}
+              onPress={handleFixAllRhythms}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>Corriger tous les rythmes</Text>
+            </TouchableOpacity>
+          </View>
           
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.accent }]}
-            onPress={handleFixAllTechniques}
-            disabled={isLoading}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Réparer toutes les techniques</Text>
-          </TouchableOpacity>
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.primary} />
+              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Traitement en cours...</Text>
+            </View>
+          )}
           
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.success }]}
-            onPress={handleFixLongDescriptions}
-            disabled={isLoading}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Réparer descriptions longues</Text>
-          </TouchableOpacity>
+          {result && (
+            <View style={[styles.resultContainer, { backgroundColor: theme.surfaceLight }]}>
+              <Text style={[styles.resultText, { color: theme.textPrimary }]}>{result}</Text>
+            </View>
+          )}
           
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.error }]}
-            onPress={handleResetAndReimport}
-            disabled={isLoading}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Réinitialiser base de données</Text>
-          </TouchableOpacity>
+          {rhythmResults.length > 0 && (
+            <View style={styles.resultsContainer}>
+              <Text style={[styles.resultsTitle, { color: theme.textPrimary }]}>
+                Résultats de la vérification des rythmes
+              </Text>
+              
+              {rhythmResults.map((result, index) => (
+                <View 
+                  key={result.techniqueId} 
+                  style={[
+                    styles.resultItem, 
+                    { 
+                      backgroundColor: result.isValid ? theme.success : theme.error,
+                      marginBottom: index === rhythmResults.length - 1 ? 0 : 10
+                    }
+                  ]}
+                >
+                  <Text style={styles.resultTitle}>
+                    {result.techniqueName} ({result.techniqueId})
+                  </Text>
+                  
+                  <Text style={styles.resultStatus}>
+                    {result.isValid ? '✅ Rythme valide' : '❌ Rythme non conforme'}
+                  </Text>
+                  
+                  {result.details && (
+                    <View style={styles.detailsContainer}>
+                      <Text style={styles.detailText}>
+                        Durée totale du cycle: {(result.details.totalCycleDuration / 1000).toFixed(1)}s
+                      </Text>
+                      
+                      {result.details.recommendedRatio && (
+                        <Text style={styles.detailText}>
+                          Ratio recommandé: {result.details.recommendedRatio}
+                        </Text>
+                      )}
+                      
+                      {result.details.actualRatio && (
+                        <Text style={styles.detailText}>
+                          Ratio actuel: {result.details.actualRatio}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                  
+                  {result.recommendations && result.recommendations.length > 0 && (
+                    <View style={styles.recommendationsContainer}>
+                      <Text style={styles.recommendationsTitle}>Recommandations:</Text>
+                      {result.recommendations.map((recommendation, recIndex) => (
+                        <Text key={recIndex} style={styles.recommendationText}>
+                          • {recommendation}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+          
+          {correctionResults.length > 0 && (
+            <View style={styles.resultsContainer}>
+              <Text style={[styles.resultsTitle, { color: theme.textPrimary }]}>
+                Résultats de la correction des rythmes
+              </Text>
+              
+              {correctionResults.map((result, index) => (
+                <View 
+                  key={`correction-${result.techniqueId}`} 
+                  style={[
+                    styles.resultItem, 
+                    { 
+                      backgroundColor: result.success ? theme.success : theme.error,
+                      marginBottom: index === correctionResults.length - 1 ? 0 : 10
+                    }
+                  ]}
+                >
+                  <Text style={styles.resultTitle}>
+                    {result.techniqueName} ({result.techniqueId})
+                  </Text>
+                  
+                  <Text style={styles.resultStatus}>
+                    {result.success ? '✅ Correction réussie' : '❌ Échec de la correction'}
+                  </Text>
+                  
+                  <Text style={styles.resultMessage}>
+                    {result.message}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
-        
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.primary} />
-            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Traitement en cours...</Text>
-          </View>
-        )}
-        
-        {result && (
-          <View style={[styles.resultContainer, { backgroundColor: theme.surfaceLight }]}>
-            <Text style={[styles.resultText, { color: theme.textPrimary }]}>{result}</Text>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -212,6 +411,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   buttonContainer: {
     marginBottom: 20,
@@ -241,6 +448,58 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontSize: 16,
+  },
+  resultsContainer: {
+    marginTop: 20,
+  },
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  resultItem: {
+    padding: 15,
+    borderRadius: 10,
+  },
+  resultTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 5,
+  },
+  resultStatus: {
+    fontSize: 14,
+    color: 'white',
+    marginBottom: 10,
+  },
+  detailsContainer: {
+    marginBottom: 10,
+  },
+  detailText: {
+    fontSize: 14,
+    color: 'white',
+    marginBottom: 3,
+  },
+  recommendationsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 10,
+    borderRadius: 5,
+  },
+  recommendationsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 5,
+  },
+  recommendationText: {
+    fontSize: 13,
+    color: 'white',
+    marginBottom: 3,
+  },
+  resultMessage: {
+    fontSize: 14,
+    color: 'white',
+    marginTop: 5,
   },
 });
 

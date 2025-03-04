@@ -1553,3 +1553,455 @@ export const resetAndReimportAllTechniques = async (): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Vérifie si les étapes de respiration d'une technique respectent bien le rythme recommandé
+ * @param techniqueId L'ID de la technique à vérifier
+ * @returns Un objet contenant le résultat de la vérification et des recommandations si nécessaire
+ */
+export const verifyBreathingTechniqueRhythm = async (techniqueId: string): Promise<{
+  isValid: boolean;
+  recommendations?: string[];
+  details?: {
+    totalCycleDuration: number;
+    recommendedRatio?: string;
+    actualRatio?: string;
+  };
+}> => {
+  try {
+    const technique = await getBreathingTechniqueById(techniqueId);
+    
+    if (!technique || !technique.steps || technique.steps.length === 0) {
+      return {
+        isValid: false,
+        recommendations: ['La technique ne contient pas d\'étapes définies.']
+      };
+    }
+    
+    const steps = technique.steps;
+    let totalCycleDuration = 0;
+    let inhaleTime = 0;
+    let exhaleTime = 0;
+    let holdTime = 0;
+    
+    // Calculer la durée totale du cycle et les durées de chaque type d'étape
+    steps.forEach(step => {
+      totalCycleDuration += step.duration;
+      
+      const name = step.name.toLowerCase();
+      if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+        inhaleTime += step.duration;
+      } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+        exhaleTime += step.duration;
+      } else if (name.includes('pause') || name.includes('hold') || name.includes('retention')) {
+        holdTime += step.duration;
+      }
+    });
+    
+    // Vérifier les ratios recommandés selon le type de technique
+    const recommendations: string[] = [];
+    let isValid = true;
+    let recommendedRatio = '';
+    let actualRatio = '';
+    
+    // Convertir les durées en secondes pour plus de lisibilité
+    const inhaleSeconds = inhaleTime / 1000;
+    const exhaleSeconds = exhaleTime / 1000;
+    const holdSeconds = holdTime / 1000;
+    
+    // Définir le ratio actuel
+    actualRatio = `${inhaleSeconds}:${holdSeconds}:${exhaleSeconds}`;
+    
+    // Vérifier selon le type de technique
+    switch (techniqueId) {
+      case 'coherente':
+        // La respiration cohérente devrait avoir un ratio 1:1 (inspiration:expiration)
+        recommendedRatio = '1:0:1';
+        if (Math.abs(inhaleTime - exhaleTime) > 500) { // Tolérance de 500ms
+          recommendations.push(`Pour la respiration cohérente, l'inspiration et l'expiration devraient avoir la même durée. Actuellement: ${inhaleSeconds}s vs ${exhaleSeconds}s.`);
+          isValid = false;
+        }
+        break;
+        
+      case 'box':
+        // La respiration box devrait avoir un ratio 1:1:1:1 (inspiration:rétention:expiration:rétention)
+        recommendedRatio = '1:1:1:1';
+        const boxSteps = steps.length;
+        if (boxSteps !== 4) {
+          recommendations.push(`La respiration box devrait avoir 4 étapes (inspiration, rétention, expiration, rétention). Actuellement: ${boxSteps} étapes.`);
+          isValid = false;
+        } else {
+          const firstHold = steps[1].duration;
+          const secondHold = steps[3].duration;
+          if (Math.abs(inhaleTime - exhaleTime) > 500 || 
+              Math.abs(inhaleTime - firstHold) > 500 || 
+              Math.abs(exhaleTime - secondHold) > 500) {
+            recommendations.push(`Pour la respiration box, toutes les étapes devraient avoir la même durée. Vérifiez les durées de chaque étape.`);
+            isValid = false;
+          }
+        }
+        break;
+        
+      case '4-7-8':
+        // La respiration 4-7-8 devrait avoir un ratio 4:7:8
+        recommendedRatio = '4:7:8';
+        const ratio478 = [4, 7, 8];
+        const actualRatio478 = [inhaleSeconds, holdSeconds, exhaleSeconds];
+        
+        // Normaliser les ratios pour comparaison
+        const normalizedActual = actualRatio478.map(t => t / actualRatio478[0]);
+        
+        if (Math.abs(normalizedActual[1] - ratio478[1]/ratio478[0]) > 0.2 || 
+            Math.abs(normalizedActual[2] - ratio478[2]/ratio478[0]) > 0.2) {
+          recommendations.push(`Pour la respiration 4-7-8, le ratio devrait être 4:7:8. Actuellement: ${actualRatio478.join(':')}.`);
+          isValid = false;
+        }
+        break;
+        
+      case 'diaphragmatique':
+        // La respiration diaphragmatique devrait avoir une expiration plus longue que l'inspiration
+        if (exhaleTime <= inhaleTime) {
+          recommendations.push(`Pour la respiration diaphragmatique, l'expiration devrait être plus longue que l'inspiration. Actuellement: inspiration ${inhaleSeconds}s, expiration ${exhaleSeconds}s.`);
+          isValid = false;
+        }
+        recommendedRatio = '1:0:1.5-2';
+        break;
+        
+      default:
+        // Pour les autres techniques, vérifier des principes généraux
+        if (exhaleTime < inhaleTime) {
+          recommendations.push(`En général, l'expiration devrait être au moins aussi longue que l'inspiration. Actuellement: inspiration ${inhaleSeconds}s, expiration ${exhaleSeconds}s.`);
+          isValid = false;
+        }
+        
+        // Vérifier si les durées sont trop courtes ou trop longues
+        if (inhaleTime < 2000) {
+          recommendations.push(`L'inspiration semble très courte (${inhaleSeconds}s). Pour la plupart des techniques, une inspiration d'au moins 2-3 secondes est recommandée.`);
+          isValid = false;
+        }
+        
+        if (exhaleTime < 2000) {
+          recommendations.push(`L'expiration semble très courte (${exhaleSeconds}s). Pour la plupart des techniques, une expiration d'au moins 2-3 secondes est recommandée.`);
+          isValid = false;
+        }
+        
+        if (totalCycleDuration < 6000) {
+          recommendations.push(`La durée totale du cycle (${totalCycleDuration/1000}s) semble très courte. Un cycle complet devrait généralement durer au moins 6-8 secondes.`);
+          isValid = false;
+        }
+    }
+    
+    return {
+      isValid,
+      recommendations: recommendations.length > 0 ? recommendations : undefined,
+      details: {
+        totalCycleDuration,
+        recommendedRatio: recommendedRatio || undefined,
+        actualRatio
+      }
+    };
+  } catch (error) {
+    console.error(`Erreur lors de la vérification du rythme de la technique ${techniqueId}:`, error);
+    return {
+      isValid: false,
+      recommendations: [`Une erreur est survenue lors de la vérification: ${error}`]
+    };
+  }
+};
+
+/**
+ * Corrige automatiquement le rythme d'une technique de respiration pour qu'il respecte les recommandations
+ * @param techniqueId L'ID de la technique à corriger
+ * @returns Un objet contenant le résultat de la correction
+ */
+export const fixBreathingTechniqueRhythm = async (techniqueId: string): Promise<{
+  success: boolean;
+  message: string;
+  originalSteps?: BreathingStep[];
+  correctedSteps?: BreathingStep[];
+}> => {
+  try {
+    const technique = await getBreathingTechniqueById(techniqueId);
+    
+    if (!technique || !technique.steps || technique.steps.length === 0) {
+      return {
+        success: false,
+        message: 'La technique ne contient pas d\'étapes définies.'
+      };
+    }
+    
+    // Sauvegarder les étapes originales
+    const originalSteps = [...technique.steps];
+    let correctedSteps: BreathingStep[] = [...originalSteps];
+    
+    // Vérifier le rythme actuel
+    const rhythmCheck = await verifyBreathingTechniqueRhythm(techniqueId);
+    
+    if (rhythmCheck.isValid) {
+      return {
+        success: true,
+        message: 'Le rythme de cette technique est déjà conforme aux recommandations.',
+        originalSteps,
+        correctedSteps
+      };
+    }
+    
+    // Appliquer des corrections spécifiques selon le type de technique
+    switch (techniqueId) {
+      case 'coherente':
+        // Corriger pour avoir un ratio 1:1 (inspiration:expiration)
+        correctedSteps = correctCoherenteRhythm(originalSteps);
+        break;
+        
+      case 'box':
+        // Corriger pour avoir un ratio 1:1:1:1
+        correctedSteps = correctBoxRhythm(originalSteps);
+        break;
+        
+      case '4-7-8':
+        // Corriger pour avoir un ratio 4:7:8
+        correctedSteps = correct478Rhythm(originalSteps);
+        break;
+        
+      case 'diaphragmatique':
+        // Corriger pour avoir une expiration plus longue que l'inspiration
+        correctedSteps = correctDiaphragmaticRhythm(originalSteps);
+        break;
+        
+      default:
+        // Appliquer des corrections générales
+        correctedSteps = correctGeneralRhythm(originalSteps);
+    }
+    
+    // Mettre à jour la technique avec les étapes corrigées
+    technique.steps = correctedSteps;
+    await updateBreathingTechnique(technique);
+    
+    // Invalider le cache
+    invalidateCache();
+    
+    return {
+      success: true,
+      message: 'Le rythme de la technique a été corrigé avec succès.',
+      originalSteps,
+      correctedSteps
+    };
+  } catch (error) {
+    console.error(`Erreur lors de la correction du rythme de la technique ${techniqueId}:`, error);
+    return {
+      success: false,
+      message: `Une erreur est survenue lors de la correction: ${error}`
+    };
+  }
+};
+
+/**
+ * Corrige le rythme de la respiration cohérente pour avoir un ratio 1:1
+ */
+const correctCoherenteRhythm = (steps: BreathingStep[]): BreathingStep[] => {
+  const correctedSteps = [...steps];
+  
+  // Identifier les étapes d'inspiration et d'expiration
+  const inhaleStep = correctedSteps.find(step => 
+    step.name.toLowerCase().includes('inspiration') || 
+    step.name.toLowerCase().includes('inhale')
+  );
+  
+  const exhaleStep = correctedSteps.find(step => 
+    step.name.toLowerCase().includes('expiration') || 
+    step.name.toLowerCase().includes('exhale')
+  );
+  
+  if (inhaleStep && exhaleStep) {
+    // Calculer la durée moyenne
+    const avgDuration = Math.round((inhaleStep.duration + exhaleStep.duration) / 2);
+    
+    // Définir la même durée pour les deux étapes
+    inhaleStep.duration = avgDuration;
+    exhaleStep.duration = avgDuration;
+  }
+  
+  return correctedSteps;
+};
+
+/**
+ * Corrige le rythme de la respiration box pour avoir un ratio 1:1:1:1
+ */
+const correctBoxRhythm = (steps: BreathingStep[]): BreathingStep[] => {
+  // Si le nombre d'étapes n'est pas 4, restructurer complètement
+  if (steps.length !== 4) {
+    return [
+      {
+        name: "Inspiration",
+        duration: 4000,
+        instruction: "Inspirez lentement par le nez"
+      },
+      {
+        name: "Rétention",
+        duration: 4000,
+        instruction: "Retenez votre souffle, poumons pleins"
+      },
+      {
+        name: "Expiration",
+        duration: 4000,
+        instruction: "Expirez lentement par la bouche"
+      },
+      {
+        name: "Pause",
+        duration: 4000,
+        instruction: "Retenez votre souffle, poumons vides"
+      }
+    ];
+  }
+  
+  // Si le nombre d'étapes est correct, égaliser les durées
+  const correctedSteps = [...steps];
+  
+  // Calculer la durée moyenne
+  const totalDuration = correctedSteps.reduce((sum, step) => sum + step.duration, 0);
+  const avgDuration = Math.round(totalDuration / 4);
+  
+  // Appliquer la même durée à toutes les étapes
+  correctedSteps.forEach(step => {
+    step.duration = avgDuration;
+  });
+  
+  return correctedSteps;
+};
+
+/**
+ * Corrige le rythme de la respiration 4-7-8 pour avoir le bon ratio
+ */
+const correct478Rhythm = (steps: BreathingStep[]): BreathingStep[] => {
+  // Identifier les étapes
+  const inhaleStep = steps.find(step => 
+    step.name.toLowerCase().includes('inspiration') || 
+    step.name.toLowerCase().includes('inhale')
+  );
+  
+  const holdStep = steps.find(step => 
+    step.name.toLowerCase().includes('rétention') || 
+    step.name.toLowerCase().includes('hold')
+  );
+  
+  const exhaleStep = steps.find(step => 
+    step.name.toLowerCase().includes('expiration') || 
+    step.name.toLowerCase().includes('exhale')
+  );
+  
+  // Si toutes les étapes sont identifiées, appliquer le ratio 4:7:8
+  if (inhaleStep && holdStep && exhaleStep) {
+    // Définir la durée de base (1 unité = 500ms)
+    const baseUnit = 500;
+    
+    inhaleStep.duration = 4 * baseUnit; // 2 secondes
+    holdStep.duration = 7 * baseUnit;   // 3.5 secondes
+    exhaleStep.duration = 8 * baseUnit; // 4 secondes
+    
+    return steps;
+  }
+  
+  // Si les étapes ne sont pas correctement identifiées, créer de nouvelles étapes
+  return [
+    {
+      name: "Inspiration",
+      duration: 2000, // 4 unités de 500ms
+      instruction: "Inspirez lentement par le nez"
+    },
+    {
+      name: "Rétention",
+      duration: 3500, // 7 unités de 500ms
+      instruction: "Retenez votre souffle"
+    },
+    {
+      name: "Expiration",
+      duration: 4000, // 8 unités de 500ms
+      instruction: "Expirez lentement par la bouche"
+    }
+  ];
+};
+
+/**
+ * Corrige le rythme de la respiration diaphragmatique
+ */
+const correctDiaphragmaticRhythm = (steps: BreathingStep[]): BreathingStep[] => {
+  // Identifier les étapes d'inspiration et d'expiration
+  const inhaleStep = steps.find(step => 
+    step.name.toLowerCase().includes('inspiration') || 
+    step.name.toLowerCase().includes('inhale')
+  );
+  
+  const exhaleStep = steps.find(step => 
+    step.name.toLowerCase().includes('expiration') || 
+    step.name.toLowerCase().includes('exhale')
+  );
+  
+  if (inhaleStep && exhaleStep) {
+    // S'assurer que l'expiration est plus longue que l'inspiration (ratio 1:1.5)
+    if (exhaleStep.duration <= inhaleStep.duration) {
+      exhaleStep.duration = Math.round(inhaleStep.duration * 1.5);
+    }
+    
+    return steps;
+  }
+  
+  // Si les étapes ne sont pas correctement identifiées, créer de nouvelles étapes
+  return [
+    {
+      name: "Inspiration",
+      duration: 4000,
+      instruction: "Inspirez lentement par le nez en gonflant le ventre"
+    },
+    {
+      name: "Pause",
+      duration: 1000,
+      instruction: "Pause brève"
+    },
+    {
+      name: "Expiration",
+      duration: 6000,
+      instruction: "Expirez lentement par la bouche en rentrant le ventre"
+    }
+  ];
+};
+
+/**
+ * Applique des corrections générales au rythme d'une technique de respiration
+ */
+const correctGeneralRhythm = (steps: BreathingStep[]): BreathingStep[] => {
+  const correctedSteps = [...steps];
+  
+  // Identifier les étapes d'inspiration et d'expiration
+  const inhaleSteps = correctedSteps.filter(step => 
+    step.name.toLowerCase().includes('inspiration') || 
+    step.name.toLowerCase().includes('inhale')
+  );
+  
+  const exhaleSteps = correctedSteps.filter(step => 
+    step.name.toLowerCase().includes('expiration') || 
+    step.name.toLowerCase().includes('exhale')
+  );
+  
+  // Appliquer des corrections générales
+  
+  // 1. S'assurer que les inspirations durent au moins 2 secondes
+  inhaleSteps.forEach(step => {
+    if (step.duration < 2000) {
+      step.duration = 2000;
+    }
+  });
+  
+  // 2. S'assurer que les expirations durent au moins 2 secondes et sont au moins aussi longues que les inspirations
+  if (inhaleSteps.length > 0 && exhaleSteps.length > 0) {
+    const totalInhaleDuration = inhaleSteps.reduce((sum, step) => sum + step.duration, 0);
+    const avgInhaleDuration = totalInhaleDuration / inhaleSteps.length;
+    
+    exhaleSteps.forEach(step => {
+      if (step.duration < 2000 || step.duration < avgInhaleDuration) {
+        step.duration = Math.max(2000, Math.round(avgInhaleDuration * 1.2));
+      }
+    });
+  }
+  
+  return correctedSteps;
+};
