@@ -6,9 +6,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 // Importer uniquement les icônes nécessaires
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions } from 'react-native';
+import { useTheme, darkTheme } from './theme/ThemeContext';
+import { SettingsProvider } from './contexts/SettingsContext';
+import { StatsProvider } from './contexts/StatsContext';
+import { ThemeProvider } from './theme/ThemeContext';
+import { addNewBreathingTechniques, updateBreathingTechniqueCategories } from './services/DatabaseService';
+import { initDatabase } from './services/DatabaseService';
 
-// Importations immédiates pour les écrans principaux
+// Import des écrans
 import HomeScreen from './screens/HomeScreen';
 import SplashScreen from './screens/SplashScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -16,11 +22,6 @@ import InformationScreen from './screens/InformationScreen';
 import StatsScreen from './screens/StatsScreen';
 import TestNewTechniques from './screens/TestNewTechniques';
 import ContactDeveloperScreen from './screens/ContactDeveloperScreen';
-import { SettingsProvider } from './contexts/SettingsContext';
-import { StatsProvider } from './contexts/StatsContext';
-import { ThemeProvider, useTheme, darkTheme } from './theme/ThemeContext';
-import { addNewBreathingTechniques, updateBreathingTechniqueCategories } from './services/DatabaseService';
-import { initDatabase } from './services/DatabaseService';
 
 // Chargement paresseux (lazy loading) pour l'écran de respiration générique
 const GenericBreathingScreen = lazy(() => import('./screens/GenericBreathingScreen'));
@@ -113,11 +114,15 @@ const MainTabNavigator = () => {
           backgroundColor: theme.surface,
           borderTopWidth: 1,
           borderTopColor: theme.border,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         headerStyle: {
-          backgroundColor: theme.primary,
+          backgroundColor: theme.background,
+          elevation: 0,
+          shadowOpacity: 0,
         },
-        headerTintColor: theme.textLight,
+        headerTintColor: theme.textPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
@@ -171,6 +176,21 @@ const AppNavigator = () => {
     };
   };
   
+  // Configuration des animations de transition
+  const fadeAnimation = {
+    animation: 'fade',
+    config: {
+      duration: 250,
+    }
+  };
+  
+  const slideAnimation = {
+    animation: 'slide_from_right',
+    config: {
+      duration: 300,
+    }
+  };
+  
   return (
     <NavigationContainer>
       <StatusBar style={theme === darkTheme ? "light" : "dark"} />
@@ -178,27 +198,40 @@ const AppNavigator = () => {
         initialRouteName="Splash"
         screenOptions={{
           headerStyle: {
-            backgroundColor: 'transparent',
+            backgroundColor: theme.background,
           },
           headerShadowVisible: false,
           headerTintColor: theme.textPrimary,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-          headerTransparent: true,
+          headerTransparent: false,
           headerTitleAlign: 'center',
+          animation: 'slide_from_right',
+          animationDuration: 300,
+          contentStyle: {
+            backgroundColor: theme.background,
+          },
         }}
       >
         {/* Écrans principaux */}
         <Stack.Screen 
           name="Splash" 
           component={SplashScreen} 
-          options={{ headerShown: false }} 
+          options={{ 
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: 250,
+          }} 
         />
         <Stack.Screen 
           name="MainTabs" 
           component={MainTabNavigator} 
-          options={{ headerShown: false }} 
+          options={{ 
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: 250,
+          }} 
         />
         <Stack.Screen 
           name="Info" 
