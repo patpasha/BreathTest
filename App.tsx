@@ -178,12 +178,15 @@ const AppNavigator = () => {
         initialRouteName="Splash"
         screenOptions={{
           headerStyle: {
-            backgroundColor: theme.primary,
+            backgroundColor: 'transparent',
           },
-          headerTintColor: theme.textLight,
+          headerShadowVisible: false,
+          headerTintColor: theme.textPrimary,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
+          headerTransparent: true,
+          headerTitleAlign: 'center',
         }}
       >
         {/* Écrans principaux */}
@@ -320,7 +323,7 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="TestNewTechniques" 
           component={TestNewTechniques}
-          options={{ title: 'Test des nouvelles techniques' }}
+          options={{ title: 'Maintenance' }}
         />
         
         <Stack.Screen 

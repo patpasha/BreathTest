@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
+import { View, StyleSheet, Animated, Easing, Text, useColorScheme } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop, Filter, FeGaussianBlur, FeOffset, FeComposite, FeColorMatrix, FeMerge, FeMergeNode, FeBlend } from 'react-native-svg';
 
 interface BreathingBubbleProps {
   isActive: boolean;
@@ -12,6 +12,9 @@ interface BreathingBubbleProps {
 
 const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: BreathingBubbleProps) => {
   const theme = useTheme();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+  
   const animatedValue = useRef(new Animated.Value(0.5)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [currentAnimation, setCurrentAnimation] = useState<Animated.CompositeAnimation | null>(null);
@@ -134,6 +137,14 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
     bubbleColor = theme.accent || '#FFC107';
   }
 
+  // Couleurs pour le cercle de progression avec meilleur contraste en mode sombre
+  const progressBackgroundColor = isDarkMode ? '#2d3748' : theme.border;
+  const progressColor = bubbleColor;
+  
+  // Identifiants pour les gradients et filtres
+  const progressGradientId = `progressGradient-${bubbleColor.replace(/#/g, '')}`;
+  const glowFilterId = `glowFilter-${bubbleColor.replace(/#/g, '')}`;
+  
   // Assurer un bon contraste pour le texte
   const textColor = 'white';
   
@@ -142,7 +153,7 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
 
   // Calcul de la taille du cercle de progression
   const progressSize = size * 1.1; // Légèrement plus grand que la bulle
-  const strokeWidth = size * 0.03; // Épaisseur proportionnelle
+  const strokeWidth = size * 0.04; // Épaisseur augmentée pour meilleure visibilité
   const radius = (progressSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -158,28 +169,56 @@ const BreathingBubble = ({ isActive, currentStep, progress, size = 200 }: Breath
       {isActive && (
         <View style={[styles.progressCircle, { width: progressSize, height: progressSize }]}>
           <Svg width={progressSize} height={progressSize}>
-            {/* Cercle de fond */}
+            <Defs>
+              {/* Gradient pour le cercle de progression */}
+              <LinearGradient id={progressGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                <Stop offset="0%" stopColor={progressColor} stopOpacity="1" />
+                <Stop offset="100%" stopColor={progressColor} stopOpacity="0.7" />
+              </LinearGradient>
+              
+              {/* Filtre pour l'effet de lueur (glow) */}
+              <Filter id={glowFilterId} x="-20%" y="-20%" width="140%" height="140%">
+                <FeGaussianBlur stdDeviation="3" result="blur" />
+                <FeColorMatrix
+                  in="blur"
+                  type="matrix"
+                  values="0 0 0 0 0
+                          0 0 0 0 0
+                          0 0 0 0 0
+                          0 0 0 1 0"
+                  result="glow"
+                />
+                <FeBlend in="SourceGraphic" in2="glow" mode="normal" />
+              </Filter>
+            </Defs>
+            
+            {/* Cercle de fond avec effet de lueur en mode sombre */}
             <Circle
               cx={progressSize / 2}
               cy={progressSize / 2}
               r={radius}
               strokeWidth={strokeWidth}
-              stroke={theme.border}
+              stroke={progressBackgroundColor}
               fill="transparent"
+              opacity={isDarkMode ? 0.5 : 0.3}
             />
-            {/* Cercle de progression animé */}
+            
+            {/* Cercle de progression animé avec effet de lueur */}
             <AnimatedCircle
               cx={progressSize / 2}
               cy={progressSize / 2}
               r={radius}
               strokeWidth={strokeWidth}
-              stroke={bubbleColor}
+              stroke={`url(#${progressGradientId})`}
               fill="transparent"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
               strokeLinecap="round"
               rotation="-90"
               origin={`${progressSize / 2}, ${progressSize / 2}`}
+              opacity={1}
+              strokeOpacity={1}
+              filter={isDarkMode ? `url(#${glowFilterId})` : undefined}
             />
           </Svg>
         </View>
