@@ -415,8 +415,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           <View style={styles.headerContainer}>
             <View style={styles.timerContainer}>
               <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
-            </View>
-            <View style={styles.cyclesContainer}>
               <Text style={[styles.cyclesText, { color: theme.textSecondary }]}>Cycle: {currentCycle}</Text>
             </View>
           </View>
@@ -539,28 +537,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, // Marge horizontale uniforme
   },
   headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 20,
     marginBottom: 10,
     paddingHorizontal: 16,
   },
   timerContainer: {
-    flex: 1,
     alignItems: 'center',
-  },
-  cyclesContainer: {
-    position: 'absolute',
-    right: 16,
-    top: 0,
   },
   timerText: {
     fontSize: 48,
     fontWeight: 'bold',
+    marginBottom: 5,
   },
   cyclesText: {
     fontSize: 18,
+    textAlign: 'center',
   },
   breathingSection: {
     marginTop: 20,
