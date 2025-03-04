@@ -446,27 +446,30 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             </TouchableOpacity>
           )}
 
-          <View style={styles.techniqueDescriptionContainer}>
-            <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
-            <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
-              {technique.description}
-            </Text>
-            
-            {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => (
-              <Text 
-                key={index} 
-                style={[
-                  styles.instructionText, 
-                  { 
-                    color: paragraph.startsWith('⚠️ ATTENTION') ? theme.error : theme.textSecondary,
-                    fontWeight: paragraph.startsWith('⚠️ ATTENTION') ? 'bold' : 'normal'
-                  }
-                ]}
-              >
-                {paragraph}
+          {/* Guide de la technique - affiché uniquement si showGuide est true */}
+          {(!isActive || showGuide) && (
+            <View style={styles.techniqueDescriptionContainer}>
+              <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
+              <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
+                {technique.description}
               </Text>
-            ))}
-          </View>
+              
+              {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => (
+                <Text 
+                  key={index} 
+                  style={[
+                    styles.instructionText, 
+                    { 
+                      color: paragraph.startsWith('⚠️ ATTENTION') ? theme.error : theme.textSecondary,
+                      fontWeight: paragraph.startsWith('⚠️ ATTENTION') ? 'bold' : 'normal'
+                    }
+                  ]}
+                >
+                  {paragraph}
+                </Text>
+              ))}
+            </View>
+          )}
 
           {!isActive && (
             <View style={styles.durationSelectorContainer}>
