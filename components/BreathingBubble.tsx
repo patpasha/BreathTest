@@ -20,10 +20,16 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   const [prevStep, setPrevStep] = useState(currentStep);
   
   // Utilisation de useRef pour conserver les valeurs entre les rendus
-  const animatedValue = useRef(new Animated.Value(progress)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(0.8)).current;
   const blurValue = useRef(new Animated.Value(0)).current;
+  
+  // Référence pour la progression circulaire
+  const progressRef = useRef({
+    value: 0,
+    animation: null as Animated.CompositeAnimation | null
+  });
+  const progressAnim = useRef(new Animated.Value(0)).current;
   
   // Déterminer la couleur en fonction de l'étape
   const getStepColor = (stepName: string) => {
@@ -54,8 +60,30 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   useEffect(() => {
     if (currentStep !== prevStep) {
       setPrevStep(currentStep);
+      
+      // Réinitialiser la progression au changement d'étape
+      if (progressRef.current.animation) {
+        progressRef.current.animation.stop();
+      }
+      
+      progressRef.current.value = 0;
+      progressAnim.setValue(0);
+      
+      // Démarrer une nouvelle animation de progression
+      if (isActive) {
+        const duration = getStepDuration(currentStep);
+        const animation = Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: duration,
+          easing: Easing.linear,
+          useNativeDriver: false
+        });
+        
+        progressRef.current.animation = animation;
+        animation.start();
+      }
     }
-  }, [currentStep, prevStep]);
+  }, [currentStep, prevStep, isActive]);
 
   // Animation basée sur l'étape actuelle
   useEffect(() => {
@@ -78,6 +106,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           useNativeDriver: false,
         })
       ]).start();
+      
+      // Arrêter l'animation de progression
+      if (progressRef.current.animation) {
+        progressRef.current.animation.stop();
+      }
+      
       return;
     }
 
@@ -162,6 +196,15 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     }
   }, [currentStep, isActive]);
 
+  // Effet pour gérer la progression externe
+  useEffect(() => {
+    // Ne mettre à jour la progression que si elle est contrôlée de l'extérieur
+    // et qu'il n'y a pas d'animation en cours
+    if (!isActive || !progressRef.current.animation) {
+      progressAnim.setValue(progress);
+    }
+  }, [progress, isActive]);
+
   // Estimer la durée de l'étape en fonction du nom
   const getStepDuration = (stepName: string): number => {
     // Recherche d'un nombre dans le nom de l'étape (ex: "Inspiration 4s")
@@ -181,16 +224,6 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     }
   };
 
-  // Animation de progression
-  useEffect(() => {
-    Animated.timing(animatedValue, {
-      toValue: progress,
-      duration: 100,
-      useNativeDriver: false,
-      easing: Easing.linear,
-    }).start();
-  }, [progress]);
-
   // Couleur actuelle de l'étape
   const currentColor = getStepColor(currentStep);
   
@@ -209,6 +242,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   const blurRadius = blurValue.interpolate({
     inputRange: [0, 2],
     outputRange: [0, 8],
+  });
+  
+  // Calcul du strokeDashoffset basé sur la progression
+  const strokeDashoffset = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, 0],
   });
   
   return (
@@ -252,10 +291,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             stroke={currentColor}
             fill="transparent"
             strokeDasharray={`${circumference}`}
-            strokeDashoffset={animatedValue.interpolate({
-              inputRange: [0, 1],
-              outputRange: [circumference, 0],
-            })}
+            strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             rotation="-90"
             origin={`${circleSize / 2}, ${circleSize / 2}`}
