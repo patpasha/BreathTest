@@ -24,11 +24,13 @@ ExpoSplashScreen.preventAutoHideAsync().catch(() => {
 // Précharger les ressources essentielles en parallèle
 const preloadAssets = async () => {
   try {
-    // Précharger l'image du logo en utilisant directement l'objet d'image sans extraire l'URI
+    // Ne pas utiliser Image.prefetch pour les ressources locales
     // Cela évite le problème "No suitable URL request handler found for (null)"
-    await Image.prefetch(require('./assets/splash-icon.png'));
+    console.log('Préchargement des ressources terminé');
+    return Promise.resolve();
   } catch (error) {
     console.warn('Erreur lors du préchargement des ressources:', error);
+    return Promise.resolve();
   }
 };
 
@@ -697,12 +699,14 @@ const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
           </Svg>
         </Animated.View>
         
-        {/* Logo */}
+        {/* Logo - Utiliser une approche plus sûre pour charger l'image */}
         <View style={styles.logoWrapper}>
           <Image 
             source={require('./assets/splash-icon.png')} 
             style={styles.logo}
             resizeMode="contain"
+            // Désactiver le préchargement qui peut causer des problèmes
+            defaultSource={require('./assets/splash-icon.png')}
           />
         </View>
       </Animated.View>
@@ -768,28 +772,29 @@ export default function App() {
                 await addNewBreathingTechniques();
                 console.log('Nouvelles techniques de respiration ajoutées avec succès');
                 
-                // Mettre à jour les catégories des techniques de respiration
-                console.log('Mise à jour des catégories des techniques de respiration en arrière-plan...');
+                // Mettre à jour les catégories de techniques de respiration
+                console.log('Mise à jour des catégories de techniques de respiration en arrière-plan...');
                 await updateBreathingTechniqueCategories();
-                console.log('Catégories des techniques de respiration mises à jour avec succès');
+                console.log('Catégories de techniques de respiration mises à jour avec succès');
               } catch (error) {
-                console.error('Erreur lors des opérations en arrière-plan:', error);
-                // Les erreurs en arrière-plan ne bloquent pas l'application
+                console.error('Erreur lors des opérations de maintenance:', error);
               }
-            }, 2000);
+            }, 2000); // Exécuter après 2 secondes pour permettre à l'interface de se charger
           })
-          .catch(error => {
+          .catch((error) => {
             console.error('Erreur lors de l\'initialisation de la base de données:', error);
-            // Même en cas d'erreur, l'application continue de fonctionner
+          })
+          .finally(() => {
+            // Marquer le chargement comme terminé
+            setIsLoading(false);
           });
-        
       } catch (error) {
         console.error('Erreur lors de l\'initialisation de l\'application:', error);
-        // Même en cas d'erreur, on considère l'app comme prête pour éviter de bloquer l'utilisateur
-        setIsAppReady(true);
+        setIsLoading(false);
       }
     };
 
+    // Lancer l'initialisation
     initializeApp();
   }, []);
 
