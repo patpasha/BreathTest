@@ -158,6 +158,7 @@ const TestNewTechniques = () => {
   const handleVerifyAllRhythms = async () => {
     try {
       setIsLoading(true);
+      setRhythmResults([]);
       const techniques = await getAllBreathingTechniques();
       const results = [];
       
@@ -174,6 +175,7 @@ const TestNewTechniques = () => {
       setIsLoading(false);
     } catch (error) {
       console.error('Erreur lors de la vérification des rythmes:', error);
+      setResult(`Erreur: ${error instanceof Error ? error.message : String(error)}`);
       setIsLoading(false);
     }
   };
@@ -181,6 +183,7 @@ const TestNewTechniques = () => {
   const handleFixAllRhythms = async () => {
     try {
       setIsLoading(true);
+      setCorrectionResults([]);
       const techniques = await getAllBreathingTechniques();
       const results = [];
       
@@ -215,6 +218,7 @@ const TestNewTechniques = () => {
       handleVerifyAllRhythms();
     } catch (error) {
       console.error('Erreur lors de la correction des rythmes:', error);
+      setResult(`Erreur: ${error instanceof Error ? error.message : String(error)}`);
       setIsLoading(false);
     }
   };
@@ -222,11 +226,11 @@ const TestNewTechniques = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Test des nouvelles fonctionnalités</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Maintenance des techniques de respiration</Text>
         
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-            Test des nouvelles techniques
+            Gestion des techniques
           </Text>
           
           <View style={styles.buttonContainer}>
@@ -275,15 +279,15 @@ const TestNewTechniques = () => {
               onPress={handleVerifyAllRhythms}
               disabled={isLoading}
             >
-              <Text style={styles.buttonText}>Vérifier tous les rythmes</Text>
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Vérifier tous les rythmes</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: theme.secondary || '#4CAF50' }]}
+              style={[styles.button, { backgroundColor: theme.secondary }]}
               onPress={handleFixAllRhythms}
               disabled={isLoading}
             >
-              <Text style={styles.buttonText}>Corriger tous les rythmes</Text>
+              <Text style={[styles.buttonText, { color: theme.textLight }]}>Corriger tous les rythmes</Text>
             </TouchableOpacity>
           </View>
           
@@ -317,28 +321,28 @@ const TestNewTechniques = () => {
                     }
                   ]}
                 >
-                  <Text style={styles.resultTitle}>
+                  <Text style={[styles.resultTitle, { color: 'white' }]}>
                     {result.techniqueName} ({result.techniqueId})
                   </Text>
                   
-                  <Text style={styles.resultStatus}>
+                  <Text style={[styles.resultStatus, { color: 'white' }]}>
                     {result.isValid ? '✅ Rythme valide' : '❌ Rythme non conforme'}
                   </Text>
                   
                   {result.details && (
                     <View style={styles.detailsContainer}>
-                      <Text style={styles.detailText}>
+                      <Text style={[styles.detailText, { color: 'white' }]}>
                         Durée totale du cycle: {(result.details.totalCycleDuration / 1000).toFixed(1)}s
                       </Text>
                       
                       {result.details.recommendedRatio && (
-                        <Text style={styles.detailText}>
+                        <Text style={[styles.detailText, { color: 'white' }]}>
                           Ratio recommandé: {result.details.recommendedRatio}
                         </Text>
                       )}
                       
                       {result.details.actualRatio && (
-                        <Text style={styles.detailText}>
+                        <Text style={[styles.detailText, { color: 'white' }]}>
                           Ratio actuel: {result.details.actualRatio}
                         </Text>
                       )}
@@ -347,9 +351,9 @@ const TestNewTechniques = () => {
                   
                   {result.recommendations && result.recommendations.length > 0 && (
                     <View style={styles.recommendationsContainer}>
-                      <Text style={styles.recommendationsTitle}>Recommandations:</Text>
+                      <Text style={[styles.recommendationsTitle, { color: 'white' }]}>Recommandations:</Text>
                       {result.recommendations.map((recommendation, recIndex) => (
-                        <Text key={recIndex} style={styles.recommendationText}>
+                        <Text key={recIndex} style={[styles.recommendationText, { color: 'white' }]}>
                           • {recommendation}
                         </Text>
                       ))}
@@ -377,15 +381,15 @@ const TestNewTechniques = () => {
                     }
                   ]}
                 >
-                  <Text style={styles.resultTitle}>
+                  <Text style={[styles.resultTitle, { color: 'white' }]}>
                     {result.techniqueName} ({result.techniqueId})
                   </Text>
                   
-                  <Text style={styles.resultStatus}>
+                  <Text style={[styles.resultStatus, { color: 'white' }]}>
                     {result.success ? '✅ Correction réussie' : '❌ Échec de la correction'}
                   </Text>
                   
-                  <Text style={styles.resultMessage}>
+                  <Text style={[styles.resultMessage, { color: 'white' }]}>
                     {result.message}
                   </Text>
                 </View>
@@ -464,12 +468,10 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 5,
   },
   resultStatus: {
     fontSize: 14,
-    color: 'white',
     marginBottom: 10,
   },
   detailsContainer: {
@@ -477,7 +479,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: 'white',
     marginBottom: 3,
   },
   recommendationsContainer: {
@@ -488,17 +489,14 @@ const styles = StyleSheet.create({
   recommendationsTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: 'white',
     marginBottom: 5,
   },
   recommendationText: {
     fontSize: 13,
-    color: 'white',
     marginBottom: 3,
   },
   resultMessage: {
     fontSize: 14,
-    color: 'white',
     marginTop: 5,
   },
 });
