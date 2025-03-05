@@ -742,44 +742,44 @@ export default function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        // Marquer l'application comme prête immédiatement pour afficher le splash screen
+        // Cela permet d'afficher l'interface utilisateur plus rapidement
+        setIsAppReady(true);
+        
         // Démarrer l'initialisation de la base de données en arrière-plan
         console.log('Initialisation de la base de données en arrière-plan...');
-        
-        // Marquer l'application comme prête immédiatement pour afficher le splash screen
-        setIsAppReady(true);
         
         // Initialiser la base de données en arrière-plan
         initDatabase()
           .then(() => {
             console.log('Base de données initialisée avec succès');
             
-            // Exécuter les opérations non critiques en arrière-plan après le chargement de l'interface
-            // Utiliser un délai plus court pour les opérations de maintenance
+            // Marquer le chargement comme terminé
+            setIsLoading(false);
+            
+            // Les opérations de maintenance sont désormais optionnelles et peuvent être
+            // exécutées en arrière-plan après que l'application soit complètement chargée
+            // Elles sont commentées car elles ne sont plus nécessaires pour la plupart des utilisateurs
+            /*
             setTimeout(async () => {
               try {
                 // Ajouter les nouvelles techniques de respiration à la base de données
-                // Cette opération n'est pas critique et peut être exécutée en arrière-plan
-                // ou même supprimée si l'application est stable
                 console.log('Ajout des nouvelles techniques de respiration en arrière-plan...');
                 await addNewBreathingTechniques();
                 console.log('Nouvelles techniques de respiration ajoutées avec succès');
                 
                 // Mettre à jour les catégories de techniques de respiration
-                // Cette opération n'est pas critique et peut être exécutée en arrière-plan
-                // ou même supprimée si l'application est stable
                 console.log('Mise à jour des catégories de techniques de respiration en arrière-plan...');
                 await updateBreathingTechniqueCategories();
                 console.log('Catégories de techniques de respiration mises à jour avec succès');
               } catch (error) {
                 console.error('Erreur lors des opérations de maintenance:', error);
               }
-            }, 1000); // Réduire le délai de 2000ms à 1000ms
+            }, 1000);
+            */
           })
           .catch((error) => {
             console.error('Erreur lors de l\'initialisation de la base de données:', error);
-          })
-          .finally(() => {
-            // Marquer le chargement comme terminé
             setIsLoading(false);
           });
       } catch (error) {

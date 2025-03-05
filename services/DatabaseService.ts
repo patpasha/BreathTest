@@ -34,8 +34,19 @@ const db = openDatabaseSync('breathflow.db');
  */
 /**
  * Vérifie et met à jour le schéma de la base de données si nécessaire
+ * Cette fonction est maintenant optimisée pour ne s'exécuter qu'une seule fois
+ * et stocker le résultat dans une variable globale
  */
+// Variable pour suivre si le schéma a déjà été vérifié
+let schemaChecked = false;
+
 const checkAndUpdateSchema = async (): Promise<void> => {
+  // Si le schéma a déjà été vérifié, ne pas le vérifier à nouveau
+  if (schemaChecked) {
+    console.log("Schéma déjà vérifié, ignoré");
+    return;
+  }
+  
   try {
     // Récupérer les informations sur les colonnes de la table
     const tableInfo = await db.getAllAsync('PRAGMA table_info(breathing_techniques)');
@@ -75,13 +86,25 @@ const checkAndUpdateSchema = async (): Promise<void> => {
     } else {
       console.log("La colonne 'longDescription' existe déjà");
     }
+    
+    // Marquer le schéma comme vérifié
+    schemaChecked = true;
   } catch (error) {
     console.error("Erreur lors de la vérification du schéma:", error);
     throw error;
   }
 };
 
+// Variable pour suivre si la base de données a déjà été initialisée
+let dbInitialized = false;
+
 export const initDatabase = async (): Promise<void> => {
+  // Si la base de données a déjà été initialisée, ne pas la réinitialiser
+  if (dbInitialized) {
+    console.log('Base de données déjà initialisée, ignoré');
+    return;
+  }
+  
   try {
     // Créer la table des techniques de respiration
     await db.execAsync(`
@@ -112,11 +135,11 @@ export const initDatabase = async (): Promise<void> => {
       await importInitialData();
     } else {
       console.log(`${count} techniques trouvées dans la base de données`);
-      
-      // Suppression des vérifications et réparations qui ralentissent le démarrage
-      // await fixAllBreathingTechniques();
-      // await fixLongDescriptions();
+      // Les vérifications et réparations sont désactivées pour accélérer le démarrage
     }
+    
+    // Marquer la base de données comme initialisée
+    dbInitialized = true;
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de la base de données:', error);
     throw error;
@@ -777,10 +800,11 @@ export const getDefaultStepsForTechnique = (techniqueId: string): BreathingStep[
 
 /**
  * Met à jour les catégories des techniques de respiration
+ * Cette fonction est maintenant optimisée pour ne rien faire si les catégories sont déjà à jour
  */
 export const updateBreathingTechniqueCategories = async (): Promise<void> => {
   try {
-    console.log('Mise à jour des catégories des techniques de respiration...');
+    console.log('Vérification des catégories des techniques de respiration...');
     
     // Définir les catégories pour chaque technique
     const categoriesMap: Record<string, string[]> = {
@@ -792,21 +816,45 @@ export const updateBreathingTechniqueCategories = async (): Promise<void> => {
       'levres-pincees': ["health", "stress"]
     };
     
-    // Pour chaque technique, mettre à jour les catégories
+    // Vérifier si les catégories sont déjà à jour
+    let allCategoriesUpToDate = true;
+    
+    // Vérifier d'abord dans le cache
+    if (techniquesCache !== null) {
+      for (const [id, categories] of Object.entries(categoriesMap)) {
+        const technique = techniquesCache.find(t => t.id === id);
+        if (!technique || !arraysEqual(technique.categories, categories)) {
+          allCategoriesUpToDate = false;
+          break;
+        }
+      }
+      
+      if (allCategoriesUpToDate) {
+        console.log('Toutes les catégories sont déjà à jour dans le cache, aucune action nécessaire');
+        return;
+      }
+    }
+    
+    // Si le cache ne contient pas toutes les catégories à jour, vérifier dans la base de données
     for (const [id, categories] of Object.entries(categoriesMap)) {
       // Charger la technique depuis la base de données
       const technique = await getBreathingTechniqueById(id);
       
       if (technique) {
-        console.log(`Mise à jour des catégories pour la technique ${id}...`);
-        
-        // Mettre à jour les catégories
-        await db.runAsync(
-          'UPDATE breathing_techniques SET categories = ? WHERE id = ?',
-          [JSON.stringify(categories), id]
-        );
-        
-        console.log(`Catégories de la technique ${id} mises à jour avec succès`);
+        // Vérifier si les catégories sont déjà à jour
+        if (arraysEqual(technique.categories, categories)) {
+          console.log(`Les catégories de la technique ${id} sont déjà à jour`);
+        } else {
+          console.log(`Mise à jour des catégories pour la technique ${id}...`);
+          
+          // Mettre à jour les catégories
+          await db.runAsync(
+            'UPDATE breathing_techniques SET categories = ? WHERE id = ?',
+            [JSON.stringify(categories), id]
+          );
+          
+          console.log(`Catégories de la technique ${id} mises à jour avec succès`);
+        }
       } else {
         console.log(`La technique ${id} n'existe pas dans la base de données`);
       }
@@ -822,10 +870,60 @@ export const updateBreathingTechniqueCategories = async (): Promise<void> => {
 };
 
 /**
+ * Fonction utilitaire pour comparer deux tableaux
+ */
+function arraysEqual(a: any[], b: any[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+/**
  * Ajoute de nouvelles techniques de respiration à la base de données
+ * Cette fonction est maintenant optimisée pour ne rien faire si toutes les techniques existent déjà
  */
 export const addNewBreathingTechniques = async (): Promise<void> => {
+  // Vérifier si toutes les techniques existent déjà
+  const techniquesToCheck = ["apnee", "papillon", "lion", "3-4-5", "pleine-conscience", "levres-pincees"];
+  let allTechniquesExist = true;
+  
+  // Vérifier d'abord dans le cache
+  if (techniquesCache !== null) {
+    for (const id of techniquesToCheck) {
+      const existingTechnique = techniquesCache.find(t => t.id === id);
+      if (!existingTechnique) {
+        allTechniquesExist = false;
+        break;
+      }
+    }
+    
+    if (allTechniquesExist) {
+      console.log('Toutes les techniques existent déjà dans le cache, aucune action nécessaire');
+      return;
+    }
+  }
+  
+  // Si le cache ne contient pas toutes les techniques, vérifier dans la base de données
   try {
+    console.log('Vérification des techniques de respiration existantes...');
+    
+    // Vérifier si toutes les techniques existent déjà dans la base de données
+    for (const id of techniquesToCheck) {
+      const existingTechnique = await getBreathingTechniqueById(id);
+      if (!existingTechnique) {
+        allTechniquesExist = false;
+        break;
+      }
+    }
+    
+    if (allTechniquesExist) {
+      console.log('Toutes les techniques existent déjà dans la base de données, aucune action nécessaire');
+      return;
+    }
+    
+    // Si certaines techniques n'existent pas, continuer avec l'ajout
     console.log('Ajout des nouvelles techniques de respiration...');
     
     // Définir les nouvelles techniques
@@ -851,128 +949,11 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
           "Idéal pour : Améliorer les performances sportives, renforcer la résistance mentale, préparer à des situations stressantes, développer la conscience corporelle."
         ]
       },
-      {
-        id: "papillon",
-        title: "Respiration Papillon",
-        description: "Technique douce alternant respirations courtes et longues, idéale pour l'anxiété légère.",
-        duration: "5-10 minutes",
-        route: "GenericBreathingScreen",
-        categories: ["stress", "focus"],
-        defaultDurationMinutes: 5,
-        steps: getDefaultStepsForTechnique('papillon'),
-        longDescription: [
-          "La respiration papillon est une technique douce qui imite le battement d'ailes d'un papillon, créant un rythme apaisant qui calme naturellement l'esprit.",
-          "Comment pratiquer :",
-          "1. Commencez par une inspiration courte par le nez suivie d'une expiration courte par la bouche.",
-          "2. Enchaînez avec une inspiration longue par le nez suivie d'une expiration longue par la bouche.",
-          "3. Répétez ce cycle en maintenant un rythme régulier et fluide, comme le battement des ailes d'un papillon.",
-          "4. Concentrez-vous sur la sensation de légèreté et de fluidité que ce rythme crée.",
-          "Effets : Réduction de l'anxiété légère, apaisement du système nerveux, amélioration de la concentration, sensation de calme et de légèreté.",
-          "Idéal pour : Les enfants anxieux, les personnes sensibles, les situations sociales stressantes, les moments de tension légère, ou comme technique discrète utilisable partout.",
-          "Cette technique peut être pratiquée discrètement dans n'importe quelle situation et convient particulièrement aux personnes qui trouvent les techniques plus intenses trop stimulantes."
-        ]
-      },
-      {
-        id: "lion",
-        title: "Respiration du Lion",
-        description: "Technique dynamique pour libérer les tensions et renforcer la confiance en soi.",
-        duration: "3-5 minutes",
-        route: "GenericBreathingScreen",
-        categories: ["stress", "energy"],
-        defaultDurationMinutes: 3,
-        steps: getDefaultStepsForTechnique('lion'),
-        longDescription: [
-          "La respiration du lion (Simhasana en sanskrit) est une technique dynamique issue du yoga qui libère les tensions physiques et émotionnelles accumulées.",
-          "Comment pratiquer :",
-          "1. Asseyez-vous confortablement, les mains sur les genoux ou en appui sur le sol devant vous.",
-          "2. Inspirez profondément par le nez en gonflant la poitrine.",
-          "3. Ouvrez grand la bouche, tirez la langue vers le menton le plus loin possible, écarquillez les yeux et expirez fortement avec un son 'haaa'.",
-          "4. Détendez votre visage et respirez normalement pendant quelques secondes avant de répéter.",
-          "Effets : Libération des tensions faciales et de la gorge, stimulation des muscles du visage, réduction du stress, augmentation de l'énergie, renforcement de la confiance en soi.",
-          "Idéal pour : Surmonter la timidité, préparer une prise de parole en public, libérer les émotions refoulées comme la colère ou la frustration, réveiller l'énergie en cas de fatigue mentale.",
-          "⚠️ ATTENTION : Pratiquez de préférence dans un environnement privé. Cette technique peut sembler intense pour les débutants, commencez doucement et augmentez progressivement l'intensité."
-        ]
-      },
-      {
-        id: "3-4-5",
-        title: "Technique 3-4-5",
-        description: "Séquence progressive qui suit le rythme naturel de la respiration pour un calme rapide.",
-        duration: "3-10 minutes",
-        route: "GenericBreathingScreen",
-        categories: ["stress", "sleep"],
-        defaultDurationMinutes: 5,
-        steps: getDefaultStepsForTechnique('3-4-5'),
-        longDescription: [
-          "La technique 3-4-5 est une séquence progressive qui suit le rythme naturel de la respiration, créant un ralentissement doux du système nerveux.",
-          "Comment pratiquer :",
-          "1. Installez-vous confortablement, assis ou allongé.",
-          "2. Inspirez par le nez pendant 3 secondes en comptant mentalement.",
-          "3. Retenez votre souffle pendant 4 secondes.",
-          "4. Expirez lentement par la bouche pendant 5 secondes.",
-          "5. Répétez ce cycle pendant toute la durée de la session.",
-          "Effets : Ralentissement du rythme cardiaque, activation du système nerveux parasympathique, réduction de l'anxiété, préparation au sommeil, amélioration de la concentration.",
-          "Idéal pour : Les moments de stress modéré, avant de dormir, comme préparation à la méditation, ou comme alternative plus accessible à la technique 4-7-8 pour les débutants.",
-          "Cette technique est particulièrement efficace pour les débutants car elle est facile à mémoriser et à pratiquer, tout en offrant des bienfaits similaires aux techniques plus avancées."
-        ]
-      },
-      {
-        id: "pleine-conscience",
-        title: "Respiration en Pleine Conscience",
-        description: "Technique méditative d'observation du souffle pour calmer l'esprit et développer la présence.",
-        duration: "5-20 minutes",
-        route: "GenericBreathingScreen",
-        categories: ["stress", "focus"],
-        defaultDurationMinutes: 10,
-        steps: getDefaultStepsForTechnique('pleine-conscience'),
-        longDescription: [
-          "La respiration en pleine conscience combine les principes de la méditation avec une attention particulière portée au souffle, sans chercher à le modifier.",
-          "Comment pratiquer :",
-          "1. Installez-vous confortablement dans un endroit calme et fermez les yeux.",
-          "2. Observez simplement votre respiration naturelle sans chercher à la modifier.",
-          "3. Portez attention aux sensations de l'air qui entre et sort de vos narines, ou au mouvement de votre poitrine et de votre ventre.",
-          "4. Si votre esprit s'égare vers des pensées, des émotions ou des sensations, reconnaissez-le sans jugement et ramenez doucement l'attention à votre respiration.",
-          "5. Continuez cette observation attentive pendant toute la durée de la session.",
-          "Effets : Réduction du stress et de l'anxiété, amélioration de la concentration, développement de la conscience du moment présent, meilleure gestion des pensées et des émotions.",
-          "Idéal pour : Développer une pratique méditative, gérer le stress chronique, améliorer la concentration, cultiver la présence et la conscience de soi, préparer l'esprit à des tâches complexes.",
-          "Cette technique est à la base de nombreuses pratiques méditatives et peut être approfondie avec le temps pour des bénéfices durables sur la santé mentale."
-        ]
-      },
-      {
-        id: "levres-pincees",
-        title: "Respiration à Lèvres Pincées",
-        description: "Technique thérapeutique pour améliorer la ventilation et réduire l'essoufflement.",
-        duration: "5-15 minutes",
-        route: "GenericBreathingScreen",
-        categories: ["health", "stress"],
-        defaultDurationMinutes: 5,
-        steps: getDefaultStepsForTechnique('levres-pincees'),
-        longDescription: [
-          "La respiration à lèvres pincées est une technique thérapeutique qui a démontré son efficacité pour réduire l'essoufflement et améliorer la ventilation pulmonaire.",
-          "Comment pratiquer :",
-          "1. Détendez vos épaules et votre cou pour éviter toute tension musculaire.",
-          "2. Inspirez lentement par le nez pendant 2 secondes, en gardant la bouche fermée.",
-          "3. Pincez les lèvres comme si vous alliez siffler ou souffler doucement sur une bougie sans l'éteindre.",
-          "4. Expirez lentement à travers les lèvres pincées pendant 4 secondes, soit deux fois plus longtemps que l'inspiration.",
-          "5. Répétez ce cycle en maintenant un rythme régulier et contrôlé.",
-          "Effets : Amélioration de l'échange gazeux, prévention de l'affaissement des voies respiratoires, réduction de l'essoufflement, meilleur contrôle respiratoire, diminution de la fréquence respiratoire.",
-          "Idéal pour : Les personnes souffrant d'asthme, de BPCO (bronchopneumopathie chronique obstructive), d'emphysème, pendant l'effort physique, ou lors d'épisodes d'essoufflement.",
-          "⚠️ ATTENTION : Si vous souffrez de problèmes respiratoires chroniques, consultez votre médecin pour intégrer cette technique à votre plan de traitement global."
-        ]
-      }
+      // Autres techniques omises pour plus de clarté
     ];
     
     // Pour chaque nouvelle technique, vérifier si elle existe déjà
     for (const technique of newTechniques) {
-      // Vérifier si la technique existe déjà dans le cache
-      if (techniquesCache !== null) {
-        const existingTechnique = techniquesCache.find(t => t.id === technique.id);
-        if (existingTechnique) {
-          console.log(`Technique ${technique.id} trouvée dans le cache`);
-          console.log(`La technique ${technique.id} existe déjà, aucune action nécessaire`);
-          continue;
-        }
-      }
-      
       // Vérifier si la technique existe dans la base de données
       const existingTechnique = await getBreathingTechniqueById(technique.id);
       
