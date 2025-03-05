@@ -129,7 +129,7 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right', 'top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
+      <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
       <LinearGradient
         colors={[theme.primaryLight, theme.background]}
         style={styles.headerGradient}

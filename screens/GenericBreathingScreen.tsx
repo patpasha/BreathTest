@@ -446,7 +446,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
+      <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
       <View style={styles.mainContainer}>
         {/* En-tête avec dégradé */}
         <LinearGradient
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerGradient: {
-    paddingTop: 20,
+    paddingTop: 50,
     paddingBottom: 30,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -644,13 +644,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 10,
+    paddingTop: 30,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 20,
+    top: 30,
     zIndex: 10,
     padding: 8,
     borderRadius: 20,

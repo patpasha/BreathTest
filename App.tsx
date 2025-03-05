@@ -375,7 +375,7 @@ const AppNavigator = () => {
   
   return (
     <NavigationContainer>
-      <StatusBar style={theme === darkTheme ? "light" : "dark"} />
+      <StatusBar style={theme === darkTheme ? "light" : "dark"} translucent={true} backgroundColor="transparent" />
       <Stack.Navigator 
         initialRouteName="MainTabs"
         screenOptions={{
