@@ -379,24 +379,17 @@ const SettingsScreen = () => {
         </View>
 
         <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: theme.primary }]}
+          style={[styles.button, { backgroundColor: theme.primary }]}
           onPress={() => navigation.navigate('ContactDeveloper')}
         >
-          <Text style={styles.contactButtonText}>Contacter le Développeur</Text>
+          <Text style={[styles.buttonText, { color: 'white' }]}>Contacter le développeur</Text>
         </TouchableOpacity>
 
-        {/* Bouton de maintenance - visible uniquement en mode développeur */}
-        {showDevTools && (
-          <TouchableOpacity
-            style={[styles.maintenanceButton, { 
-              backgroundColor: theme.surfaceLight,
-              borderColor: theme.border,
-              borderWidth: 1
-            }]}
-          >
-            <Text style={[styles.maintenanceButtonText, { color: theme.textSecondary }]}>Maintenance</Text>
-          </TouchableOpacity>
-        )}
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>À propos</Text>
+          <Text style={[styles.version, { color: theme.textSecondary }]}>Version 1.2.0</Text>
+          <Text style={[styles.copyright, { color: theme.textTertiary }]}>© 2023 BreathFlow</Text>
+        </View>
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Réinitialiser</Text>
@@ -504,28 +497,15 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingTop: 10,
   },
-  contactButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  button: {
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 15,
     alignItems: 'center',
+    marginVertical: 8,
   },
-  contactButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  buttonText: {
     fontSize: 16,
-  },
-  maintenanceButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
-  maintenanceButtonText: {
-    fontSize: 14,
+    fontWeight: '600',
   },
   resetButton: {
     paddingVertical: 15,
@@ -601,6 +581,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     marginBottom: 8,
+  },
+  version: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  copyright: {
+    fontSize: 12,
   },
 });
 
