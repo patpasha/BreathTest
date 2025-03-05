@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 // Importer uniquement les icônes nécessaires
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions, Easing, Animated } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions, Easing, Animated, Image } from 'react-native';
 import { useTheme, darkTheme } from './theme/ThemeContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { StatsProvider } from './contexts/StatsContext';
@@ -14,6 +14,7 @@ import { ThemeProvider } from './theme/ThemeContext';
 import { addNewBreathingTechniques, updateBreathingTechniqueCategories } from './services/DatabaseService';
 import { initDatabase } from './services/DatabaseService';
 import * as ExpoSplashScreen from 'expo-splash-screen';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 // Maintenir le splashscreen visible pendant le chargement
 ExpoSplashScreen.preventAutoHideAsync().catch(() => {
@@ -308,7 +309,7 @@ const AppNavigator = () => {
     <NavigationContainer>
       <StatusBar style={theme === darkTheme ? "light" : "dark"} />
       <Stack.Navigator 
-        initialRouteName="Splash"
+        initialRouteName="MainTabs"
         screenOptions={{
           headerStyle: {
             backgroundColor: theme.background,
@@ -329,14 +330,6 @@ const AppNavigator = () => {
         }}
       >
         {/* Écrans principaux */}
-        <Stack.Screen 
-          name="Splash" 
-          component={SplashScreen} 
-          options={{ 
-            headerShown: false,
-            ...enhancedFadeTransition,
-          }} 
-        />
         <Stack.Screen 
           name="MainTabs" 
           component={MainTabNavigator} 
@@ -480,29 +473,189 @@ const AppNavigator = () => {
   );
 };
 
+// Composant de splashscreen personnalisé
+const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
+  const theme = useTheme();
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  
+  // Calcul pour l'anneau de progression
+  const circleSize = 200;
+  const radius = circleSize / 2;
+  const circumference = 2 * Math.PI * radius;
+  
+  // Animation de rotation
+  const rotation = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  
+  useEffect(() => {
+    // Démarrer les animations d'entrée
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }),
+      Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 4000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      )
+    ]).start();
+    
+    // Ajouter un délai pour que l'animation soit visible
+    const timer = setTimeout(() => {
+      // Animation de sortie
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 800,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 800,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        onFinish();
+      });
+    }, 2500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Création d'un composant Circle animé
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+  
+  // Calcul du strokeDashoffset basé sur la progression
+  const strokeDashoffset = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, 0],
+  });
+  
+  return (
+    <View style={[styles.splashContainer, { backgroundColor: theme.background }]}>
+      <Animated.View 
+        style={[
+          styles.logoContainer,
+          {
+            opacity: opacityAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
+        {/* Anneau de progression */}
+        <Animated.View 
+          style={[
+            styles.progressContainer,
+            {
+              transform: [{ rotate: rotation }]
+            }
+          ]}
+        >
+          <Svg width={circleSize} height={circleSize} style={styles.svg}>
+            <Defs>
+              <LinearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
+                <Stop offset="100%" stopColor={`${theme.primary}99`} stopOpacity="0.6" />
+              </LinearGradient>
+            </Defs>
+            
+            {/* Anneau de fond */}
+            <Circle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius - 2}
+              strokeWidth={4}
+              stroke={`${theme.primary}33`}
+              fill="transparent"
+            />
+            
+            {/* Anneau de progression */}
+            <AnimatedCircle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius - 2}
+              strokeWidth={4}
+              stroke={`url(#gradient)`}
+              fill="transparent"
+              strokeDasharray={`${circumference}`}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              rotation="-90"
+              origin={`${circleSize / 2}, ${circleSize / 2}`}
+            />
+          </Svg>
+        </Animated.View>
+        
+        {/* Logo */}
+        <View style={styles.logoWrapper}>
+          <Image 
+            source={require('./assets/splash-icon.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+      </Animated.View>
+      
+      <Animated.Text 
+        style={[
+          styles.title, 
+          { 
+            color: theme.textPrimary,
+            opacity: opacityAnim,
+            transform: [{ translateY: opacityAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0]
+            })}]
+          }
+        ]}
+      >
+        BreathFlow
+      </Animated.Text>
+    </View>
+  );
+};
+
 // Composant principal
 export default function App() {
   // Animation pour la transition globale
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [dbInitialized, setDbInitialized] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [isSplashAnimationComplete, setIsSplashAnimationComplete] = useState(false);
 
   // Fonction pour masquer le splashscreen
   const onLayoutRootView = useCallback(async () => {
     try {
-      // Démarrer l'animation de fondu
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        useNativeDriver: true,
-      }).start();
-      
-      // Masquer le splashscreen une fois que l'application est prête
+      // Masquer le splashscreen natif une fois que l'application est prête
       await ExpoSplashScreen.hideAsync();
     } catch (e) {
       console.warn('Erreur lors de la masquage du splashscreen:', e);
     }
-  }, [fadeAnim]);
+  }, []);
 
   // Initialiser la base de données au démarrage de l'application
   useEffect(() => {
@@ -523,14 +676,48 @@ export default function App() {
         console.log('Mise à jour des catégories des techniques de respiration...');
         await updateBreathingTechniqueCategories();
         console.log('Catégories des techniques de respiration mises à jour avec succès');
+        
+        // Marquer l'application comme prête
+        setIsAppReady(true);
       } catch (error) {
         console.error('Erreur lors de l\'initialisation de l\'application:', error);
+        // Même en cas d'erreur, on considère l'app comme prête pour éviter de bloquer l'utilisateur
+        setIsAppReady(true);
       }
     };
 
     initializeApp();
   }, []);
 
+  // Démarrer l'animation de fondu une fois que le splashscreen est terminé
+  useEffect(() => {
+    if (isSplashAnimationComplete) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isSplashAnimationComplete, fadeAnim]);
+
+  // Gérer la fin de l'animation du splashscreen
+  const handleSplashAnimationComplete = useCallback(() => {
+    setIsSplashAnimationComplete(true);
+  }, []);
+
+  // Si l'application n'est pas prête, afficher le splashscreen personnalisé
+  if (!isAppReady || !isSplashAnimationComplete) {
+    return (
+      <SafeAreaProvider onLayout={onLayoutRootView}>
+        <ThemeProvider>
+          <CustomSplashScreen onFinish={handleSplashAnimationComplete} />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Une fois que l'application est prête et que l'animation du splashscreen est terminée, afficher l'application
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
@@ -545,3 +732,47 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 30,
+  },
+  progressContainer: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+  },
+  svg: {
+    position: 'absolute',
+  },
+  logoWrapper: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  logo: {
+    width: 140,
+    height: 140,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+});
