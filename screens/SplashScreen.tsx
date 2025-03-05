@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
-import { initDatabase } from '../services/DatabaseService';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
@@ -12,8 +11,6 @@ type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 
 const SplashScreen = () => {
   const navigation = useNavigation<SplashScreenNavigationProp>();
   const theme = useTheme();
-  const [dbInitialized, setDbInitialized] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
   
   // Animations
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -21,22 +18,8 @@ const SplashScreen = () => {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const exitAnim = useRef(new Animated.Value(1)).current;
 
-  // Initialiser la base de données
+  // Initialiser les animations et démarrer le timer
   useEffect(() => {
-    const initDb = async () => {
-      try {
-        console.log('Initialisation de la base de données depuis SplashScreen...');
-        await initDatabase();
-        console.log('Base de données initialisée avec succès depuis SplashScreen');
-        setDbInitialized(true);
-      } catch (error) {
-        console.error('Erreur lors de l\'initialisation de la base de données:', error);
-        setDbError('Erreur lors de l\'initialisation de la base de données');
-      }
-    };
-
-    initDb();
-    
     // Démarrer les animations d'entrée
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -57,38 +40,34 @@ const SplashScreen = () => {
         useNativeDriver: false,
       })
     ]).start();
+    
+    // Ajouter un délai pour que l'animation soit visible
+    const timer = setTimeout(() => {
+      startExitAnimation();
+    }, 2500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (dbInitialized) {
-      // Animation de sortie
-      const startExitAnimation = () => {
-        Animated.parallel([
-          Animated.timing(exitAnim, {
-            toValue: 0,
-            duration: 800,
-            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1.1,
-            duration: 800,
-            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-            useNativeDriver: true,
-          })
-        ]).start(() => {
-          navigation.replace('MainTabs');
-        });
-      };
-      
-      // Ajouter un délai pour que l'animation soit visible
-      const timer = setTimeout(() => {
-        startExitAnimation();
-      }, 1500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [dbInitialized, navigation, exitAnim, scaleAnim]);
+  // Animation de sortie
+  const startExitAnimation = () => {
+    Animated.parallel([
+      Animated.timing(exitAnim, {
+        toValue: 0,
+        duration: 800,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 800,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      navigation.replace('MainTabs');
+    });
+  };
   
   // Calcul pour l'anneau de progression
   const circleSize = 200;
@@ -229,8 +208,6 @@ const SplashScreen = () => {
       >
         BreathFlow
       </Animated.Text>
-      
-      {dbError && <Text style={[styles.errorText, { color: theme.error }]}>{dbError}</Text>}
     </Animated.View>
   );
 };
@@ -275,9 +252,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 20,
-  },
-  errorText: {
-    marginTop: 10,
   },
 });
 

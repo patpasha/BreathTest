@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useCallback, useRef } from 'react';
+import React, { lazy, Suspense, useEffect, useCallback, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -484,6 +484,7 @@ const AppNavigator = () => {
 export default function App() {
   // Animation pour la transition globale
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [dbInitialized, setDbInitialized] = useState(false);
 
   // Fonction pour masquer le splashscreen
   const onLayoutRootView = useCallback(async () => {
@@ -503,15 +504,23 @@ export default function App() {
     }
   }, [fadeAnim]);
 
-  // Ajouter les nouvelles techniques de respiration au démarrage de l'application
+  // Initialiser la base de données au démarrage de l'application
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        // Initialiser d'abord la base de données
+        console.log('Initialisation de la base de données...');
+        await initDatabase();
+        console.log('Base de données initialisée avec succès');
+        setDbInitialized(true);
+        
         // Ajouter les nouvelles techniques de respiration à la base de données
+        console.log('Ajout des nouvelles techniques de respiration...');
         await addNewBreathingTechniques();
         console.log('Nouvelles techniques de respiration ajoutées avec succès');
         
         // Mettre à jour les catégories des techniques de respiration
+        console.log('Mise à jour des catégories des techniques de respiration...');
         await updateBreathingTechniqueCategories();
         console.log('Catégories des techniques de respiration mises à jour avec succès');
       } catch (error) {
