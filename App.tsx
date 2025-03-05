@@ -710,9 +710,11 @@ export default function App() {
   if (!isAppReady || !isSplashAnimationComplete) {
     return (
       <SafeAreaProvider onLayout={onLayoutRootView}>
-        <ThemeProvider>
-          <CustomSplashScreen onFinish={handleSplashAnimationComplete} />
-        </ThemeProvider>
+        <SettingsProvider>
+          <ThemeProvider>
+            <CustomSplashScreen onFinish={handleSplashAnimationComplete} />
+          </ThemeProvider>
+        </SettingsProvider>
       </SafeAreaProvider>
     );
   }
