@@ -305,16 +305,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    paddingTop: 30,
+    paddingTop: 15,
     paddingBottom: 30,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    marginTop: 20,
+    marginTop: 0,
   },
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 30,
+    paddingTop: 15,
   },
   title: {
     fontSize: 38,

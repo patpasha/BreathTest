@@ -636,21 +636,21 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerGradient: {
-    paddingTop: 70,
-    paddingBottom: 30,
+    paddingTop: 40,
+    paddingBottom: 25,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 20,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 40,
+    top: 20,
     zIndex: 10,
     padding: 8,
     borderRadius: 20,
@@ -673,12 +673,12 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 100, // Espace pour le bouton fixe
+    paddingBottom: 80, // Espace pour le bouton fixe
   },
   breathingSection: {
-    marginTop: 20,
-    marginBottom: 30,
-    paddingVertical: 20,
+    marginTop: 10,
+    marginBottom: 20,
+    paddingVertical: 10,
   },
   circleContainer: {
     alignItems: 'center',
@@ -721,11 +721,11 @@ const styles = StyleSheet.create({
   },
   fixedButtonContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 20,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 15,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
