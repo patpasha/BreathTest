@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
@@ -171,19 +171,13 @@ const SplashScreen = () => {
           </Svg>
         </Animated.View>
         
-        {/* Cercle principal */}
-        <View 
-          style={[
-            styles.bubble,
-            {
-              backgroundColor: theme.primary,
-              width: circleSize * 0.7,
-              height: circleSize * 0.7,
-              borderRadius: circleSize * 0.35,
-            }
-          ]}
-        >
-          <Text style={styles.breathText}>B</Text>
+        {/* Logo au lieu du cercle avec la lettre B */}
+        <View style={styles.logoWrapper}>
+          <Image 
+            source={require('../assets/splash-icon.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
       </Animated.View>
       
@@ -231,22 +225,23 @@ const styles = StyleSheet.create({
   svg: {
     position: 'absolute',
   },
-  bubble: {
+  logoWrapper: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
   },
-  breathText: {
-    fontSize: 60,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  logo: {
+    width: 140,
+    height: 140,
   },
   title: {
     fontSize: 32,
