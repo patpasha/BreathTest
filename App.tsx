@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useCallback } from 'react';
+import React, { lazy, Suspense, useEffect, useCallback, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 // Importer uniquement les icônes nécessaires
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions, Easing } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Platform, Dimensions, Easing, Animated } from 'react-native';
 import { useTheme, darkTheme } from './theme/ThemeContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { StatsProvider } from './contexts/StatsContext';
@@ -248,7 +248,22 @@ const AppNavigator = () => {
         },
       };
     },
-    transitionSpec: customTransitionSpec,
+    transitionSpec: {
+      open: {
+        animation: 'timing',
+        config: {
+          duration: 600,
+          easing: Easing.bezier(0.2, 0.65, 0.4, 0.9),
+        },
+      },
+      close: {
+        animation: 'timing',
+        config: {
+          duration: 450,
+          easing: Easing.bezier(0.2, 0.65, 0.4, 0.9),
+        },
+      },
+    },
   };
   
   // Animation de glissement horizontal améliorée
@@ -467,15 +482,26 @@ const AppNavigator = () => {
 
 // Composant principal
 export default function App() {
+  // Animation pour la transition globale
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
   // Fonction pour masquer le splashscreen
   const onLayoutRootView = useCallback(async () => {
     try {
+      // Démarrer l'animation de fondu
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      }).start();
+      
       // Masquer le splashscreen une fois que l'application est prête
       await ExpoSplashScreen.hideAsync();
     } catch (e) {
       console.warn('Erreur lors de la masquage du splashscreen:', e);
     }
-  }, []);
+  }, [fadeAnim]);
 
   // Ajouter les nouvelles techniques de respiration au démarrage de l'application
   useEffect(() => {
@@ -498,13 +524,15 @@ export default function App() {
 
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
-      <SettingsProvider>
-        <ThemeProvider>
-          <StatsProvider>
-            <AppNavigator />
-          </StatsProvider>
-        </ThemeProvider>
-      </SettingsProvider>
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        <SettingsProvider>
+          <ThemeProvider>
+            <StatsProvider>
+              <AppNavigator />
+            </StatsProvider>
+          </ThemeProvider>
+        </SettingsProvider>
+      </Animated.View>
     </SafeAreaProvider>
   );
 }

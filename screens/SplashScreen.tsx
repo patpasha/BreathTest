@@ -19,6 +19,7 @@ const SplashScreen = () => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const exitAnim = useRef(new Animated.Value(1)).current;
 
   // Initialiser la base de données
   useEffect(() => {
@@ -36,7 +37,7 @@ const SplashScreen = () => {
 
     initDb();
     
-    // Démarrer les animations
+    // Démarrer les animations d'entrée
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 1,
@@ -60,14 +61,34 @@ const SplashScreen = () => {
 
   useEffect(() => {
     if (dbInitialized) {
+      // Animation de sortie
+      const startExitAnimation = () => {
+        Animated.parallel([
+          Animated.timing(exitAnim, {
+            toValue: 0,
+            duration: 800,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1.1,
+            duration: 800,
+            easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          navigation.replace('MainTabs');
+        });
+      };
+      
       // Ajouter un délai pour que l'animation soit visible
       const timer = setTimeout(() => {
-        navigation.replace('MainTabs');
+        startExitAnimation();
       }, 1500);
       
       return () => clearTimeout(timer);
     }
-  }, [dbInitialized, navigation]);
+  }, [dbInitialized, navigation, exitAnim, scaleAnim]);
   
   // Calcul pour l'anneau de progression
   const circleSize = 200;
@@ -83,19 +104,59 @@ const SplashScreen = () => {
     outputRange: [circumference, 0],
   });
 
+  // Animation de rotation pour l'anneau
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 4000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [rotateAnim]);
+  
+  const rotation = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <Animated.View 
+      style={[
+        styles.container, 
+        { 
+          backgroundColor: theme.background,
+          opacity: exitAnim
+        }
+      ]}
+    >
       <Animated.View 
         style={[
           styles.logoContainer,
           {
             opacity: opacityAnim,
-            transform: [{ scale: scaleAnim }]
+            transform: [
+              { scale: scaleAnim },
+              { translateY: exitAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-50, 0]
+              })}
+            ]
           }
         ]}
       >
         {/* Anneau de progression */}
-        <View style={styles.progressContainer}>
+        <Animated.View 
+          style={[
+            styles.progressContainer,
+            {
+              transform: [{ rotate: rotation }]
+            }
+          ]}
+        >
           <Svg width={circleSize} height={circleSize} style={styles.svg}>
             <Defs>
               <LinearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -129,7 +190,7 @@ const SplashScreen = () => {
               origin={`${circleSize / 2}, ${circleSize / 2}`}
             />
           </Svg>
-        </View>
+        </Animated.View>
         
         {/* Cercle principal */}
         <View 
@@ -153,10 +214,16 @@ const SplashScreen = () => {
           { 
             color: theme.textPrimary,
             opacity: opacityAnim,
-            transform: [{ translateY: opacityAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [20, 0]
-            })}]
+            transform: [
+              { translateY: opacityAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [20, 0]
+              })},
+              { translateY: exitAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [50, 0]
+              })}
+            ]
           }
         ]}
       >
@@ -164,7 +231,7 @@ const SplashScreen = () => {
       </Animated.Text>
       
       {dbError && <Text style={[styles.errorText, { color: theme.error }]}>{dbError}</Text>}
-    </View>
+    </Animated.View>
   );
 };
 
