@@ -113,11 +113,9 @@ export const initDatabase = async (): Promise<void> => {
     } else {
       console.log(`${count} techniques trouvées dans la base de données`);
       
-      // Vérifier et réparer toutes les techniques de respiration
-      await fixAllBreathingTechniques();
-      
-      // Vérifier et réparer les descriptions longues manquantes
-      await fixLongDescriptions();
+      // Suppression des vérifications et réparations qui ralentissent le démarrage
+      // await fixAllBreathingTechniques();
+      // await fixLongDescriptions();
     }
   } catch (error) {
     console.error('Erreur lors de l\'initialisation de la base de données:', error);
@@ -784,19 +782,19 @@ export const updateBreathingTechniqueCategories = async (): Promise<void> => {
   try {
     console.log('Mise à jour des catégories des techniques de respiration...');
     
-    // Définir les mises à jour de catégories
-    const categoriesToUpdate = [
-      { id: 'apnee', categories: ['performance', 'stress', 'health'] },
-      { id: 'papillon', categories: ['stress', 'focus'] },
-      { id: 'lion', categories: ['stress', 'energy'] },
-      { id: '3-4-5', categories: ['stress', 'sleep'] },
-      { id: 'pleine-conscience', categories: ['stress', 'focus'] },
-      { id: 'levres-pincees', categories: ['health', 'stress'] }
-    ];
+    // Définir les catégories pour chaque technique
+    const categoriesMap: Record<string, string[]> = {
+      'apnee': ["performance", "stress", "health"],
+      'papillon': ["stress", "sleep"],
+      'lion': ["energy", "focus"],
+      '3-4-5': ["stress", "sleep"],
+      'pleine-conscience': ["stress", "focus"],
+      'levres-pincees': ["health", "stress"]
+    };
     
-    // Mettre à jour chaque technique
-    for (const { id, categories } of categoriesToUpdate) {
-      // Vérifier si la technique existe
+    // Pour chaque technique, mettre à jour les catégories
+    for (const [id, categories] of Object.entries(categoriesMap)) {
+      // Charger la technique depuis la base de données
       const technique = await getBreathingTechniqueById(id);
       
       if (technique) {
@@ -823,6 +821,9 @@ export const updateBreathingTechniqueCategories = async (): Promise<void> => {
   }
 };
 
+/**
+ * Ajoute de nouvelles techniques de respiration à la base de données
+ */
 export const addNewBreathingTechniques = async (): Promise<void> => {
   try {
     console.log('Ajout des nouvelles techniques de respiration...');
@@ -847,8 +848,7 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
           "4. Expirez lentement et complètement, puis récupérez en respirant normalement.",
           "5. Répétez ce cycle après une période de récupération suffisante.",
           "Effets : Amélioration de la capacité pulmonaire, renforcement du diaphragme, stimulation du système immunitaire, développement de la résistance au stress, augmentation de la concentration de CO2 bénéfique.",
-          "Idéal pour : Améliorer les performances sportives, renforcer la résistance mentale, préparer à des situations stressantes, développer la conscience corporelle.",
-          "⚠️ ATTENTION : Ne pratiquez jamais l'apnée seul ou dans l'eau sans supervision. Arrêtez immédiatement si vous ressentez des étourdissements ou un inconfort. Contre-indiqué pour les personnes souffrant de problèmes cardiaques, d'hypertension ou d'épilepsie."
+          "Idéal pour : Améliorer les performances sportives, renforcer la résistance mentale, préparer à des situations stressantes, développer la conscience corporelle."
         ]
       },
       {
@@ -961,12 +961,25 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
       }
     ];
     
-    // Vérifier l'existence de chaque technique et l'ajouter si elle n'existe pas
+    // Pour chaque nouvelle technique, vérifier si elle existe déjà
     for (const technique of newTechniques) {
+      // Vérifier si la technique existe déjà dans le cache
+      if (techniquesCache !== null) {
+        const existingTechnique = techniquesCache.find(t => t.id === technique.id);
+        if (existingTechnique) {
+          console.log(`Technique ${technique.id} trouvée dans le cache`);
+          console.log(`La technique ${technique.id} existe déjà, aucune action nécessaire`);
+          continue;
+        }
+      }
+      
+      // Vérifier si la technique existe dans la base de données
       const existingTechnique = await getBreathingTechniqueById(technique.id);
       
-      if (!existingTechnique) {
-        console.log(`Ajout de la technique ${technique.id}...`);
+      if (existingTechnique) {
+        console.log(`La technique ${technique.id} existe déjà, aucune action nécessaire`);
+      } else {
+        // Insérer la nouvelle technique
         await db.runAsync(
           `INSERT INTO breathing_techniques (id, title, description, duration, route, categories, steps, defaultDurationMinutes, longDescription) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -978,17 +991,16 @@ export const addNewBreathingTechniques = async (): Promise<void> => {
             technique.route,
             JSON.stringify(technique.categories),
             JSON.stringify(technique.steps),
-            technique.defaultDurationMinutes || 0,
-            JSON.stringify(technique.longDescription)
+            technique.defaultDurationMinutes || 5,
+            JSON.stringify(technique.longDescription || [])
           ]
         );
+        
         console.log(`Technique ${technique.id} ajoutée avec succès`);
-      } else {
-        console.log(`La technique ${technique.id} existe déjà, aucune action nécessaire`);
       }
     }
     
-    // Invalider le cache après l'ajout des nouvelles techniques
+    // Invalider le cache après les modifications
     invalidateCache();
     console.log('Ajout des nouvelles techniques terminé');
   } catch (error) {

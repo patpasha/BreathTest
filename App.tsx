@@ -754,21 +754,26 @@ export default function App() {
             console.log('Base de données initialisée avec succès');
             
             // Exécuter les opérations non critiques en arrière-plan après le chargement de l'interface
+            // Utiliser un délai plus court pour les opérations de maintenance
             setTimeout(async () => {
               try {
                 // Ajouter les nouvelles techniques de respiration à la base de données
+                // Cette opération n'est pas critique et peut être exécutée en arrière-plan
+                // ou même supprimée si l'application est stable
                 console.log('Ajout des nouvelles techniques de respiration en arrière-plan...');
                 await addNewBreathingTechniques();
                 console.log('Nouvelles techniques de respiration ajoutées avec succès');
                 
                 // Mettre à jour les catégories de techniques de respiration
+                // Cette opération n'est pas critique et peut être exécutée en arrière-plan
+                // ou même supprimée si l'application est stable
                 console.log('Mise à jour des catégories de techniques de respiration en arrière-plan...');
                 await updateBreathingTechniqueCategories();
                 console.log('Catégories de techniques de respiration mises à jour avec succès');
               } catch (error) {
                 console.error('Erreur lors des opérations de maintenance:', error);
               }
-            }, 2000); // Exécuter après 2 secondes pour permettre à l'interface de se charger
+            }, 1000); // Réduire le délai de 2000ms à 1000ms
           })
           .catch((error) => {
             console.error('Erreur lors de l\'initialisation de la base de données:', error);
