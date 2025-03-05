@@ -12,6 +12,7 @@ import { BreathingScreenProps } from '../App';
 import { getBreathingTechniqueById, BreathingTechnique, BreathingStep, getDefaultStepsForTechnique } from '../services/DatabaseService';
 import BreathingBubble from '../components/BreathingBubble';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.55;
@@ -455,6 +456,12 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           end={{ x: 0, y: 1 }}
         >
           <View style={styles.headerContainer}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+            </TouchableOpacity>
             <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
             <View style={[styles.cyclesBadge, { backgroundColor: theme.primaryLight }]}>
               <Text style={[styles.cyclesText, { color: theme.primary }]}>Cycle {currentCycle}</Text>
@@ -638,6 +645,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 10,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 20,
+    top: 20,
+    zIndex: 10,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   timerText: {
     fontSize: 52,

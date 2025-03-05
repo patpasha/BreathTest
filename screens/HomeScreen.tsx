@@ -295,27 +295,6 @@ const HomeScreen = () => {
             ))}
           </View>
         </View>
-
-        {/* Bouton de paramètres */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.settingsButton,
-              {
-                backgroundColor: theme.primary,
-                borderRadius: 12,
-                shadowColor: theme.primary,
-                shadowOpacity: 0.3,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 5 },
-                elevation: 5,
-              }
-            ]}
-            onPress={() => navigation.navigate('SettingsTab')}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Paramètres</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -467,21 +446,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     letterSpacing: 0.2,
-  },
-  buttonContainer: {
-    paddingHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  settingsButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
   },
 });
 

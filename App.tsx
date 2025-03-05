@@ -193,15 +193,7 @@ const MainTabNavigator = () => {
           elevation: 0,
           shadowOpacity: 0,
         },
-        headerStyle: {
-          backgroundColor: theme.background,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: theme.textPrimary,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerShown: false,
       })}
     >
       <Tab.Screen 
@@ -209,7 +201,6 @@ const MainTabNavigator = () => {
         component={HomeScreen} 
         options={{
           title: 'Accueil',
-          headerTitle: 'BreathFlow',
           tabBarLabel: 'Accueil'
         }} 
       />
@@ -388,16 +379,7 @@ const AppNavigator = () => {
       <Stack.Navigator 
         initialRouteName="MainTabs"
         screenOptions={{
-          headerStyle: {
-            backgroundColor: theme.background,
-          },
-          headerShadowVisible: false,
-          headerTintColor: theme.textPrimary,
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          headerTransparent: false,
-          headerTitleAlign: 'center',
+          headerShown: false,
           animation: 'slide_from_right',
           animationDuration: 300,
           contentStyle: {
@@ -418,16 +400,13 @@ const AppNavigator = () => {
         <Stack.Screen 
           name="Info" 
           component={InformationScreen} 
-          options={{ title: 'Informations' }} 
+          options={{ headerShown: false }} 
         />
         
         {/* Écran générique pour les techniques de respiration */}
         <Stack.Screen 
           name="GenericBreathingScreen" 
-          options={({ route }) => ({ 
-            title: route.params?.title || 'Technique de respiration',
-            headerBackTitle: 'Retour'
-          })} 
+          options={{ headerShown: false }} 
         >
           {props => (
             <Suspense fallback={<LoadingScreen />}>
@@ -439,98 +418,98 @@ const AppNavigator = () => {
         {/* Toutes les techniques de respiration (migrées vers l'écran générique) */}
         <Stack.Screen 
           name="PhysiologicalSigh" 
-          options={{ title: 'Soupir Physiologique' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('physiological-sigh', 'Soupir Physiologique')}
         />
         
         <Stack.Screen 
           name="Respiration478" 
-          options={{ title: 'Respiration 4-7-8' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('4-7-8', 'Respiration 4-7-8')}
         />
         
         <Stack.Screen 
           name="RespirationCoherente" 
-          options={{ title: 'Respiration Cohérente' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('coherente', 'Respiration Cohérente')}
         />
         
         <Stack.Screen 
           name="RespirationDiaphragmatique" 
-          options={{ title: 'Respiration Diaphragmatique' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('diaphragmatique', 'Respiration Diaphragmatique')}
         />
         
         <Stack.Screen 
           name="RespirationBox" 
-          options={{ title: 'Respiration Box' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('box', 'Respiration Box')}
         />
         
         <Stack.Screen 
           name="CyclicHyperventilation" 
-          options={{ title: 'Hyperventilation Cyclique' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('cyclic-hyperventilation', 'Hyperventilation Cyclique')}
         />
         
         <Stack.Screen 
           name="WimHof" 
-          options={{ title: 'Méthode Wim Hof' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('wim-hof', 'Méthode Wim Hof')}
         />
         
         <Stack.Screen 
           name="RespirationAlternee" 
-          options={{ title: 'Respiration Alternée' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('alternee', 'Respiration Alternée')}
         />
         
         <Stack.Screen 
           name="RespirationButeyko" 
-          options={{ title: 'Méthode Buteyko' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('buteyko', 'Méthode Buteyko')}
         />
         
         <Stack.Screen 
           name="RespirationUjjayi" 
-          options={{ title: 'Respiration Ujjayi' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('ujjayi', 'Respiration Ujjayi')}
         />
         
         <Stack.Screen 
           name="RespirationTummo" 
-          options={{ title: 'Respiration Tummo' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('tummo', 'Respiration Tummo')}
         />
         
         {/* Nouvelles techniques de respiration */}
         <Stack.Screen 
           name="RespirationPapillon" 
-          options={{ title: 'Respiration Papillon' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('papillon', 'Respiration Papillon')}
         />
         
         <Stack.Screen 
           name="RespirationLion" 
-          options={{ title: 'Respiration du Lion' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('lion', 'Respiration du Lion')}
         />
         
         <Stack.Screen 
           name="Respiration345" 
-          options={{ title: 'Technique 3-4-5' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('3-4-5', 'Technique 3-4-5')}
         />
         
         <Stack.Screen 
           name="RespirationPleineConscience" 
-          options={{ title: 'Respiration en Pleine Conscience' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('pleine-conscience', 'Respiration en Pleine Conscience')}
         />
         
         <Stack.Screen 
           name="RespirationLevresPincees" 
-          options={{ title: 'Respiration à Lèvres Pincées' }}
+          options={{ headerShown: false }}
           children={createGenericBreathingScreen('levres-pincees', 'Respiration à Lèvres Pincées')}
         />
         
