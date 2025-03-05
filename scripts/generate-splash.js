@@ -14,40 +14,35 @@ const ctx = canvas.getContext('2d');
 ctx.fillStyle = '#121212';
 ctx.fillRect(0, 0, width, height);
 
-// Dessiner un cercle extérieur (anneau)
+// Dessiner les cercles concentriques
 const centerX = width / 2;
 const centerY = height / 2;
-const outerRadius = 400;
+const radius = 350;
 
-// Anneau extérieur avec dégradé
-const gradient = ctx.createLinearGradient(
-  centerX - outerRadius, 
-  centerY - outerRadius, 
-  centerX + outerRadius, 
-  centerY + outerRadius
-);
-gradient.addColorStop(0, '#3498db');
-gradient.addColorStop(1, '#3498db99');
-
+// Cercle principal
 ctx.beginPath();
-ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
-ctx.lineWidth = 15;
-ctx.strokeStyle = gradient;
-ctx.stroke();
-
-// Cercle intérieur (bulle)
-const innerRadius = 280;
-ctx.beginPath();
-ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
-ctx.fillStyle = '#3498db';
+ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+ctx.fillStyle = '#2196F3'; // Bleu plus doux
 ctx.fill();
 
-// Ajouter la lettre "B" au centre
-ctx.font = 'bold 300px Arial';
-ctx.fillStyle = '#FFFFFF';
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-ctx.fillText('B', centerX, centerY);
+// Cercle intermédiaire
+ctx.beginPath();
+ctx.arc(centerX, centerY, radius * 0.7, 0, 2 * Math.PI);
+ctx.fillStyle = '#64B5F6'; // Bleu plus clair
+ctx.fill();
+
+// Cercle central
+ctx.beginPath();
+ctx.arc(centerX, centerY, radius * 0.4, 0, 2 * Math.PI);
+ctx.fillStyle = '#BBDEFB'; // Bleu très clair
+ctx.fill();
+
+// Contour blanc
+ctx.beginPath();
+ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+ctx.lineWidth = 15;
+ctx.strokeStyle = '#FFFFFF';
+ctx.stroke();
 
 // Ajouter le texte "BreathFlow" en bas
 ctx.font = 'bold 80px Arial';
