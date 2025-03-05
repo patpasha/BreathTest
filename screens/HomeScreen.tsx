@@ -128,7 +128,7 @@ const HomeScreen = () => {
   // Les techniques sont déjà filtrées dans l'état breathingTechniques
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right', 'top']}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
       <LinearGradient
         colors={[theme.primaryLight, theme.background]}
@@ -137,7 +137,7 @@ const HomeScreen = () => {
         end={{ x: 0, y: 1 }}
       >
         <View style={styles.headerContainer}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>BreathFlow</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Welcome!</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Retrouvez calme et sérénité grâce à des techniques de respiration éprouvées
           </Text>
@@ -305,15 +305,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    paddingTop: 20,
+    paddingTop: 30,
     paddingBottom: 30,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    marginTop: 20,
   },
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 30,
   },
   title: {
     fontSize: 38,
