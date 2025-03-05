@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
 import { initDatabase } from '../services/DatabaseService';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
 
@@ -13,6 +14,11 @@ const SplashScreen = () => {
   const theme = useTheme();
   const [dbInitialized, setDbInitialized] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
+  
+  // Animations
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   // Initialiser la base de données
   useEffect(() => {
@@ -29,19 +35,135 @@ const SplashScreen = () => {
     };
 
     initDb();
+    
+    // Démarrer les animations
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      })
+    ]).start();
   }, []);
 
   useEffect(() => {
     if (dbInitialized) {
-      navigation.replace('MainTabs');
+      // Ajouter un délai pour que l'animation soit visible
+      const timer = setTimeout(() => {
+        navigation.replace('MainTabs');
+      }, 1500);
+      
+      return () => clearTimeout(timer);
     }
   }, [dbInitialized, navigation]);
+  
+  // Calcul pour l'anneau de progression
+  const circleSize = 200;
+  const radius = circleSize / 2;
+  const circumference = 2 * Math.PI * radius;
+  
+  // Création d'un composant Circle animé
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+  
+  // Calcul du strokeDashoffset basé sur la progression
+  const strokeDashoffset = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, 0],
+  });
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.textPrimary }]}>BreathFlow</Text>
+      <Animated.View 
+        style={[
+          styles.logoContainer,
+          {
+            opacity: opacityAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
+        {/* Anneau de progression */}
+        <View style={styles.progressContainer}>
+          <Svg width={circleSize} height={circleSize} style={styles.svg}>
+            <Defs>
+              <LinearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor={theme.primary} stopOpacity="1" />
+                <Stop offset="100%" stopColor={`${theme.primary}99`} stopOpacity="0.6" />
+              </LinearGradient>
+            </Defs>
+            
+            {/* Anneau de fond */}
+            <Circle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius - 2}
+              strokeWidth={4}
+              stroke={`${theme.primary}33`}
+              fill="transparent"
+            />
+            
+            {/* Anneau de progression */}
+            <AnimatedCircle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius - 2}
+              strokeWidth={4}
+              stroke={`url(#gradient)`}
+              fill="transparent"
+              strokeDasharray={`${circumference}`}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              rotation="-90"
+              origin={`${circleSize / 2}, ${circleSize / 2}`}
+            />
+          </Svg>
+        </View>
+        
+        {/* Cercle principal */}
+        <View 
+          style={[
+            styles.bubble,
+            {
+              backgroundColor: theme.primary,
+              width: circleSize * 0.7,
+              height: circleSize * 0.7,
+              borderRadius: circleSize * 0.35,
+            }
+          ]}
+        >
+          <Text style={styles.breathText}>B</Text>
+        </View>
+      </Animated.View>
+      
+      <Animated.Text 
+        style={[
+          styles.title, 
+          { 
+            color: theme.textPrimary,
+            opacity: opacityAnim,
+            transform: [{ translateY: opacityAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0]
+            })}]
+          }
+        ]}
+      >
+        BreathFlow
+      </Animated.Text>
+      
       {dbError && <Text style={[styles.errorText, { color: theme.error }]}>{dbError}</Text>}
-      <ActivityIndicator size="large" color={theme.primary} />
     </View>
   );
 };
@@ -51,6 +173,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 30,
+  },
+  progressContainer: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+  },
+  svg: {
+    position: 'absolute',
+  },
+  bubble: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  breathText: {
+    fontSize: 60,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   title: {
     fontSize: 32,
