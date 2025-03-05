@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useCallback, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useCallback, useRef, useState, createContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -20,6 +20,20 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 ExpoSplashScreen.preventAutoHideAsync().catch(() => {
   /* Le splashscreen est peut-être déjà caché */
 });
+
+// Précharger les ressources essentielles en parallèle
+const preloadAssets = async () => {
+  try {
+    // Précharger l'image du logo en utilisant directement l'objet d'image sans extraire l'URI
+    // Cela évite le problème "No suitable URL request handler found for (null)"
+    await Image.prefetch(require('./assets/splash-icon.png'));
+  } catch (error) {
+    console.warn('Erreur lors du préchargement des ressources:', error);
+  }
+};
+
+// Démarrer le préchargement immédiatement
+preloadAssets();
 
 // Import des écrans
 import HomeScreen from './screens/HomeScreen';
@@ -81,12 +95,67 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Composant de chargement pour les écrans en lazy loading
+// Interface pour le contexte global de l'application
+interface AppContextType {
+  showDevTools: boolean;
+  setShowDevTools: (show: boolean) => void;
+}
+
+// Contexte global pour l'application
+export const AppContext = createContext<AppContextType>({
+  showDevTools: false,
+  setShowDevTools: () => {},
+});
+
+// Composant de chargement amélioré pour les écrans en lazy loading
 const LoadingScreen = () => {
   const theme = useTheme();
+  const pulseAnim = useRef(new Animated.Value(0.8)).current;
+  
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.8,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [pulseAnim]);
+  
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
-      <ActivityIndicator size="large" color={theme.primary} />
+    <View style={{ 
+      flex: 1, 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      backgroundColor: theme.background 
+    }}>
+      <Animated.View style={{
+        transform: [{ scale: pulseAnim }],
+        marginBottom: 20
+      }}>
+        <Image 
+          source={require('./assets/splash-icon.png')} 
+          style={{ width: 120, height: 120 }}
+          resizeMode="contain"
+        />
+      </Animated.View>
+      <Text style={{ 
+        color: theme.textPrimary, 
+        fontSize: 18, 
+        marginTop: 10,
+        fontWeight: '500'
+      }}>
+        Chargement...
+      </Text>
     </View>
   );
 };
@@ -167,6 +236,7 @@ const MainTabNavigator = () => {
 // Composant pour le navigateur principal avec accès au thème
 const AppNavigator = () => {
   const theme = useTheme();
+  const { showDevTools } = React.useContext(AppContext);
   
   // Fonction utilitaire pour créer des écrans de respiration générique
   const createGenericBreathingScreen = (techniqueId: string, title: string) => {
@@ -303,6 +373,13 @@ const AppNavigator = () => {
       };
     },
     transitionSpec: customTransitionSpec,
+  };
+  
+  // Activer les outils de développement après 5 taps rapides
+  const handleDevToolsActivation = () => {
+    // Utiliser le contexte global pour activer les outils de développement
+    const { setShowDevTools } = React.useContext(AppContext);
+    setShowDevTools(true);
   };
   
   return (
@@ -457,12 +534,14 @@ const AppNavigator = () => {
           children={createGenericBreathingScreen('levres-pincees', 'Respiration à Lèvres Pincées')}
         />
         
-        {/* Écran de test pour les nouvelles techniques */}
-        <Stack.Screen 
-          name="TestNewTechniques" 
-          component={TestNewTechniques}
-          options={{ title: 'Maintenance' }}
-        />
+        {/* Écran de test pour les nouvelles techniques - accessible uniquement si activé */}
+        {showDevTools && (
+          <Stack.Screen 
+            name="TestNewTechniques" 
+            component={TestNewTechniques}
+            options={{ title: 'Maintenance' }}
+          />
+        )}
         
         <Stack.Screen 
           name="ContactDeveloper" 
@@ -476,7 +555,7 @@ const AppNavigator = () => {
 // Composant de splashscreen personnalisé
 const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
   const theme = useTheme();
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -493,60 +572,60 @@ const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
   });
   
   useEffect(() => {
-    // Démarrer les animations d'entrée
+    // Démarrer les animations d'entrée immédiatement
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 300, // Réduit de 500ms à 300ms
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 1,
-        duration: 400,
+        duration: 250, // Réduit de 400ms à 250ms
         useNativeDriver: true,
       }),
       Animated.timing(progressAnim, {
         toValue: 1,
-        duration: 1500,
+        duration: 1000, // Réduit de 1500ms à 1000ms
         easing: Easing.linear,
         useNativeDriver: false,
       }),
       Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
-          duration: 3000,
+          duration: 2000, // Réduit de 3000ms à 2000ms
           easing: Easing.linear,
           useNativeDriver: true,
         })
       )
     ]).start();
     
-    // Ajouter un délai pour que l'animation soit visible
+    // Réduire le délai d'affichage
     const timer = setTimeout(() => {
       // Animation de sortie
       Animated.parallel([
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 500,
+          duration: 300, // Réduit de 500ms à 300ms
           easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
           useNativeDriver: true,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1.1,
-          duration: 500,
+          duration: 300, // Réduit de 500ms à 300ms
           easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
           useNativeDriver: true,
         })
       ]).start(() => {
         onFinish();
       });
-    }, 2000);
+    }, 1200); // Réduit de 2000ms à 1200ms
     
     // Garantir que onFinish est appelé même si l'animation échoue
     const safetyTimer = setTimeout(() => {
       onFinish();
-    }, 5000);
+    }, 3000); // Réduit de 5000ms à 3000ms
     
     return () => {
       clearTimeout(timer);
@@ -653,6 +732,8 @@ export default function App() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [isAppReady, setIsAppReady] = useState(false);
   const [isSplashAnimationComplete, setIsSplashAnimationComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showDevTools, setShowDevTools] = useState(false);
 
   // Fonction pour masquer le splashscreen
   const onLayoutRootView = useCallback(async () => {
@@ -668,32 +749,40 @@ export default function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Initialiser d'abord la base de données
-        console.log('Initialisation de la base de données...');
+        // Démarrer l'initialisation de la base de données en arrière-plan
+        console.log('Initialisation de la base de données en arrière-plan...');
         
-        // Simuler un délai court pour éviter les écrans vides
-        const initPromise = initDatabase();
-        
-        // Attendre au moins 500ms pour éviter les flashs d'écran
-        await Promise.all([
-          initPromise,
-          new Promise(resolve => setTimeout(resolve, 500))
-        ]);
-        
-        console.log('Base de données initialisée avec succès');
-        
-        // Ajouter les nouvelles techniques de respiration à la base de données
-        console.log('Ajout des nouvelles techniques de respiration...');
-        await addNewBreathingTechniques();
-        console.log('Nouvelles techniques de respiration ajoutées avec succès');
-        
-        // Mettre à jour les catégories des techniques de respiration
-        console.log('Mise à jour des catégories des techniques de respiration...');
-        await updateBreathingTechniqueCategories();
-        console.log('Catégories des techniques de respiration mises à jour avec succès');
-        
-        // Marquer l'application comme prête
+        // Marquer l'application comme prête immédiatement pour afficher le splash screen
         setIsAppReady(true);
+        
+        // Initialiser la base de données en arrière-plan
+        initDatabase()
+          .then(() => {
+            console.log('Base de données initialisée avec succès');
+            
+            // Exécuter les opérations non critiques en arrière-plan après le chargement de l'interface
+            setTimeout(async () => {
+              try {
+                // Ajouter les nouvelles techniques de respiration à la base de données
+                console.log('Ajout des nouvelles techniques de respiration en arrière-plan...');
+                await addNewBreathingTechniques();
+                console.log('Nouvelles techniques de respiration ajoutées avec succès');
+                
+                // Mettre à jour les catégories des techniques de respiration
+                console.log('Mise à jour des catégories des techniques de respiration en arrière-plan...');
+                await updateBreathingTechniqueCategories();
+                console.log('Catégories des techniques de respiration mises à jour avec succès');
+              } catch (error) {
+                console.error('Erreur lors des opérations en arrière-plan:', error);
+                // Les erreurs en arrière-plan ne bloquent pas l'application
+              }
+            }, 2000);
+          })
+          .catch(error => {
+            console.error('Erreur lors de l\'initialisation de la base de données:', error);
+            // Même en cas d'erreur, l'application continue de fonctionner
+          });
+        
       } catch (error) {
         console.error('Erreur lors de l\'initialisation de l\'application:', error);
         // Même en cas d'erreur, on considère l'app comme prête pour éviter de bloquer l'utilisateur
@@ -707,12 +796,17 @@ export default function App() {
   // Démarrer l'animation de fondu une fois que le splashscreen est terminé
   useEffect(() => {
     if (isSplashAnimationComplete && isAppReady) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        useNativeDriver: true,
-      }).start();
+      // Afficher l'écran de chargement pendant un court instant
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          useNativeDriver: true,
+        }).start(() => {
+          setIsLoading(false);
+        });
+      }, 300);
     }
   }, [isSplashAnimationComplete, isAppReady, fadeAnim]);
 
@@ -733,18 +827,33 @@ export default function App() {
       </SafeAreaProvider>
     );
   }
+  
+  // Si l'application est en cours de chargement après le splashscreen, afficher l'écran de chargement
+  if (isLoading) {
+    return (
+      <SafeAreaProvider onLayout={onLayoutRootView}>
+        <SettingsProvider>
+          <ThemeProvider>
+            <LoadingScreen />
+          </ThemeProvider>
+        </SettingsProvider>
+      </SafeAreaProvider>
+    );
+  }
 
   // Une fois que l'application est prête et que l'animation du splashscreen est terminée, afficher l'application
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-        <SettingsProvider>
-          <ThemeProvider>
-            <StatsProvider>
-              <AppNavigator />
-            </StatsProvider>
-          </ThemeProvider>
-        </SettingsProvider>
+        <AppContext.Provider value={{ showDevTools, setShowDevTools }}>
+          <SettingsProvider>
+            <ThemeProvider>
+              <StatsProvider>
+                <AppNavigator />
+              </StatsProvider>
+            </ThemeProvider>
+          </SettingsProvider>
+        </AppContext.Provider>
       </Animated.View>
     </SafeAreaProvider>
   );
