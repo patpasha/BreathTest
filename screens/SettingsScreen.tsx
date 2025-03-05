@@ -17,10 +17,23 @@ type SettingsScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
+// Interface pour le contexte global de l'application
+interface AppContext {
+  showDevTools: boolean;
+  setShowDevTools: (show: boolean) => void;
+}
+
+// Contexte global pour l'application
+export const AppContext = React.createContext<AppContext>({
+  showDevTools: false,
+  setShowDevTools: () => {},
+});
+
 const SettingsScreen = () => {
   const { settings, setSetting, resetSettings } = useSettings();
   const theme = useTheme();
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const { showDevTools, setShowDevTools } = React.useContext(AppContext);
 
   // État local pour suivre les modifications non enregistrées (uniquement pour les rappels)
   const [localReminderSettings, setLocalReminderSettings] = useState({
@@ -30,6 +43,10 @@ const SettingsScreen = () => {
   });
   const [hasReminderChanges, setHasReminderChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // État pour le compteur de taps pour activer le mode développeur
+  const [devTapCount, setDevTapCount] = useState(0);
+  const devTapTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Référence pour suivre si c'est le premier rendu
   const isFirstRender = useRef(true);
@@ -231,9 +248,55 @@ const SettingsScreen = () => {
     }
   };
 
+  // Fonction pour gérer les taps sur le titre et activer le mode développeur
+  const handleTitlePress = () => {
+    // Incrémenter le compteur de taps
+    setDevTapCount(prevCount => prevCount + 1);
+    
+    // Réinitialiser le compteur après 2 secondes d'inactivité
+    if (devTapTimeout.current) {
+      clearTimeout(devTapTimeout.current);
+    }
+    
+    devTapTimeout.current = setTimeout(() => {
+      // Si l'utilisateur a tapé 7 fois, activer le mode développeur
+      if (devTapCount >= 6) {
+        setShowDevTools(true);
+        Alert.alert(
+          'Mode développeur activé',
+          'Vous avez activé le mode développeur.',
+          [{ text: 'OK' }]
+        );
+      }
+      setDevTapCount(0);
+    }, 1500);
+  };
+  
+  // Nettoyer le timeout lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      if (devTapTimeout.current) {
+        clearTimeout(devTapTimeout.current);
+      }
+    };
+  }, []);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+        <TouchableOpacity 
+          activeOpacity={0.8} 
+          onPress={handleTitlePress}
+          style={styles.titleContainer}
+        >
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Paramètres</Text>
+          {devTapCount > 0 && devTapCount < 7 && (
+            <Text style={[styles.devHint, { color: theme.textTertiary }]}>
+              {7 - devTapCount} taps pour le mode développeur
+            </Text>
+          )}
+        </TouchableOpacity>
+        
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <View style={styles.sectionHeader}>
             <TouchableOpacity 
@@ -242,7 +305,7 @@ const SettingsScreen = () => {
             >
               <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
-            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Préférences</Text>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]} onPress={handleTitlePress}>Préférences</Text>
             <View style={styles.headerSpacer} />
           </View>
           
@@ -316,18 +379,24 @@ const SettingsScreen = () => {
         </View>
 
         <TouchableOpacity
-          style={styles.contactButton}
+          style={[styles.contactButton, { backgroundColor: theme.primary }]}
           onPress={() => navigation.navigate('ContactDeveloper')}
         >
           <Text style={styles.contactButtonText}>Contacter le Développeur</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: theme.warning }]}
-          onPress={() => navigation.navigate('TestNewTechniques')}
-        >
-          <Text style={styles.contactButtonText}>Diagnostic des techniques</Text>
-        </TouchableOpacity>
+        {/* Bouton de maintenance - visible uniquement en mode développeur */}
+        {showDevTools && (
+          <TouchableOpacity
+            style={[styles.maintenanceButton, { 
+              backgroundColor: theme.surfaceLight,
+              borderColor: theme.border,
+              borderWidth: 1
+            }]}
+          >
+            <Text style={[styles.maintenanceButtonText, { color: theme.textSecondary }]}>Maintenance</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={[styles.section, { backgroundColor: theme.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Réinitialiser</Text>
@@ -436,16 +505,27 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   contactButton: {
-    paddingVertical: 15,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: '#4CAF50',
-    marginBottom: 20,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: 'center',
   },
   contactButtonText: {
-    fontSize: 16,
+    color: 'white',
     fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 16,
+  },
+  maintenanceButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  maintenanceButtonText: {
+    fontSize: 14,
   },
   resetButton: {
     paddingVertical: 15,
@@ -506,6 +586,21 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
+  },
+  titleContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  devHint: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: 8,
   },
 });
 

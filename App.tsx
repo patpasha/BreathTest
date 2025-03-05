@@ -43,7 +43,6 @@ import SplashScreen from './screens/SplashScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import InformationScreen from './screens/InformationScreen';
 import StatsScreen from './screens/StatsScreen';
-import TestNewTechniques from './screens/TestNewTechniques';
 import ContactDeveloperScreen from './screens/ContactDeveloperScreen';
 
 // Chargement paresseux (lazy loading) pour l'écran de respiration générique
@@ -67,7 +66,6 @@ export type RootStackParamList = {
   Splash: undefined;
   MainTabs: undefined;
   Info: undefined;
-  TestNewTechniques: undefined;
   ContactDeveloper: undefined;
   
   // Écran générique pour les techniques de respiration
@@ -535,15 +533,6 @@ const AppNavigator = () => {
           options={{ title: 'Respiration à Lèvres Pincées' }}
           children={createGenericBreathingScreen('levres-pincees', 'Respiration à Lèvres Pincées')}
         />
-        
-        {/* Écran de test pour les nouvelles techniques - accessible uniquement si activé */}
-        {showDevTools && (
-          <Stack.Screen 
-            name="TestNewTechniques" 
-            component={TestNewTechniques}
-            options={{ title: 'Maintenance' }}
-          />
-        )}
         
         <Stack.Screen 
           name="ContactDeveloper" 
