@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,6 +13,12 @@ import { StatsProvider } from './contexts/StatsContext';
 import { ThemeProvider } from './theme/ThemeContext';
 import { addNewBreathingTechniques, updateBreathingTechniqueCategories } from './services/DatabaseService';
 import { initDatabase } from './services/DatabaseService';
+import * as ExpoSplashScreen from 'expo-splash-screen';
+
+// Maintenir le splashscreen visible pendant le chargement
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {
+  /* Le splashscreen est peut-être déjà caché */
+});
 
 // Import des écrans
 import HomeScreen from './screens/HomeScreen';
@@ -461,6 +467,16 @@ const AppNavigator = () => {
 
 // Composant principal
 export default function App() {
+  // Fonction pour masquer le splashscreen
+  const onLayoutRootView = useCallback(async () => {
+    try {
+      // Masquer le splashscreen une fois que l'application est prête
+      await ExpoSplashScreen.hideAsync();
+    } catch (e) {
+      console.warn('Erreur lors de la masquage du splashscreen:', e);
+    }
+  }, []);
+
   // Ajouter les nouvelles techniques de respiration au démarrage de l'application
   useEffect(() => {
     const initializeApp = async () => {
@@ -481,7 +497,7 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider onLayout={onLayoutRootView}>
       <SettingsProvider>
         <ThemeProvider>
           <StatsProvider>
