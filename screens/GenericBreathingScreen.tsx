@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions, Alert, ScrollView, ActivityIndicator, Easing } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions, Alert, ScrollView, ActivityIndicator, Easing, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useSettings } from '../contexts/SettingsContext';
@@ -11,8 +11,9 @@ import { useTheme } from '../theme/ThemeContext';
 import { BreathingScreenProps } from '../App';
 import { getBreathingTechniqueById, BreathingTechnique, BreathingStep, getDefaultStepsForTechnique } from '../services/DatabaseService';
 import BreathingBubble from '../components/BreathingBubble';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.55;
 
 const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => {
@@ -443,20 +444,28 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   const currentStepObj = technique.steps ? technique.steps[currentStep] : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
       <View style={styles.mainContainer}>
+        {/* En-tête avec dégradé */}
+        <LinearGradient
+          colors={[theme.primaryLight, theme.background]}
+          style={styles.headerGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        >
+          <View style={styles.headerContainer}>
+            <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
+            <View style={[styles.cyclesBadge, { backgroundColor: theme.primaryLight }]}>
+              <Text style={[styles.cyclesText, { color: theme.primary }]}>Cycle {currentCycle}</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Conteneur principal pour le timer et les cycles */}
-          <View style={styles.headerContainer}>
-            <View style={styles.timerContainer}>
-              <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
-              <Text style={[styles.cyclesText, { color: theme.textSecondary }]}>Cycle: {currentCycle}</Text>
-            </View>
-          </View>
-
           {/* Conteneur pour la bulle de respiration avec plus d'espace */}
           <View style={styles.breathingSection}>
             <View style={styles.circleContainer}>
@@ -464,29 +473,48 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                 isActive={isActive}
                 currentStep={currentStepObj?.name || ''}
                 progress={stepProgress}
-                size={CIRCLE_SIZE * 0.8}
+                size={CIRCLE_SIZE * 0.9}
                 instruction={currentStepObj?.instruction || ''}
               />
             </View>
           </View>
 
           {/* Section pour le bouton de guide avec plus d'espace */}
-          <View style={styles.guideSection}>
-            {isActive && (
+          {isActive && (
+            <View style={styles.guideSection}>
               <TouchableOpacity 
-                style={[styles.guideButton, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]} 
+                style={[
+                  styles.guideButton, 
+                  { 
+                    backgroundColor: showGuide ? theme.primaryLight : 'transparent',
+                    borderColor: theme.border
+                  }
+                ]} 
                 onPress={() => setShowGuide(!showGuide)}
               >
-                <Text style={{ color: theme.textSecondary }}>
+                <Text style={{ 
+                  color: showGuide ? theme.primary : theme.textSecondary,
+                  fontWeight: showGuide ? '600' : '400'
+                }}>
                   {showGuide ? "Masquer le guide" : "Afficher le guide"}
                 </Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          )}
 
           {/* Guide de la technique - affiché uniquement si showGuide est true */}
           {(!isActive || showGuide) && (
-            <View style={styles.techniqueDescriptionContainer}>
+            <View style={[
+              styles.techniqueDescriptionContainer, 
+              { 
+                backgroundColor: theme.cardBackground,
+                shadowColor: theme.shadowColor,
+                shadowOpacity: 0.1,
+                shadowRadius: 15,
+                shadowOffset: { width: 0, height: 5 },
+                elevation: 5,
+              }
+            ]}>
               <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
               <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
                 {technique.description}
@@ -527,6 +555,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
 
           {!isActive && (
             <View style={styles.durationSelectorContainer}>
+              <Text style={[styles.durationTitle, { color: theme.textPrimary }]}>Durée de la session</Text>
               <DurationSelector
                 duration={sessionDurationMinutes}
                 onDurationChange={handleDurationChange}
@@ -539,17 +568,47 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         </ScrollView>
         
         {/* Bouton fixe en bas de l'écran */}
-        <View style={[styles.fixedButtonContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
+        <View style={[
+          styles.fixedButtonContainer, 
+          { 
+            backgroundColor: theme.background,
+            shadowColor: theme.shadowColor,
+            shadowOpacity: 0.1,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: -5 },
+            elevation: 10,
+          }
+        ]}>
           {!isActive ? (
             <TouchableOpacity 
-              style={[styles.startButton, { backgroundColor: theme.primary }]} 
+              style={[
+                styles.startButton, 
+                { 
+                  backgroundColor: theme.primary,
+                  shadowColor: theme.primary,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 5 },
+                  elevation: 5,
+                }
+              ]} 
               onPress={handleStart}
             >
               <Text style={styles.buttonText}>Commencer</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity 
-              style={[styles.stopButton, { backgroundColor: theme.error }]} 
+              style={[
+                styles.stopButton, 
+                { 
+                  backgroundColor: theme.error,
+                  shadowColor: theme.error,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 5 },
+                  elevation: 5,
+                }
+              ]} 
               onPress={handleStop}
             >
               <Text style={styles.buttonText}>Arrêter</Text>
@@ -569,28 +628,35 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 80, // Espace pour le bouton fixe
-    paddingHorizontal: 16, // Marge horizontale uniforme
+  headerGradient: {
+    paddingTop: 20,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   headerContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-    paddingHorizontal: 16,
-  },
-  timerContainer: {
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 10,
   },
   timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 52,
+    fontWeight: '700',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  cyclesBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   cyclesText: {
-    fontSize: 18,
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 100, // Espace pour le bouton fixe
   },
   breathingSection: {
     marginTop: 20,
@@ -605,22 +671,17 @@ const styles = StyleSheet.create({
   guideSection: {
     marginBottom: 20,
     paddingVertical: 10,
+    alignItems: 'center',
   },
   guideButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
-    alignSelf: 'center',
+    borderRadius: 12,
     borderWidth: 1,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
   },
   instructionTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     marginBottom: 15,
     textAlign: 'center',
   },
@@ -631,8 +692,15 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   durationSelectorContainer: {
-    marginVertical: 15,
+    marginVertical: 20,
     width: '100%',
+    paddingHorizontal: 20,
+  },
+  durationTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    textAlign: 'center',
   },
   fixedButtonContainer: {
     position: 'absolute',
@@ -640,35 +708,31 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
+    paddingVertical: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   startButton: {
-    paddingVertical: 15,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   stopButton: {
-    paddingVertical: 15,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
   },
   buttonText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   techniqueDescriptionContainer: {
-    paddingHorizontal: 16,
+    marginHorizontal: 20,
     marginBottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginTop: 10,
   },
 });
