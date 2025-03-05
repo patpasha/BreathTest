@@ -497,25 +497,25 @@ const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 500,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 400,
         useNativeDriver: true,
       }),
       Animated.timing(progressAnim, {
         toValue: 1,
-        duration: 2000,
+        duration: 1500,
         easing: Easing.linear,
         useNativeDriver: false,
       }),
       Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
-          duration: 4000,
+          duration: 3000,
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -528,20 +528,20 @@ const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
       Animated.parallel([
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 800,
+          duration: 500,
           easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
           useNativeDriver: true,
         }),
         Animated.timing(scaleAnim, {
           toValue: 1.1,
-          duration: 800,
+          duration: 500,
           easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
           useNativeDriver: true,
         })
       ]).start(() => {
         onFinish();
       });
-    }, 2500);
+    }, 2000);
     
     return () => clearTimeout(timer);
   }, []);
@@ -663,7 +663,16 @@ export default function App() {
       try {
         // Initialiser d'abord la base de données
         console.log('Initialisation de la base de données...');
-        await initDatabase();
+        
+        // Simuler un délai court pour éviter les écrans vides
+        const initPromise = initDatabase();
+        
+        // Attendre au moins 500ms pour éviter les flashs d'écran
+        await Promise.all([
+          initPromise,
+          new Promise(resolve => setTimeout(resolve, 500))
+        ]);
+        
         console.log('Base de données initialisée avec succès');
         setDbInitialized(true);
         
@@ -703,8 +712,22 @@ export default function App() {
 
   // Gérer la fin de l'animation du splashscreen
   const handleSplashAnimationComplete = useCallback(() => {
-    setIsSplashAnimationComplete(true);
-  }, []);
+    // Assurer que l'application est prête avant de terminer l'animation du splashscreen
+    if (isAppReady) {
+      setIsSplashAnimationComplete(true);
+    } else {
+      // Si l'application n'est pas encore prête, attendre qu'elle le soit
+      const checkAppReady = setInterval(() => {
+        if (isAppReady) {
+          clearInterval(checkAppReady);
+          setIsSplashAnimationComplete(true);
+        }
+      }, 100);
+      
+      // Nettoyer l'intervalle si le composant est démonté
+      return () => clearInterval(checkAppReady);
+    }
+  }, [isAppReady]);
 
   // Si l'application n'est pas prête, afficher le splashscreen personnalisé
   if (!isAppReady || !isSplashAnimationComplete) {
