@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator, Dimensions, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,9 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../App';
 import { useTheme } from '../theme/ThemeContext';
 import { BreathingTechnique, getAllBreathingTechniques, getBreathingTechniquesByCategory, initDatabase } from '../services/DatabaseService';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'HomeTab'>,
@@ -27,7 +30,7 @@ const HomeScreen = () => {
   const theme = useTheme();
   
   // État pour stocker la catégorie sélectionnée (null = toutes les catégories)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>('all');
   
   // État pour stocker les techniques de respiration chargées depuis la base de données
   const [breathingTechniques, setBreathingTechniques] = useState<BreathingTechnique[]>([]);
@@ -125,191 +128,192 @@ const HomeScreen = () => {
   // Les techniques sont déjà filtrées dans l'état breathingTechniques
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView style={styles.scrollView}>
-        {/* Logo de l'application avec design moderne */}
-        <View style={styles.logoContainer}>
-          <View 
-            style={[
-              styles.logoCircle, 
-              { 
-                backgroundColor: theme.primary,
-                shadowColor: theme.shadowColor,
-                shadowOpacity: theme.shadowOpacity,
-                shadowRadius: theme.shadowRadius,
-                shadowOffset: theme.shadowOffset,
-                elevation: theme.elevation
-              }
-            ]}
-          >
-            <View style={[styles.logoInnerCircle, { backgroundColor: theme.primaryLight }]}>
-              <Text style={[styles.logoText, { color: theme.primary }]}>BF</Text>
-            </View>
-          </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
+      <LinearGradient
+        colors={[theme.primaryLight, theme.background]}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      >
+        <View style={styles.headerContainer}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>BreathFlow</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Retrouvez calme et sérénité grâce à des techniques de respiration éprouvées
+          </Text>
         </View>
-        
-        <Text style={[styles.title, { color: theme.textPrimary }]}>BreathFlow</Text>
-        <Text style={[styles.subtitle, { color: theme.textTertiary }]}>
-          Techniques de respiration basées sur des méthodes scientifiquement reconnues
-        </Text>
-        
-        {/* Indicateur de chargement (uniquement au chargement initial) */}
-        {isLoading && !isInitialized && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.primary} />
-            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Chargement des techniques...</Text>
-          </View>
-        )}
+      </LinearGradient>
 
+      {/* Indicateur de chargement (uniquement au chargement initial) */}
+      {isLoading && !isInitialized && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Chargement des techniques...</Text>
+        </View>
+      )}
+
+      {/* Contenu principal */}
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
+      >
         {/* Sélecteur de catégories avec design amélioré */}
         {isInitialized && (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            style={styles.categoryScrollView}
-            contentContainerStyle={styles.categoryContainer}
-          >
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryButton,
-                  {
-                  borderRadius: theme.borderRadiusRound,
-                  borderColor: theme.primary,
-                  backgroundColor: selectedCategory === category.id 
-                    ? theme.primary 
-                    : theme.primaryLight,
-                  shadowColor: theme.shadowColor,
-                  shadowOpacity: selectedCategory === category.id ? 0.3 : 0.1,
-                  shadowRadius: 4,
-                  shadowOffset: { width: 0, height: 2 },
-                  elevation: selectedCategory === category.id ? 3 : 1,
-                }
-              ]}
-              onPress={() => setSelectedCategory(category.id)}
+          <View style={styles.categorySection}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Catégories</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.categoryScrollView}
+              contentContainerStyle={styles.categoryContainer}
             >
-              <Text 
-                style={[
-                  styles.categoryText, 
-                  { 
-                    color: selectedCategory === category.id ? theme.textLight : theme.primary,
-                    fontWeight: selectedCategory === category.id ? '700' : '500'
-                  }
-                ]}
-              >
-                {category.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryButton,
+                    {
+                      borderRadius: 12,
+                      backgroundColor: selectedCategory === category.id 
+                        ? theme.primary 
+                        : 'transparent',
+                      borderWidth: 1,
+                      borderColor: selectedCategory === category.id 
+                        ? theme.primary 
+                        : theme.border,
+                    }
+                  ]}
+                  onPress={() => setSelectedCategory(category.id)}
+                >
+                  <Text 
+                    style={[
+                      styles.categoryText, 
+                      { 
+                        color: selectedCategory === category.id ? theme.textLight : theme.textSecondary,
+                        fontWeight: selectedCategory === category.id ? '600' : '400'
+                      }
+                    ]}
+                  >
+                    {category.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
-        <View style={styles.cardContainer}>
+        {/* Techniques de respiration */}
+        <View style={styles.techniquesSection}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            {selectedCategory === 'all' ? 'Toutes les techniques' : 
+              categories.find(c => c.id === selectedCategory)?.title || 'Techniques'}
+          </Text>
+          
           {isLoading && isInitialized && (
             <View style={styles.miniLoadingContainer}>
               <ActivityIndicator size="small" color={theme.primary} />
             </View>
           )}
-          {!isLoading && breathingTechniques.map((technique) => (
-            <TouchableOpacity
-              key={technique.id}
-              style={[
-                styles.card, 
-                { 
-                  backgroundColor: theme.cardBackground, 
-                  borderRadius: theme.borderRadiusMedium,
-                  shadowColor: theme.shadowColor,
-                  shadowOpacity: theme.shadowOpacity,
-                  shadowRadius: theme.shadowRadius / 2,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: theme.elevation / 2,
-                  borderWidth: 1,
-                  borderColor: theme.border
-                }
-              ]}
-              onPress={() => {
-                if (technique.route === 'GenericBreathingScreen') {
-                  navigation.navigate('GenericBreathingScreen', { techniqueId: technique.id, title: technique.title });
-                } else {
-                  // Pour les autres routes, utiliser directement le nom de la route
-                  // @ts-ignore - Nous savons que ces routes existent dans notre application
-                  navigation.navigate(technique.route);
-                }
-              }}
-            >
-              <View style={styles.cardContent}>
-                <Text style={[styles.cardTitle, { color: theme.primary }]}>{technique.title}</Text>
-                <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
-                  {technique.description}
+          
+          <View style={styles.cardContainer}>
+            {!isLoading && breathingTechniques.length === 0 && (
+              <View style={styles.emptyStateContainer}>
+                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+                  Aucune technique trouvée dans cette catégorie
                 </Text>
-                <View style={styles.cardFooter}>
-                  <Text style={[styles.cardDuration, { color: theme.textTertiary }]}>
-                    <Text style={{ fontWeight: '600' }}>Durée:</Text> {technique.duration}
+              </View>
+            )}
+            
+            {!isLoading && breathingTechniques.map((technique) => (
+              <TouchableOpacity
+                key={technique.id}
+                style={[
+                  styles.card, 
+                  { 
+                    backgroundColor: theme.cardBackground, 
+                    borderRadius: 16,
+                    shadowColor: theme.shadowColor,
+                    shadowOpacity: 0.1,
+                    shadowRadius: 15,
+                    shadowOffset: { width: 0, height: 5 },
+                    elevation: 5,
+                  }
+                ]}
+                onPress={() => {
+                  if (technique.route === 'GenericBreathingScreen') {
+                    navigation.navigate('GenericBreathingScreen', { techniqueId: technique.id, title: technique.title });
+                  } else {
+                    // Pour les autres routes, utiliser directement le nom de la route
+                    // @ts-ignore - Nous savons que ces routes existent dans notre application
+                    navigation.navigate(technique.route);
+                  }
+                }}
+              >
+                <LinearGradient
+                  colors={[theme.primaryLight, theme.cardBackground]}
+                  style={styles.cardHeader}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
+                </LinearGradient>
+                
+                <View style={styles.cardContent}>
+                  <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
+                    {technique.description}
                   </Text>
-                  <View style={styles.categoryTags}>
-                    {technique.categories.slice(0, 2).map((catId) => (
-                      <View 
-                        key={`${technique.id}-${catId}`} 
-                        style={[
-                          styles.categoryTag, 
-                          { 
-                            backgroundColor: theme.primaryLight,
-                            borderRadius: theme.borderRadiusRound
-                          }
-                        ]}
-                      >
-                        <Text style={[styles.categoryTagText, { color: theme.primary, fontWeight: '600' }]}>
-                          {categories.find(cat => cat.id === catId)?.title.split(' ')[0]}
-                        </Text>
-                      </View>
-                    ))}
+                  
+                  <View style={styles.cardFooter}>
+                    <View style={[styles.durationBadge, { backgroundColor: theme.primaryLight }]}>
+                      <Text style={[styles.cardDuration, { color: theme.primary }]}>
+                        {technique.duration}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.categoryTags}>
+                      {technique.categories.slice(0, 2).map((catId) => (
+                        <View 
+                          key={`${technique.id}-${catId}`} 
+                          style={[
+                            styles.categoryTag, 
+                            { 
+                              backgroundColor: theme.primaryLight,
+                              borderRadius: 8
+                            }
+                          ]}
+                        >
+                          <Text style={[styles.categoryTagText, { color: theme.primary }]}>
+                            {categories.find(cat => cat.id === catId)?.title.split(' ')[0]}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
+        {/* Bouton de paramètres */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
-              styles.infoButton, 
-              { 
-                backgroundColor: theme.secondary,
-                borderRadius: theme.borderRadiusMedium,
-                shadowColor: theme.shadowColor,
-                shadowOpacity: theme.shadowOpacity,
-                shadowRadius: theme.shadowRadius / 2,
-                shadowOffset: { width: 0, height: 3 },
-                elevation: theme.elevation / 2,
-                flex: 1,
-                marginRight: 8
-              }
-            ]}
-            onPress={() => navigation.navigate('Info')}
-          >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Informations</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.infoButton, 
-              { 
+              styles.settingsButton,
+              {
                 backgroundColor: theme.primary,
-                borderRadius: theme.borderRadiusMedium,
-                shadowColor: theme.shadowColor,
-                shadowOpacity: theme.shadowOpacity,
-                shadowRadius: theme.shadowRadius / 2,
-                shadowOffset: { width: 0, height: 3 },
-                elevation: theme.elevation / 2,
-                flex: 1,
-                marginLeft: 8
+                borderRadius: 12,
+                shadowColor: theme.primary,
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 5 },
+                elevation: 5,
               }
             ]}
-            onPress={() => navigation.navigate('TestNewTechniques')}
+            onPress={() => navigation.navigate('SettingsTab')}
           >
-            <Text style={[styles.buttonText, { color: theme.textLight }]}>Nouvelles Techniques</Text>
+            <Text style={[styles.buttonText, { color: theme.textLight }]}>Paramètres</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -318,102 +322,122 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniLoadingContainer: {
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: 50,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-  },
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
+  headerGradient: {
+    paddingTop: 20,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  logoContainer: {
+  headerContainer: {
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 10,
-  },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoInnerCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 40,
-    fontWeight: 'bold',
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 38,
+    fontWeight: '700',
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 5,
+    marginBottom: 12,
     letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 25,
-    paddingHorizontal: 30,
-    lineHeight: 22,
+    paddingHorizontal: 20,
+    lineHeight: 24,
     letterSpacing: 0.2,
+    opacity: 0.8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    paddingBottom: 30,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  miniLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    height: 80,
+  },
+  categorySection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  techniquesSection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 15,
+    paddingHorizontal: 4,
   },
   categoryScrollView: {
-    marginBottom: 20,
+    marginBottom: 5,
   },
   categoryContainer: {
-    paddingHorizontal: 15,
     paddingVertical: 5,
   },
   categoryButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    marginHorizontal: 6,
-    borderWidth: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryText: {
     fontSize: 14,
     letterSpacing: 0.2,
   },
   cardContainer: {
-    paddingHorizontal: 20,
+    marginTop: 5,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 12,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   card: {
-    marginBottom: 18,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
   },
   cardContent: {
     padding: 20,
+    paddingTop: 10,
   },
   cardTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
   cardDescription: {
     fontSize: 15,
-    marginBottom: 12,
+    marginBottom: 16,
     lineHeight: 22,
     letterSpacing: 0.2,
   },
@@ -421,38 +445,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 5,
+  },
+  durationBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   cardDuration: {
     fontSize: 13,
+    fontWeight: '600',
   },
   categoryTags: {
     flexDirection: 'row',
   },
   categoryTag: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginLeft: 6,
+    paddingVertical: 6,
+    marginLeft: 8,
   },
   categoryTagText: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '500',
     letterSpacing: 0.2,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginTop: 15,
-    marginBottom: 15,
+    marginTop: 10,
+    marginBottom: 20,
   },
-  infoButton: {
-    paddingVertical: 14,
+  settingsButton: {
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: 0.3,
   },
 });
