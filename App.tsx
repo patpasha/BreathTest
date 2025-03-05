@@ -543,7 +543,15 @@ const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
       });
     }, 2000);
     
-    return () => clearTimeout(timer);
+    // Garantir que onFinish est appelé même si l'animation échoue
+    const safetyTimer = setTimeout(() => {
+      onFinish();
+    }, 5000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(safetyTimer);
+    };
   }, []);
   
   // Création d'un composant Circle animé
@@ -643,7 +651,6 @@ const CustomSplashScreen = ({ onFinish }: { onFinish: () => void }) => {
 export default function App() {
   // Animation pour la transition globale
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [dbInitialized, setDbInitialized] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
   const [isSplashAnimationComplete, setIsSplashAnimationComplete] = useState(false);
 
@@ -674,7 +681,6 @@ export default function App() {
         ]);
         
         console.log('Base de données initialisée avec succès');
-        setDbInitialized(true);
         
         // Ajouter les nouvelles techniques de respiration à la base de données
         console.log('Ajout des nouvelles techniques de respiration...');
@@ -700,7 +706,7 @@ export default function App() {
 
   // Démarrer l'animation de fondu une fois que le splashscreen est terminé
   useEffect(() => {
-    if (isSplashAnimationComplete) {
+    if (isSplashAnimationComplete && isAppReady) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
@@ -708,28 +714,14 @@ export default function App() {
         useNativeDriver: true,
       }).start();
     }
-  }, [isSplashAnimationComplete, fadeAnim]);
+  }, [isSplashAnimationComplete, isAppReady, fadeAnim]);
 
   // Gérer la fin de l'animation du splashscreen
   const handleSplashAnimationComplete = useCallback(() => {
-    // Assurer que l'application est prête avant de terminer l'animation du splashscreen
-    if (isAppReady) {
-      setIsSplashAnimationComplete(true);
-    } else {
-      // Si l'application n'est pas encore prête, attendre qu'elle le soit
-      const checkAppReady = setInterval(() => {
-        if (isAppReady) {
-          clearInterval(checkAppReady);
-          setIsSplashAnimationComplete(true);
-        }
-      }, 100);
-      
-      // Nettoyer l'intervalle si le composant est démonté
-      return () => clearInterval(checkAppReady);
-    }
-  }, [isAppReady]);
+    setIsSplashAnimationComplete(true);
+  }, []);
 
-  // Si l'application n'est pas prête, afficher le splashscreen personnalisé
+  // Si l'application n'est pas prête ou l'animation du splashscreen n'est pas terminée, afficher le splashscreen personnalisé
   if (!isAppReady || !isSplashAnimationComplete) {
     return (
       <SafeAreaProvider onLayout={onLayoutRootView}>
