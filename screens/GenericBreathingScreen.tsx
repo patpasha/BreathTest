@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 80, // Espace pour le bouton fixe
+    paddingBottom: 100, // Augmenter l'espace pour le bouton fixe
   },
   breathingSection: {
     marginTop: 10,
@@ -738,13 +738,14 @@ const styles = StyleSheet.create({
   },
   fixedButtonContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 0, // Placer le bouton tout en bas de l'écran
     left: 0,
     right: 0,
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    paddingBottom: 25, // Ajouter du padding en bas pour les appareils avec une barre de navigation
   },
   startButton: {
     paddingVertical: 16,
