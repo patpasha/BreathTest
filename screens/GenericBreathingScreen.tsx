@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
-const CIRCLE_SIZE = width * 0.55;
+const CIRCLE_SIZE = width * 0.5;
 
 const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => {
   const { settings } = useSettings();

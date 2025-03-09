@@ -120,7 +120,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     if (stepType === 'inhale') {
       // Animation d'inspiration: expansion douce
       Animated.timing(scaleValue, {
-        toValue: 1.3,
+        toValue: 1.15,
         duration: stepDuration,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
@@ -200,7 +200,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   // Calcul pour l'anneau de progression
   const stepType = getStepType(currentStep);
   const currentColor = getStepColor(stepType);
-  const circleSize = size * 1.2;
+  const circleSize = size * 1.3;
   const radius = circleSize / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -243,7 +243,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           <Circle
             cx={circleSize / 2}
             cy={circleSize / 2}
-            r={radius - 2}
+            r={radius - 4}
             strokeWidth={4}
             stroke={`${currentColor}33`}
             fill="transparent"
@@ -253,7 +253,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           <AnimatedCircle
             cx={circleSize / 2}
             cy={circleSize / 2}
-            r={radius - 2}
+            r={radius - 4}
             strokeWidth={4}
             stroke={`url(#${gradientId})`}
             fill="transparent"
