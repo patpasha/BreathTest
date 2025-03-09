@@ -462,7 +462,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   const currentStepObj = technique.steps ? technique.steps[currentStep] : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right', 'top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
       <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
       <View style={styles.mainContainer}>
         {/* En-tête avec dégradé */}
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerGradient: {
-    paddingTop: 40,
+    paddingTop: 50,
     paddingBottom: 25,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 20,
+    top: 15,
     zIndex: 10,
     padding: 8,
     borderRadius: 20,

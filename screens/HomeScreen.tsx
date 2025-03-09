@@ -128,7 +128,7 @@ const HomeScreen = () => {
   // Les techniques sont déjà filtrées dans l'état breathingTechniques
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right', 'top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
       <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
       <LinearGradient
         colors={[theme.primaryLight, theme.background]}
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    paddingTop: 15,
+    paddingTop: 50,
     paddingBottom: 30,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 15,
+    paddingTop: 10,
   },
   title: {
     fontSize: 38,
