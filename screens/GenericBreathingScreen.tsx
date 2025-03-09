@@ -262,6 +262,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       // Réinitialiser la progression et démarrer l'animation
       setStepProgress(0);
       progressAnimation.setValue(0);
+      
+      // Utiliser une animation plus précise pour la progression
       Animated.timing(progressAnimation, {
         toValue: 1,
         duration: currentStepObj.duration,
@@ -271,17 +273,30 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       
       setCurrentAnimValue(toValue);
 
-      // Mettre à jour la progression toutes les 16ms (environ 60fps) pour une animation plus fluide
-      const progressInterval = setInterval(() => {
-        setStepProgress(prev => {
-          const newProgress = prev + (100 / (currentStepObj.duration / 16));
-          return newProgress > 100 ? 100 : newProgress;
-        });
-      }, 16);
+      // Utiliser requestAnimationFrame pour une animation plus fluide
+      let startTime = Date.now();
+      let animationFrameId: number;
+      
+      const updateProgress = () => {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min(100, (elapsedTime / currentStepObj.duration) * 100);
+        
+        setStepProgress(progress);
+        
+        if (progress < 100 && isActive) {
+          animationFrameId = requestAnimationFrame(updateProgress);
+        }
+      };
+      
+      // Démarrer l'animation
+      animationFrameId = requestAnimationFrame(updateProgress);
 
       // Programmer le passage à l'étape suivante
       cycleTimerRef.current = setTimeout(() => {
-        clearInterval(progressInterval);
+        // Annuler l'animation frame si elle est toujours en cours
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
         
         // Passer à l'étape suivante
         const nextStep = (currentStep + 1) % steps.length;
@@ -295,7 +310,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
 
       // Nettoyer les timers lors du démontage ou du changement d'étape
       return () => {
-        clearInterval(progressInterval);
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
         if (cycleTimerRef.current) {
           clearTimeout(cycleTimerRef.current);
         }

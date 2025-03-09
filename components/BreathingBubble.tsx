@@ -197,19 +197,23 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     
   }, [currentStep, isActive]);
 
-  // Effet pour gérer la progression externe
-  useEffect(() => {
-    if (!isActive) {
-      progressAnim.setValue(progress);
-    }
-  }, [progress, isActive]);
-
   // Calcul pour l'anneau de progression
   const stepType = getStepType(currentStep);
   const currentColor = getStepColor(stepType);
   const circleSize = size * 1.2;
   const radius = circleSize / 2;
   const circumference = 2 * Math.PI * radius;
+  
+  // Effet pour gérer la progression externe
+  useEffect(() => {
+    // Mise à jour directe de la progression
+    if (isActive) {
+      // Calculer le strokeDashoffset basé sur la progression
+      const dashOffset = circumference * (1 - progress / 100);
+      // Mettre à jour directement la valeur animée
+      progressAnim.setValue(progress / 100);
+    }
+  }, [progress, isActive, circumference]);
   
   // Création d'un composant Circle animé
   const AnimatedCircle = Animated.createAnimatedComponent(Circle);
