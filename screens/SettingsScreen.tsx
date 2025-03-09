@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Switch, TouchableOpacity, ScrollView, Alert, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, Switch, TouchableOpacity, ScrollView, Alert, Platform, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,7 +38,7 @@ const SettingsScreen = () => {
   // État local pour suivre les modifications non enregistrées (uniquement pour les rappels)
   const [localReminderSettings, setLocalReminderSettings] = useState({
     reminderEnabled: settings.reminderEnabled,
-    reminderTime: settings.reminderTime,
+    reminderTimes: [...settings.reminderTimes],
     reminderDays: [...settings.reminderDays]
   });
   const [hasReminderChanges, setHasReminderChanges] = useState(false);
@@ -57,7 +57,7 @@ const SettingsScreen = () => {
   // Référence pour suivre les derniers paramètres de notification
   const lastNotificationSettings = useRef({
     enabled: settings.reminderEnabled,
-    time: settings.reminderTime,
+    times: [...settings.reminderTimes],
     days: [...settings.reminderDays]
   });
 
@@ -65,10 +65,10 @@ const SettingsScreen = () => {
   useEffect(() => {
     setLocalReminderSettings({
       reminderEnabled: settings.reminderEnabled,
-      reminderTime: settings.reminderTime,
+      reminderTimes: [...settings.reminderTimes],
       reminderDays: [...settings.reminderDays]
     });
-  }, [settings.reminderEnabled, settings.reminderTime, settings.reminderDays]);
+  }, [settings.reminderEnabled, settings.reminderTimes, settings.reminderDays]);
 
   // Vérifier s'il y a des modifications non enregistrées pour les rappels
   useEffect(() => {
@@ -79,7 +79,7 @@ const SettingsScreen = () => {
 
     const reminderSettingsChanged = 
       localReminderSettings.reminderEnabled !== settings.reminderEnabled ||
-      localReminderSettings.reminderTime !== settings.reminderTime ||
+      JSON.stringify(localReminderSettings.reminderTimes) !== JSON.stringify(settings.reminderTimes) ||
       JSON.stringify(localReminderSettings.reminderDays) !== JSON.stringify(settings.reminderDays);
     
     setHasReminderChanges(reminderSettingsChanged);
@@ -94,7 +94,7 @@ const SettingsScreen = () => {
           isFirstRender.current = false;
           lastNotificationSettings.current = {
             enabled: settings.reminderEnabled,
-            time: settings.reminderTime,
+            times: [...settings.reminderTimes],
             days: [...settings.reminderDays]
           };
           return;
@@ -108,7 +108,7 @@ const SettingsScreen = () => {
         // Vérifier si les paramètres ont réellement changé
         const settingsChanged = 
           lastNotificationSettings.current.enabled !== settings.reminderEnabled ||
-          lastNotificationSettings.current.time !== settings.reminderTime ||
+          JSON.stringify(lastNotificationSettings.current.times) !== JSON.stringify(settings.reminderTimes) ||
           JSON.stringify(lastNotificationSettings.current.days) !== JSON.stringify(settings.reminderDays);
         
         if (!settingsChanged) {
@@ -118,7 +118,7 @@ const SettingsScreen = () => {
         // Mettre à jour les derniers paramètres
         lastNotificationSettings.current = {
           enabled: settings.reminderEnabled,
-          time: settings.reminderTime,
+          times: [...settings.reminderTimes],
           days: [...settings.reminderDays]
         };
         
@@ -130,7 +130,7 @@ const SettingsScreen = () => {
           
           if (permissionGranted) {
             // Programme le rappel quotidien avec les jours sélectionnés
-            await scheduleReminderNotification(settings.reminderTime, settings.reminderDays);
+            await scheduleReminderNotification(settings.reminderTimes, settings.reminderDays);
           } else if (Platform.OS !== 'web') {
             // Affiche une alerte si les permissions sont refusées
             Alert.alert(
@@ -153,7 +153,7 @@ const SettingsScreen = () => {
     };
     
     setupNotifications();
-  }, [settings.reminderEnabled, settings.reminderTime, settings.reminderDays]);
+  }, [settings.reminderEnabled, settings.reminderTimes, settings.reminderDays]);
   
   // Fonction pour mettre à jour les paramètres locaux de rappel
   const setLocalReminderSetting = <K extends keyof typeof localReminderSettings>(key: K, value: typeof localReminderSettings[K]) => {
@@ -166,7 +166,7 @@ const SettingsScreen = () => {
     try {
       // Mettre à jour tous les paramètres de rappel
       setSetting('reminderEnabled', localReminderSettings.reminderEnabled);
-      setSetting('reminderTime', localReminderSettings.reminderTime);
+      setSetting('reminderTimes', localReminderSettings.reminderTimes);
       setSetting('reminderDays', localReminderSettings.reminderDays);
       
       // Afficher une confirmation
@@ -193,15 +193,41 @@ const SettingsScreen = () => {
   const cancelReminderChanges = () => {
     setLocalReminderSettings({
       reminderEnabled: settings.reminderEnabled,
-      reminderTime: settings.reminderTime,
+      reminderTimes: [...settings.reminderTimes],
       reminderDays: [...settings.reminderDays]
     });
     setHasReminderChanges(false);
   };
   
   // Gère le changement d'heure de rappel
-  const handleTimeChange = (time: string) => {
-    setLocalReminderSetting('reminderTime', time);
+  const handleTimeChange = (index: number, time: string) => {
+    const newTimes = [...localReminderSettings.reminderTimes];
+    newTimes[index] = time;
+    setLocalReminderSetting('reminderTimes', newTimes);
+  };
+  
+  // Ajoute une nouvelle heure de rappel
+  const addReminderTime = () => {
+    // Ajouter une nouvelle heure par défaut (20:00)
+    const newTimes = [...localReminderSettings.reminderTimes, '20:00'];
+    setLocalReminderSetting('reminderTimes', newTimes);
+  };
+  
+  // Supprime une heure de rappel
+  const removeReminderTime = (index: number) => {
+    // Ne pas supprimer la dernière heure
+    if (localReminderSettings.reminderTimes.length <= 1) {
+      Alert.alert(
+        "Impossible de supprimer",
+        "Vous devez avoir au moins une heure de rappel.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
+    const newTimes = [...localReminderSettings.reminderTimes];
+    newTimes.splice(index, 1);
+    setLocalReminderSetting('reminderTimes', newTimes);
   };
   
   // Gère le changement des jours de rappel
@@ -363,17 +389,66 @@ const SettingsScreen = () => {
           
           {localReminderSettings.reminderEnabled && (
             <View style={styles.timePickerContainer}>
-              <TimeSelector
-                time={localReminderSettings.reminderTime}
-                onTimeChange={handleTimeChange}
-                label="Heure de rappel"
-              />
+              <Text style={[styles.reminderSectionTitle, { color: theme.textPrimary }]}>Heures de rappel</Text>
+              
+              {localReminderSettings.reminderTimes.map((time, index) => (
+                <View key={`time-${index}`} style={styles.timeRow}>
+                  <View style={styles.timeSelector}>
+                    <TimeSelector
+                      time={time}
+                      onTimeChange={(newTime) => handleTimeChange(index, newTime)}
+                      label={`Rappel ${index + 1}`}
+                    />
+                  </View>
+                  
+                  <TouchableOpacity
+                    style={[styles.removeButton, { backgroundColor: theme.error }]}
+                    onPress={() => removeReminderTime(index)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="white" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: theme.primary }]}
+                onPress={addReminderTime}
+              >
+                <Ionicons name="add" size={20} color="white" />
+                <Text style={styles.addButtonText}>Ajouter un rappel</Text>
+              </TouchableOpacity>
               
               <DaySelector
                 selectedDays={localReminderSettings.reminderDays}
                 onDaysChange={handleDaysChange}
                 label="Jours de rappel"
               />
+              
+              <View style={styles.reminderButtonsContainer}>
+                {hasReminderChanges && (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.reminderButton, { backgroundColor: theme.error }]}
+                      onPress={cancelReminderChanges}
+                      disabled={isSaving}
+                    >
+                      <Text style={styles.reminderButtonText}>Annuler</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[styles.reminderButton, { backgroundColor: theme.primary }]}
+                      onPress={saveReminderSettings}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={styles.reminderButtonText}>Enregistrer</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -407,31 +482,6 @@ const SettingsScreen = () => {
           </Text>
         </View>
       </ScrollView>
-
-      {/* Boutons d'action en bas de l'écran (uniquement pour les rappels) */}
-      {hasReminderChanges && (
-        <View style={[styles.actionButtonsContainer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-          <TouchableOpacity 
-            style={[styles.cancelButton, { borderColor: theme.border }]} 
-            onPress={cancelReminderChanges}
-            disabled={isSaving}
-          >
-            <Text style={[styles.cancelButtonText, { color: theme.textPrimary }]}>Annuler</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.saveButton, { backgroundColor: theme.primary }]} 
-            onPress={saveReminderSettings}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <ActivityIndicator color={theme.textLight} size="small" />
-            ) : (
-              <Text style={[styles.saveButtonText, { color: theme.textLight }]}>Enregistrer</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
     </SafeAreaView>
   );
 };
@@ -494,8 +544,57 @@ const styles = StyleSheet.create({
   },
   timePickerContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 10,
+    paddingVertical: 10,
+  },
+  reminderSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  timeSelector: {
+    flex: 1,
+  },
+  removeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginVertical: 15,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  reminderButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  reminderButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  reminderButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
   button: {
     padding: 12,
@@ -526,46 +625,6 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  actionButtonsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  saveButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    fontSize: 16,
   },
   titleContainer: {
     paddingHorizontal: 16,

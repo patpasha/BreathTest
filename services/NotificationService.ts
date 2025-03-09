@@ -52,7 +52,7 @@ export async function registerForPushNotificationsAsync() {
   }
 }
 
-export async function scheduleReminderNotification(time: string = '20:00', days: number[] = [0, 1, 2, 3, 4, 5, 6]) {
+export async function scheduleReminderNotification(times: string[] = ['20:00'], days: number[] = [0, 1, 2, 3, 4, 5, 6]) {
   try {
     // Annule tous les rappels précédents
     await cancelAllScheduledNotifications();
@@ -63,34 +63,42 @@ export async function scheduleReminderNotification(time: string = '20:00', days:
       return false;
     }
     
-    // Extraire les heures et minutes du format "HH:MM"
-    const [hours, minutes] = time.split(':').map(Number);
-    
-    // Programmer une notification récurrente pour chaque jour sélectionné
-    for (const day of days) {
-      const identifier = `${REMINDER_NOTIFICATION_ID}-${day}`;
-      
-      // Note: Weekdays are specified with a number from 1 through 7, with 1 indicating Sunday
-      // Convertir notre format (0 = dimanche) au format d'Expo (1 = dimanche)
-      const weekday = day === 0 ? 1 : day + 1;
-      
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Rappel de respiration",
-          body: "C'est l'heure de votre exercice de respiration quotidien",
-          sound: true,
-        },
-        trigger: {
-          hour: hours,
-          minute: minutes,
-          weekday: weekday,
-          type: SchedulableTriggerInputTypes.WEEKLY
-        },
-        identifier: identifier,
-      });
+    // Si aucune heure n'est sélectionnée, ne pas programmer de notifications
+    if (times.length === 0) {
+      console.log('Aucune heure sélectionnée pour les rappels, pas de notification programmée');
+      return false;
     }
     
-    console.log(`Notifications récurrentes programmées pour ${time} les jours: ${days.join(', ')}`);
+    // Programmer une notification récurrente pour chaque jour et chaque heure sélectionnés
+    for (const day of days) {
+      for (const time of times) {
+        // Extraire les heures et minutes du format "HH:MM"
+        const [hours, minutes] = time.split(':').map(Number);
+        
+        const identifier = `${REMINDER_NOTIFICATION_ID}-${day}-${time.replace(':', '')}`;
+        
+        // Note: Weekdays are specified with a number from 1 through 7, with 1 indicating Sunday
+        // Convertir notre format (0 = dimanche) au format d'Expo (1 = dimanche)
+        const weekday = day === 0 ? 1 : day + 1;
+        
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Rappel de respiration",
+            body: "C'est l'heure de votre exercice de respiration quotidien",
+            sound: true,
+          },
+          trigger: {
+            hour: hours,
+            minute: minutes,
+            weekday: weekday,
+            type: SchedulableTriggerInputTypes.WEEKLY
+          },
+          identifier: identifier,
+        });
+      }
+    }
+    
+    console.log(`Notifications récurrentes programmées pour les heures: ${times.join(', ')} les jours: ${days.join(', ')}`);
     return true;
   } catch (error) {
     console.error('Erreur lors de la programmation de la notification:', error);
