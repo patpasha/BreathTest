@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions, Alert, ScrollView, ActivityIndicator, Easing, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions, Alert, ScrollView, ActivityIndicator, Easing, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useSettings } from '../contexts/SettingsContext';
@@ -777,7 +777,10 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   const currentStepObj = technique.steps ? technique.steps[currentStep] : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView 
+      style={[styles.container, { backgroundColor: theme.background }]}
+      edges={['left', 'right', 'bottom']} // Ne pas appliquer la safe area en haut
+    >
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -875,12 +878,18 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             
             {/* Conteneur pour la bulle de respiration avec plus d'espace */}
             <View style={styles.breathingSection}>
-              <View style={styles.circleContainer}>
+              <View style={[
+                styles.circleContainer,
+                { 
+                  backgroundColor: 'transparent',
+                  marginVertical: 15,
+                }
+              ]}>
                 <BreathingBubble 
                   isActive={isActive}
                   currentStep={technique?.steps?.[currentStep]?.name || ''}
                   progress={stepProgress}
-                  size={CIRCLE_SIZE * 0.9}
+                  size={CIRCLE_SIZE * 0.85} // Légèrement réduit pour éviter les débordements
                   instruction={technique?.steps?.[currentStep]?.instruction || ''}
                 />
               </View>
@@ -1090,35 +1099,36 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerGradient: {
-    paddingTop: 50,
-    paddingBottom: 25,
+    paddingTop: 0, // Élimine complètement l'espace en haut
+    paddingBottom: 15,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'ios' ? 40 : 30, // Ajusté pour tenir compte de la barre de statut
+    paddingBottom: 5,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 15,
+    top: Platform.OS === 'ios' ? 40 : 30, // Aligné avec le paddingTop du headerContainer
     zIndex: 10,
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   timerText: {
-    fontSize: 52,
+    fontSize: 48,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 8,
     letterSpacing: 0.5,
   },
   cyclesBadge: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 6, // Légèrement réduit
     borderRadius: 20,
   },
   cyclesText: {
@@ -1127,17 +1137,22 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 100, // Augmenter l'espace pour le bouton fixe
+    paddingBottom: 100, // Espace pour le bouton fixe
   },
   breathingSection: {
-    marginTop: 10,
-    marginBottom: 20,
-    paddingVertical: 10,
+    marginTop: 15,
+    marginBottom: 25,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   circleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    width: CIRCLE_SIZE * 1.2,
+    height: CIRCLE_SIZE * 1.2,
+    borderRadius: (CIRCLE_SIZE * 1.2) / 2,
   },
   guideSection: {
     marginBottom: 20,

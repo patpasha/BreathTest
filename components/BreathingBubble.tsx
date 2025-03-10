@@ -111,24 +111,6 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     }
   };
 
-  // Estimer la durée de l'étape en fonction du nom
-  const getStepDuration = (stepName: string): number => {
-    // Recherche d'un nombre dans le nom de l'étape (ex: "Inspiration 4s")
-    const durationMatch = stepName.match(/\d+\s*s/);
-    if (durationMatch) {
-      const numericValue = parseInt(durationMatch[0].replace(/\D/g, ''));
-      return numericValue * 1000;
-    }
-    
-    // Durées par défaut basées sur le type d'étape
-    const stepType = getStepType(stepName);
-    switch (stepType) {
-      case 'inhale': return 4000;
-      case 'exhale': return 6000;
-      case 'hold': return 2000;
-    }
-  };
-
   // Animation basée sur l'étape actuelle
   useEffect(() => {
     // Annuler les animations précédentes pour éviter les conflits
@@ -161,9 +143,6 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     }
 
     const stepType = getStepType(currentStep);
-    const stepDuration = getStepDuration(currentStep);
-    
-    console.log(`BreathingBubble: Animation pour ${stepType} (${currentStep}), durée: ${stepDuration}ms`);
     
     // Mettre à jour le type d'étape précédent pour les transitions
     setPreviousStepType(stepType);
@@ -173,7 +152,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       Animated.loop(
         Animated.timing(waveAnimation, {
           toValue: 1,
-          duration: stepType === 'inhale' ? stepDuration * 0.8 : stepDuration * 0.6,
+          duration: stepType === 'inhale' ? 4000 * 0.8 : 6000 * 0.6, // Durées par défaut
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -188,16 +167,16 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       case 'inhale':
         // Animation d'inspiration: expansion progressive avec accélération au début et décélération à la fin
         Animated.timing(scaleValue, {
-          toValue: 1.4,  // Augmenté pour une animation plus visible
-          duration: stepDuration,
+          toValue: 1.3,  // Réduit pour éviter les débordements
+          duration: 4000, // Durée par défaut
           easing: Easing.bezier(0.2, 0.0, 0.4, 1.0), // Courbe d'accélération plus naturelle
           useNativeDriver: true,
         }).start();
         
         // Augmentation de l'opacité avec une courbe naturelle
         Animated.timing(opacityValue, {
-          toValue: 1,
-          duration: stepDuration * 0.6, // Légèrement plus rapide pour donner une sensation de plénitude
+          toValue: 0.95,
+          duration: 4000 * 0.6, // Légèrement plus rapide pour donner une sensation de plénitude
           easing: Easing.bezier(0.4, 0.0, 0.2, 1),
           useNativeDriver: true,
         }).start();
@@ -206,16 +185,16 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       case 'exhale':
         // Animation d'expiration: contraction progressive avec une courbe naturelle
         Animated.timing(scaleValue, {
-          toValue: 0.65,  // Diminué pour une animation plus visible
-          duration: stepDuration,
+          toValue: 0.7,  // Augmenté pour éviter une contraction excessive
+          duration: 6000, // Durée par défaut
           easing: Easing.bezier(0.4, 0.0, 0.6, 1.0), // Courbe adaptée pour l'expiration (plus lente à la fin)
           useNativeDriver: true,
         }).start();
         
         // Diminution de l'opacité avec une courbe naturelle
         Animated.timing(opacityValue, {
-          toValue: 0.75,
-          duration: stepDuration * 0.8, // Plus lente pour accompagner l'expiration complète
+          toValue: 0.8,
+          duration: 6000 * 0.8, // Plus lente pour accompagner l'expiration complète
           easing: Easing.bezier(0.4, 0.0, 0.6, 1),
           useNativeDriver: true,
         }).start();
@@ -228,10 +207,10 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         
         if (previousStepType === 'inhale') {
           // Après une inspiration, maintenir légèrement gonflé
-          holdScale = 1.2;
+          holdScale = 1.15;
         } else if (previousStepType === 'exhale') {
           // Après une expiration, maintenir légèrement contracté
-          holdScale = 0.8;
+          holdScale = 0.85;
         }
         
         // Légère animation de pulsation pour indiquer que la phase est active
@@ -242,13 +221,13 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             useNativeDriver: true,
           }),
           Animated.timing(scaleValue, {
-            toValue: holdScale * 0.95,
-            duration: stepDuration / 2,
+            toValue: holdScale * 0.97,
+            duration: 2000 / 2,
             useNativeDriver: true,
           }),
           Animated.timing(scaleValue, {
             toValue: holdScale,
-            duration: stepDuration / 2,
+            duration: 2000 / 2,
             useNativeDriver: true,
           })
         ]).start();
@@ -256,18 +235,18 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         // Légère pulsation de l'opacité pour indiquer que la phase est active
         Animated.sequence([
           Animated.timing(opacityValue, {
-            toValue: 0.95,
-            duration: stepDuration * 0.3,
+            toValue: 0.92,
+            duration: 2000 * 0.3,
             useNativeDriver: true,
           }),
           Animated.timing(opacityValue, {
             toValue: 0.85,
-            duration: stepDuration * 0.4,
+            duration: 2000 * 0.4,
             useNativeDriver: true,
           }),
           Animated.timing(opacityValue, {
-            toValue: 0.95,
-            duration: stepDuration * 0.3,
+            toValue: 0.92,
+            duration: 2000 * 0.3,
             useNativeDriver: true,
           })
         ]).start();
@@ -285,7 +264,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       // Maintien de la visibilité pendant la majorité de l'étape
       Animated.timing(instructionOpacity, {
         toValue: 0.95,
-        duration: stepDuration - 400,
+        duration: 4000 - 400, // Durée par défaut
         useNativeDriver: true,
       }),
       // Diminution progressive pour préparer à la prochaine instruction
@@ -301,7 +280,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   // Calcul pour l'anneau de progression
   const stepType = getStepType(currentStep);
   const currentColor = getStepColor(stepType);
-  const circleSize = size * 1.3;
+  const circleSize = size * 1.2; // Réduit pour éviter les débordements
   const radius = circleSize / 2;
   const circumference = 2 * Math.PI * radius;
   
@@ -318,8 +297,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   
   // Création d'un composant Circle animé
   const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-  const AnimatedPath = Animated.createAnimatedComponent(Path);
-
+  
   // ID unique pour le gradient
   const gradientId = `gradient-${currentColor.replace('#', '')}`;
   
@@ -332,12 +310,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   // Animation de vague pour l'inspiration et l'expiration
   const waveTransform = waveAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, stepType === 'inhale' ? -20 : 20],
+    outputRange: [0, stepType === 'inhale' ? -15 : 15], // Réduit pour éviter les débordements
   });
   
   // Obtenir l'icône directionnelle en fonction du type d'étape
   const getDirectionalIndicator = () => {
-    const arrowSize = size * 0.15;
+    const arrowSize = size * 0.12; // Réduit pour éviter les chevauchements
     const arrowColor = 'rgba(255, 255, 255, 0.7)';
     
     if (stepType === 'inhale') {
@@ -348,7 +326,6 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             styles.directionalIndicator,
             {
               opacity: instructionOpacity,
-              transform: [{ scale: scaleValue }]
             }
           ]}
         >
@@ -368,7 +345,6 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             styles.directionalIndicator,
             {
               opacity: instructionOpacity,
-              transform: [{ scale: scaleValue }]
             }
           ]}
         >
@@ -388,7 +364,6 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
             styles.directionalIndicator,
             {
               opacity: instructionOpacity,
-              transform: [{ scale: scaleValue }]
             }
           ]}
         >
@@ -423,7 +398,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           <Circle
             cx={circleSize / 2}
             cy={circleSize / 2}
-            r={radius - 4}
+            r={radius - 6}
             strokeWidth={4}
             stroke={`${currentColor}33`}
             fill="transparent"
@@ -433,7 +408,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           <AnimatedCircle
             cx={circleSize / 2}
             cy={circleSize / 2}
-            r={radius - 4}
+            r={radius - 6}
             strokeWidth={4}
             stroke={`url(#${gradientId})`}
             fill="transparent"
@@ -446,7 +421,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         </Svg>
       </View>
       
-      {/* Effet de vague pour l'inspiration et l'expiration */}
+      {/* Effet de vague pour l'inspiration et l'expiration - uniquement si actif */}
       {(stepType === 'inhale' || stepType === 'exhale') && isActive && (
         <Animated.View 
           style={[
@@ -455,25 +430,25 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
               transform: [{ translateY: waveTransform }],
               opacity: opacityValue.interpolate({
                 inputRange: [0.8, 1],
-                outputRange: [0.2, 0.4],
+                outputRange: [0.1, 0.25], // Réduit pour être moins visible
                 extrapolate: 'clamp'
               })
             }
           ]}
         >
-          <Svg width={size * 1.5} height={size * 0.3} viewBox={`0 0 ${size * 1.5} ${size * 0.3}`}>
+          <Svg width={size * 1.2} height={size * 0.25} viewBox={`0 0 ${size * 1.2} ${size * 0.25}`}>
             <Path
-              d={`M0,${size * 0.15} 
-                 C${size * 0.375},${size * 0.05} 
-                 ${size * 0.75},${size * 0.25} 
-                 ${size * 1.125},${size * 0.15} 
-                 C${size * 1.5},${size * 0.05} 
-                 ${size * 1.5},${size * 0.15} 
-                 ${size * 1.5},${size * 0.15} 
-                 L${size * 1.5},${size * 0.3} 
-                 L0,${size * 0.3} Z`}
+              d={`M0,${size * 0.125} 
+                 C${size * 0.3},${size * 0.05} 
+                 ${size * 0.6},${size * 0.2} 
+                 ${size * 0.9},${size * 0.125} 
+                 C${size * 1.2},${size * 0.05} 
+                 ${size * 1.2},${size * 0.125} 
+                 ${size * 1.2},${size * 0.125} 
+                 L${size * 1.2},${size * 0.25} 
+                 L0,${size * 0.25} Z`}
               fill={currentColor}
-              opacity={0.3}
+              opacity={0.2} // Réduit pour être moins visible
             />
           </Svg>
         </Animated.View>
@@ -484,9 +459,9 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         style={[
           styles.bubble,
           {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
+            width: size * 0.9, // Réduit pour éviter le chevauchement avec l'anneau de progression
+            height: size * 0.9, // Réduit pour éviter le chevauchement avec l'anneau de progression
+            borderRadius: (size * 0.9) / 2,
             backgroundColor: currentColor,
             opacity: opacityValue,
             transform: [{ scale: scaleValue }],
@@ -536,28 +511,31 @@ const styles = StyleSheet.create({
   textContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    height: '100%',
+    width: '90%', // Réduit pour éviter les débordements de texte
+    height: '90%', // Réduit pour éviter les débordements de texte
   },
   instruction: {
-    fontSize: 16,
+    fontSize: 14, // Réduit pour éviter les débordements
     fontWeight: '600',
     textAlign: 'center',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-    marginBottom: 10,
+    marginBottom: 5, // Réduit pour éviter les chevauchements
   },
   directionalIndicator: {
     position: 'absolute',
-    bottom: '25%',
+    bottom: '20%', // Ajusté pour éviter les chevauchements
   },
   waveContainer: {
     position: 'absolute',
     zIndex: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%', // Assure que le conteneur ne déborde pas
+    height: '100%', // Assure que le conteneur ne déborde pas
+    overflow: 'hidden', // Empêche les débordements
   }
 });
 
