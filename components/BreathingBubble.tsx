@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing, Text } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 
 interface BreathingBubbleProps {
   isActive: boolean;
@@ -19,15 +19,19 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   instruction = ''
 }) => {
   const theme = useTheme();
+  const [previousStepType, setPreviousStepType] = useState<'inhale' | 'exhale' | 'hold'>('hold');
   
   // Animations
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(0.9)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const instructionOpacity = useRef(new Animated.Value(1)).current;
+  const waveAnimation = useRef(new Animated.Value(0)).current;
   
   // Déterminer le type d'étape
   const getStepType = (stepName: string): 'inhale' | 'exhale' | 'hold' => {
+    if (!stepName) return 'hold'; // Valeur par défaut si le nom est vide
+    
     const name = stepName.toLowerCase();
     if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
       return 'inhale';
@@ -78,6 +82,12 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
 
   // Animation basée sur l'étape actuelle
   useEffect(() => {
+    // Annuler les animations précédentes pour éviter les conflits
+    scaleValue.stopAnimation();
+    opacityValue.stopAnimation();
+    instructionOpacity.stopAnimation();
+    waveAnimation.stopAnimation();
+    
     if (!isActive) {
       // État par défaut quand inactif
       Animated.parallel([
@@ -104,15 +114,30 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     const stepType = getStepType(currentStep);
     const stepDuration = getStepDuration(currentStep);
     
-    // Annuler les animations précédentes
-    scaleValue.stopAnimation();
-    opacityValue.stopAnimation();
-    instructionOpacity.stopAnimation();
+    console.log(`BreathingBubble: Animation pour ${stepType} (${currentStep}), durée: ${stepDuration}ms`);
+    
+    // Mettre à jour le type d'étape précédent pour les transitions
+    setPreviousStepType(stepType);
+    
+    // Animation de vague pour l'inspiration et l'expiration
+    if (stepType === 'inhale' || stepType === 'exhale') {
+      Animated.loop(
+        Animated.timing(waveAnimation, {
+          toValue: 1,
+          duration: stepType === 'inhale' ? stepDuration * 0.8 : stepDuration * 0.6,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      // Arrêter l'animation de vague pour la rétention
+      waveAnimation.setValue(0);
+    }
     
     if (stepType === 'inhale') {
       // Animation d'inspiration: expansion progressive avec accélération au début et décélération à la fin
       Animated.timing(scaleValue, {
-        toValue: 1.15,
+        toValue: 1.3,  // Augmenté pour une animation plus visible
         duration: stepDuration,
         easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération plus naturelle
         useNativeDriver: true,
@@ -129,7 +154,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     } else if (stepType === 'exhale') {
       // Animation d'expiration: contraction progressive avec une courbe naturelle
       Animated.timing(scaleValue, {
-        toValue: 0.85,
+        toValue: 0.7,  // Diminué pour une animation plus visible
         duration: stepDuration,
         easing: Easing.bezier(0.4, 0.0, 0.6, 1), // Courbe adaptée pour l'expiration (plus lente à la fin)
         useNativeDriver: true,
@@ -190,7 +215,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       })
     ]).start();
     
-  }, [currentStep, isActive]);
+  }, [currentStep, isActive, theme]);
 
   // Calcul pour l'anneau de progression
   const stepType = getStepType(currentStep);
@@ -212,6 +237,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   
   // Création d'un composant Circle animé
   const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+  const AnimatedPath = Animated.createAnimatedComponent(Path);
 
   // ID unique pour le gradient
   const gradientId = `gradient-${currentColor.replace('#', '')}`;
@@ -221,6 +247,84 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     inputRange: [0, 1],
     outputRange: [circumference, 0],
   });
+  
+  // Animation de vague pour l'inspiration et l'expiration
+  const waveTransform = waveAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, stepType === 'inhale' ? -20 : 20],
+  });
+  
+  // Obtenir l'icône directionnelle en fonction du type d'étape
+  const getDirectionalIndicator = () => {
+    const arrowSize = size * 0.15;
+    const arrowColor = 'rgba(255, 255, 255, 0.7)';
+    
+    if (stepType === 'inhale') {
+      // Flèches vers l'intérieur pour l'inspiration
+      return (
+        <Animated.View 
+          style={[
+            styles.directionalIndicator,
+            {
+              opacity: instructionOpacity,
+              transform: [{ scale: scaleValue }]
+            }
+          ]}
+        >
+          <Svg width={arrowSize} height={arrowSize} viewBox="0 0 24 24">
+            <Path 
+              d="M20,12l-8,8l-8-8l1.4-1.4l5.6,5.6V4h2v12.2l5.6-5.6L20,12z" 
+              fill={arrowColor}
+            />
+          </Svg>
+        </Animated.View>
+      );
+    } else if (stepType === 'exhale') {
+      // Flèches vers l'extérieur pour l'expiration
+      return (
+        <Animated.View 
+          style={[
+            styles.directionalIndicator,
+            {
+              opacity: instructionOpacity,
+              transform: [{ scale: scaleValue }]
+            }
+          ]}
+        >
+          <Svg width={arrowSize} height={arrowSize} viewBox="0 0 24 24">
+            <Path 
+              d="M4,12l8-8l8,8l-1.4,1.4L13,7.8V20h-2V7.8l-5.6,5.6L4,12z" 
+              fill={arrowColor}
+            />
+          </Svg>
+        </Animated.View>
+      );
+    } else {
+      // Cercle pour la rétention
+      return (
+        <Animated.View 
+          style={[
+            styles.directionalIndicator,
+            {
+              opacity: instructionOpacity,
+              transform: [{ scale: scaleValue }]
+            }
+          ]}
+        >
+          <Svg width={arrowSize} height={arrowSize} viewBox="0 0 24 24">
+            <Circle 
+              cx="12" 
+              cy="12" 
+              r="8" 
+              fill="none" 
+              stroke={arrowColor} 
+              strokeWidth="2"
+            />
+          </Svg>
+        </Animated.View>
+      );
+    }
+  };
   
   return (
     <View style={[styles.container, { width: circleSize, height: circleSize }]}>
@@ -261,6 +365,39 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         </Svg>
       </View>
       
+      {/* Effet de vague pour l'inspiration et l'expiration */}
+      {(stepType === 'inhale' || stepType === 'exhale') && isActive && (
+        <Animated.View 
+          style={[
+            styles.waveContainer,
+            {
+              transform: [{ translateY: waveTransform }],
+              opacity: opacityValue.interpolate({
+                inputRange: [0.8, 1],
+                outputRange: [0.2, 0.4],
+                extrapolate: 'clamp'
+              })
+            }
+          ]}
+        >
+          <Svg width={size * 1.5} height={size * 0.3} viewBox={`0 0 ${size * 1.5} ${size * 0.3}`}>
+            <Path
+              d={`M0,${size * 0.15} 
+                 C${size * 0.375},${size * 0.05} 
+                 ${size * 0.75},${size * 0.25} 
+                 ${size * 1.125},${size * 0.15} 
+                 C${size * 1.5},${size * 0.05} 
+                 ${size * 1.5},${size * 0.15} 
+                 ${size * 1.5},${size * 0.15} 
+                 L${size * 1.5},${size * 0.3} 
+                 L0,${size * 0.3} Z`}
+              fill={currentColor}
+              opacity={0.3}
+            />
+          </Svg>
+        </Animated.View>
+      )}
+      
       {/* Cercle principal */}
       <Animated.View 
         style={[
@@ -280,6 +417,9 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           <Text style={styles.instruction}>
             {getInstructionText(stepType)}
           </Text>
+          
+          {/* Indicateur directionnel */}
+          {getDirectionalIndicator()}
         </Animated.View>
       </Animated.View>
     </View>
@@ -326,6 +466,17 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    marginBottom: 10,
+  },
+  directionalIndicator: {
+    position: 'absolute',
+    bottom: '25%',
+  },
+  waveContainer: {
+    position: 'absolute',
+    zIndex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   }
 });
 

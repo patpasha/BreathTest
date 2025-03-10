@@ -148,6 +148,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
 
   // Fonction pour déterminer le type d'étape
   const getStepType = (stepName: string): 'inhale' | 'exhale' | 'hold' => {
+    if (!stepName) return 'hold'; // Valeur par défaut si le nom est vide
+    
     const name = stepName.toLowerCase();
     if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
       return 'inhale';
@@ -234,11 +236,18 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       const steps = technique.steps;
       const currentStepObj = steps[currentStep];
       
+      // Vérifier si l'étape actuelle existe
+      if (!currentStepObj) {
+        console.error('Étape actuelle non définie:', currentStep);
+        return;
+      }
+      
       // Jouer le retour haptique et sonore au début de chaque étape
       playFeedback(currentStepObj.name);
       
       // Déterminer le type d'étape pour des animations adaptées
       const stepType = getStepType(currentStepObj.name);
+      console.log(`Étape actuelle: ${currentStepObj.name} (${stepType}), durée: ${currentStepObj.duration}ms`);
       
       // Déterminer la valeur cible pour l'animation
       let toValue;
@@ -270,6 +279,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         }
       }
       
+      // Mettre à jour la valeur d'animation actuelle pour référence future
+      setCurrentAnimValue(toValue);
+      
       // Animation plus fluide avec une courbe d'accélération adaptée au type d'étape
       let easingFunction;
       if (stepType === 'inhale') {
@@ -281,7 +293,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       } else {
         // Pour la rétention, pas d'animation de taille
         // Nous allons simplement maintenir la valeur actuelle
-        setCurrentAnimValue(toValue);
         
         // Passer directement à la gestion de la progression sans animer la taille
         setStepProgress(0);
@@ -348,6 +359,51 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         useNativeDriver: true,
         easing: easingFunction,
       }).start();
+      
+      // Utiliser requestAnimationFrame pour une animation plus fluide de la progression
+      let startTime = Date.now();
+      let animationFrameId: number;
+      
+      const updateProgress = () => {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min(100, (elapsedTime / currentStepObj.duration) * 100);
+        
+        setStepProgress(progress);
+        
+        if (progress < 100 && isActive) {
+          animationFrameId = requestAnimationFrame(updateProgress);
+        }
+      };
+      
+      // Démarrer l'animation de progression
+      animationFrameId = requestAnimationFrame(updateProgress);
+      
+      // Programmer le passage à l'étape suivante
+      cycleTimerRef.current = setTimeout(() => {
+        // Annuler l'animation frame si elle est toujours en cours
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        
+        // Passer à l'étape suivante
+        const nextStep = (currentStep + 1) % steps.length;
+        setCurrentStep(nextStep);
+        
+        // Incrémenter le compteur de cycles si on revient à la première étape
+        if (nextStep === 0) {
+          setCurrentCycle(prev => prev + 1);
+        }
+      }, currentStepObj.duration);
+      
+      // Nettoyer les timers lors du démontage ou du changement d'étape
+      return () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        if (cycleTimerRef.current) {
+          clearTimeout(cycleTimerRef.current);
+        }
+      };
     } else if (cycleTimerRef.current) {
       clearTimeout(cycleTimerRef.current);
     }
@@ -467,6 +523,62 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     outputRange: [0.3, 1, 1, 0.3],
   });
 
+  // Ajouter un composant pour afficher les étapes de la technique
+  const TechniqueSteps = ({ steps, currentStep }: { steps: BreathingStep[], currentStep: number }) => {
+    const theme = useTheme();
+    
+    return (
+      <View style={styles.stepsContainer}>
+        {steps.map((step, index) => {
+          const isActive = index === currentStep;
+          const stepType = getStepType(step.name);
+          let stepColor;
+          let stepIcon;
+          
+          switch (stepType) {
+            case 'inhale':
+              stepColor = theme.primary;
+              stepIcon = 'arrow-down-outline';
+              break;
+            case 'exhale':
+              stepColor = theme.secondary || '#4CAF50';
+              stepIcon = 'arrow-up-outline';
+              break;
+            default:
+              stepColor = theme.accent || '#FFC107';
+              stepIcon = 'pause-outline';
+          }
+          
+          return (
+            <View 
+              key={index} 
+              style={[
+                styles.stepIndicator,
+                {
+                  backgroundColor: isActive ? stepColor : theme.surfaceLight,
+                  borderColor: stepColor,
+                  borderWidth: isActive ? 0 : 1,
+                }
+              ]}
+            >
+              <Text 
+                style={[
+                  styles.stepNumber, 
+                  { 
+                    color: isActive ? '#FFFFFF' : stepColor,
+                    fontWeight: isActive ? 'bold' : 'normal',
+                  }
+                ]}
+              >
+                {index + 1}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
@@ -493,184 +605,265 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   const currentStepObj = technique.steps ? technique.steps[currentStep] : null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
-      <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
-      <View style={styles.mainContainer}>
-        {/* En-tête avec dégradé */}
-        <LinearGradient
-          colors={[theme.primaryLight, theme.background]}
-          style={styles.headerGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-        >
-          <View style={styles.headerContainer}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
-            </TouchableOpacity>
-            <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
-            <View style={[styles.cyclesBadge, { backgroundColor: theme.primaryLight }]}>
-              <Text style={[styles.cyclesText, { color: theme.primary }]}>Cycle {currentCycle}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textPrimary }]}>
+            Chargement de la technique...
+          </Text>
+        </View>
+      ) : (
+        <>
+          <LinearGradient
+            colors={[theme.primaryLight, theme.background]}
+            style={styles.headerGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          >
+            <View style={styles.headerContainer}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+              </TouchableOpacity>
+              <Text style={[styles.timerText, { color: theme.textPrimary }]}>{formatTime(timeRemaining)}</Text>
+              <View style={[styles.cyclesBadge, { backgroundColor: theme.primaryLight }]}>
+                <Text style={[styles.cyclesText, { color: theme.primary }]}>Cycle {currentCycle}</Text>
+              </View>
             </View>
-          </View>
-        </LinearGradient>
+          </LinearGradient>
 
-        <ScrollView 
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Conteneur pour la bulle de respiration avec plus d'espace */}
-          <View style={styles.breathingSection}>
-            <View style={styles.circleContainer}>
-              <BreathingBubble 
-                isActive={isActive}
-                currentStep={currentStepObj?.name || ''}
-                progress={stepProgress}
-                size={CIRCLE_SIZE * 0.9}
-                instruction={currentStepObj?.instruction || ''}
+          <ScrollView 
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Indicateur d'étapes */}
+            {isActive && technique?.steps && (
+              <TechniqueSteps 
+                steps={technique.steps} 
+                currentStep={currentStep} 
               />
+            )}
+            
+            {/* Conteneur pour la bulle de respiration avec plus d'espace */}
+            <View style={styles.breathingSection}>
+              <View style={styles.circleContainer}>
+                <BreathingBubble 
+                  isActive={isActive}
+                  currentStep={technique?.steps?.[currentStep]?.name || ''}
+                  progress={stepProgress}
+                  size={CIRCLE_SIZE * 0.9}
+                  instruction={technique?.steps?.[currentStep]?.instruction || ''}
+                />
+              </View>
             </View>
-          </View>
 
-          {/* Section pour le bouton de guide avec plus d'espace */}
-          {isActive && (
-            <View style={styles.guideSection}>
+            {/* Section pour le bouton de guide avec plus d'espace */}
+            {isActive && (
+              <View style={styles.guideSection}>
+                <TouchableOpacity 
+                  style={[
+                    styles.guideButton, 
+                    { 
+                      backgroundColor: showGuide ? theme.primaryLight : 'transparent',
+                      borderColor: theme.border
+                    }
+                  ]} 
+                  onPress={() => setShowGuide(!showGuide)}
+                >
+                  <Text style={{ 
+                    color: showGuide ? theme.primary : theme.textSecondary,
+                    fontWeight: showGuide ? '600' : '400'
+                  }}>
+                    {showGuide ? "Masquer le guide" : "Afficher le guide"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Guide de la technique - affiché uniquement si showGuide est true */}
+            {(!isActive || showGuide) && (
+              <View style={[
+                styles.techniqueDescriptionContainer, 
+                { 
+                  backgroundColor: theme.cardBackground,
+                  shadowColor: theme.shadowColor,
+                  shadowOpacity: 0.1,
+                  shadowRadius: 15,
+                  shadowOffset: { width: 0, height: 5 },
+                  elevation: 5,
+                }
+              ]}>
+                <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
+                <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
+                  {technique.description}
+                </Text>
+                
+                {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => {
+                  // Détection des titres, des étapes numérotées et des avertissements
+                  const isTitle = paragraph.includes('Comment pratiquer :') || 
+                                 paragraph.includes('Effets :') || 
+                                 paragraph.includes('Idéal pour :');
+                  const isNumberedStep = /^\d+\./.test(paragraph);
+                  const isWarning = paragraph.includes('⚠️ ATTENTION');
+                  
+                  return (
+                    <Text 
+                      key={index} 
+                      style={[
+                        styles.instructionText, 
+                        { 
+                          color: isWarning ? theme.error : 
+                                 isTitle ? theme.primary : 
+                                 theme.textSecondary,
+                          fontWeight: isWarning || isTitle ? 'bold' : 
+                                     isNumberedStep ? '500' : 'normal',
+                          marginTop: isTitle ? 15 : 5,
+                          marginBottom: isTitle ? 10 : 5,
+                          textAlign: 'left',
+                          paddingLeft: isNumberedStep ? 10 : 0,
+                        }
+                      ]}
+                    >
+                      {paragraph}
+                    </Text>
+                  );
+                })}
+                
+                {/* Afficher les étapes de la technique */}
+                {!isActive && technique.steps && technique.steps.length > 0 && (
+                  <View style={styles.stepsPreviewContainer}>
+                    <Text style={[styles.stepsPreviewTitle, { color: theme.primary }]}>
+                      Étapes de la technique
+                    </Text>
+                    
+                    {technique.steps.map((step, index) => {
+                      const stepType = getStepType(step.name);
+                      let stepColor;
+                      let stepIcon;
+                      
+                      switch (stepType) {
+                        case 'inhale':
+                          stepColor = theme.primary;
+                          stepIcon = 'arrow-down-outline';
+                          break;
+                        case 'exhale':
+                          stepColor = theme.secondary || '#4CAF50';
+                          stepIcon = 'arrow-up-outline';
+                          break;
+                        default:
+                          stepColor = theme.accent || '#FFC107';
+                          stepIcon = 'pause-outline';
+                      }
+                      
+                      // Calculer la durée en secondes
+                      const durationInSeconds = step.duration / 1000;
+                      
+                      return (
+                        <View 
+                          key={index} 
+                          style={[
+                            styles.stepPreviewItem,
+                            { borderLeftColor: stepColor }
+                          ]}
+                        >
+                          <View style={styles.stepPreviewHeader}>
+                            <View style={styles.stepPreviewIconContainer}>
+                              <Ionicons name={stepIcon as any} size={16} color={stepColor} />
+                            </View>
+                            <Text style={[styles.stepPreviewName, { color: theme.textPrimary }]}>
+                              {step.name}
+                            </Text>
+                            <Text style={[styles.stepPreviewDuration, { color: theme.textTertiary }]}>
+                              {durationInSeconds}s
+                            </Text>
+                          </View>
+                          
+                          {step.instruction && (
+                            <Text style={[styles.stepPreviewInstruction, { color: theme.textSecondary }]}>
+                              {step.instruction}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Sélecteur de durée - affiché uniquement si la session n'est pas active */}
+            {!isActive && (
+              <View style={styles.durationSelectorContainer}>
+                <Text style={[styles.durationTitle, { color: theme.textPrimary }]}>
+                  Durée de la session
+                </Text>
+                <DurationSelector 
+                  duration={sessionDurationMinutes} 
+                  onDurationChange={handleDurationChange}
+                  minDuration={1}
+                  maxDuration={30}
+                  step={1}
+                />
+              </View>
+            )}
+            
+            {/* Espace en bas pour éviter que le contenu ne soit caché par le bouton fixe */}
+            <View style={styles.bottomSpacer} />
+          </ScrollView>
+          
+          {/* Bouton fixe en bas de l'écran */}
+          <View style={[
+            styles.fixedButtonContainer, 
+            { 
+              backgroundColor: theme.background,
+              shadowColor: theme.shadowColor,
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: -5 },
+              elevation: 10,
+            }
+          ]}>
+            {!isActive ? (
               <TouchableOpacity 
                 style={[
-                  styles.guideButton, 
+                  styles.startButton, 
                   { 
-                    backgroundColor: showGuide ? theme.primaryLight : 'transparent',
-                    borderColor: theme.border
+                    backgroundColor: theme.primary,
+                    shadowColor: theme.primary,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 5 },
+                    elevation: 5,
                   }
                 ]} 
-                onPress={() => setShowGuide(!showGuide)}
+                onPress={handleStart}
               >
-                <Text style={{ 
-                  color: showGuide ? theme.primary : theme.textSecondary,
-                  fontWeight: showGuide ? '600' : '400'
-                }}>
-                  {showGuide ? "Masquer le guide" : "Afficher le guide"}
-                </Text>
+                <Text style={styles.buttonText}>Commencer</Text>
               </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Guide de la technique - affiché uniquement si showGuide est true */}
-          {(!isActive || showGuide) && (
-            <View style={[
-              styles.techniqueDescriptionContainer, 
-              { 
-                backgroundColor: theme.cardBackground,
-                shadowColor: theme.shadowColor,
-                shadowOpacity: 0.1,
-                shadowRadius: 15,
-                shadowOffset: { width: 0, height: 5 },
-                elevation: 5,
-              }
-            ]}>
-              <Text style={[styles.instructionTitle, { color: theme.textPrimary }]}>{technique.title}</Text>
-              <Text style={[styles.instructionText, { color: theme.textSecondary }]}>
-                {technique.description}
-              </Text>
-              
-              {technique.longDescription && technique.longDescription.map((paragraph: string, index: number) => {
-                // Détection des titres, des étapes numérotées et des avertissements
-                const isTitle = paragraph.includes('Comment pratiquer :') || 
-                               paragraph.includes('Effets :') || 
-                               paragraph.includes('Idéal pour :');
-                const isNumberedStep = /^\d+\./.test(paragraph);
-                const isWarning = paragraph.includes('⚠️ ATTENTION');
-                
-                return (
-                  <Text 
-                    key={index} 
-                    style={[
-                      styles.instructionText, 
-                      { 
-                        color: isWarning ? theme.error : 
-                               isTitle ? theme.primary : 
-                               theme.textSecondary,
-                        fontWeight: isWarning || isTitle ? 'bold' : 
-                                   isNumberedStep ? '500' : 'normal',
-                        marginTop: isTitle ? 15 : 5,
-                        marginBottom: isTitle ? 10 : 5,
-                        textAlign: 'left',
-                        paddingLeft: isNumberedStep ? 10 : 0,
-                      }
-                    ]}
-                  >
-                    {paragraph}
-                  </Text>
-                );
-              })}
-            </View>
-          )}
-
-          {!isActive && (
-            <View style={styles.durationSelectorContainer}>
-              <Text style={[styles.durationTitle, { color: theme.textPrimary }]}>Durée de la session</Text>
-              <DurationSelector
-                duration={sessionDurationMinutes}
-                onDurationChange={handleDurationChange}
-                minDuration={1}
-                maxDuration={60}
-                step={1}
-              />
-            </View>
-          )}
-        </ScrollView>
-        
-        {/* Bouton fixe en bas de l'écran */}
-        <View style={[
-          styles.fixedButtonContainer, 
-          { 
-            backgroundColor: theme.background,
-            shadowColor: theme.shadowColor,
-            shadowOpacity: 0.1,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: -5 },
-            elevation: 10,
-          }
-        ]}>
-          {!isActive ? (
-            <TouchableOpacity 
-              style={[
-                styles.startButton, 
-                { 
-                  backgroundColor: theme.primary,
-                  shadowColor: theme.primary,
-                  shadowOpacity: 0.3,
-                  shadowRadius: 10,
-                  shadowOffset: { width: 0, height: 5 },
-                  elevation: 5,
-                }
-              ]} 
-              onPress={handleStart}
-            >
-              <Text style={styles.buttonText}>Commencer</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              style={[
-                styles.stopButton, 
-                { 
-                  backgroundColor: theme.error,
-                  shadowColor: theme.error,
-                  shadowOpacity: 0.3,
-                  shadowRadius: 10,
-                  shadowOffset: { width: 0, height: 5 },
-                  elevation: 5,
-                }
-              ]} 
-              onPress={handleStop}
-            >
-              <Text style={styles.buttonText}>Arrêter</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+            ) : (
+              <TouchableOpacity 
+                style={[
+                  styles.stopButton, 
+                  { 
+                    backgroundColor: theme.error,
+                    shadowColor: theme.error,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 5 },
+                    elevation: 5,
+                  }
+                ]} 
+                onPress={handleStop}
+              >
+                <Text style={styles.buttonText}>Arrêter</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 };
@@ -767,16 +960,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  fixedButtonContainer: {
-    position: 'absolute',
-    bottom: 0, // Placer le bouton tout en bas de l'écran
-    left: 0,
-    right: 0,
+  buttonContainer: {
+    marginTop: 20,
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 25, // Ajouter du padding en bas pour les appareils avec une barre de navigation
   },
   startButton: {
     paddingVertical: 16,
@@ -800,6 +986,85 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginTop: 10,
+  },
+  stepsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+    paddingHorizontal: 20,
+  },
+  stepIndicator: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  stepNumber: {
+    fontSize: 14,
+  },
+  stepsPreviewContainer: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  stepsPreviewTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  stepPreviewItem: {
+    marginBottom: 12,
+    paddingLeft: 10,
+    borderLeftWidth: 3,
+  },
+  stepPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  stepPreviewIconContainer: {
+    marginRight: 8,
+  },
+  stepPreviewName: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  stepPreviewDuration: {
+    fontSize: 14,
+  },
+  stepPreviewInstruction: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    paddingLeft: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 20,
+  },
+  fixedButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 25, // Ajouter du padding en bas pour les appareils avec une barre de navigation
+  },
+  bottomSpacer: {
+    height: 80, // Espace pour éviter que le contenu ne soit caché par le bouton fixe
   },
 });
 
