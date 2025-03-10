@@ -345,6 +345,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       totalSessions: stats.totalSessions,
       totalDuration: stats.totalDuration,
       dailyStatsCount: Object.keys(stats.dailyStats).length,
+      sessionsCount: stats.sessions.length,
     }));
     
     // Afficher les clés des statistiques quotidiennes pour le débogage
@@ -378,6 +379,9 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       });
       
+      // Afficher les dates des sessions pour le débogage
+      console.log('Dates des sessions:', Object.keys(sessionsByDate));
+      
       // Générer les dates de la période
       for (let i = 0; i < numWeeks * 7; i++) {
         const currentDate = new Date(startDate);
@@ -396,64 +400,57 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         else if (sessionsByDate[dateString]) {
           duration = sessionsByDate[dateString].reduce((sum, session) => sum + session.duration, 0);
           console.log(`Durée calculée à partir des sessions pour ${dateString}: ${duration}s`);
+          
+          // Si nous avons trouvé des sessions mais pas d'entrée dans dailyStats, créer une entrée
+          // Cela permet de s'assurer que les données sont cohérentes pour les futures requêtes
+          if (duration > 0 && !stats.dailyStats[dateString]) {
+            console.log(`Création d'une entrée manquante dans dailyStats pour ${dateString}`);
+            
+            // Mettre à jour les statistiques quotidiennes en mémoire
+            const updatedDailyStats = { ...stats.dailyStats };
+            updatedDailyStats[dateString] = {
+              date: dateString,
+              totalDuration: duration,
+              sessionsCount: sessionsByDate[dateString].length,
+              techniques: {},
+            };
+            
+            // Mettre à jour les techniques utilisées ce jour-là
+            sessionsByDate[dateString].forEach(session => {
+              if (!updatedDailyStats[dateString].techniques[session.techniqueId]) {
+                updatedDailyStats[dateString].techniques[session.techniqueId] = 0;
+              }
+              updatedDailyStats[dateString].techniques[session.techniqueId] += 1;
+            });
+            
+            // Mettre à jour l'état des statistiques
+            setStats(prevStats => ({
+              ...prevStats,
+              dailyStats: updatedDailyStats
+            }));
+            
+            // Sauvegarder les statistiques mises à jour dans AsyncStorage
+            AsyncStorage.setItem('breathflow_stats', JSON.stringify({
+              ...stats,
+              dailyStats: updatedDailyStats
+            })).catch(error => {
+              console.error('Erreur lors de la sauvegarde des statistiques mises à jour:', error);
+            });
+          }
         }
         
-        // Ajouter les données au résultat
         result.push({
           date: dateString,
-          duration: duration,
+          duration: duration
         });
-        
-        // Log pour les dates avec activité
-        if (duration > 0) {
-          console.log('Activité enregistrée pour', dateString, ':', duration, 'secondes');
-        }
       }
       
-      // Vérification finale pour s'assurer que toutes les sessions sont prises en compte
-      let missingSessionsCount = 0;
-      stats.sessions.forEach(session => {
-        try {
-          const sessionDate = new Date(session.date).toISOString().split('T')[0];
-          const matchingDay = result.find(day => day.date === sessionDate);
-          
-          if (matchingDay) {
-            // Vérifier si la durée est cohérente
-            if (matchingDay.duration === 0 && session.duration > 0) {
-              matchingDay.duration = session.duration;
-              console.log(`Correction de la durée pour ${sessionDate} à ${session.duration}s`);
-              missingSessionsCount++;
-            }
-          }
-        } catch (error) {
-          console.error(`Erreur lors de la vérification de la session ${session.id}:`, error);
-        }
-      });
-      
-      if (missingSessionsCount > 0) {
-        console.log(`${missingSessionsCount} sessions manquantes ont été ajoutées manuellement`);
-      }
-      
+      console.log(`getWeeklyStats: ${result.length} jours générés, dont ${result.filter(d => d.duration > 0).length} avec activité`);
+      return result;
     } catch (error) {
       console.error('Erreur lors de la génération des statistiques hebdomadaires:', error);
-      // En cas d'erreur, retourner un tableau vide ou les données partielles
-      if (result.length === 0) {
-        // Générer des données vides pour éviter les erreurs d'affichage
-        const today = new Date();
-        for (let i = 0; i < numWeeks * 7; i++) {
-          const currentDate = new Date(today);
-          currentDate.setDate(currentDate.getDate() - i);
-          const dateString = currentDate.toISOString().split('T')[0];
-          result.unshift({ date: dateString, duration: 0 });
-        }
-      }
+      return [];
     }
-    
-    // Créer une copie pour éviter de modifier le tableau original
-    const finalResult = [...result];
-    console.log('Résultat final getWeeklyStats:', finalResult.length, 'jours, dont', 
-                finalResult.filter(d => d.duration > 0).length, 'avec activité');
-    return finalResult;
   };
   
   // Obtenir la distribution des techniques
