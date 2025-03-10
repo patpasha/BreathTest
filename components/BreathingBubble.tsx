@@ -9,6 +9,7 @@ interface BreathingBubbleProps {
   progress: number;
   size: number;
   instruction?: string;
+  stepDuration?: number; // Durée de l'étape en millisecondes
 }
 
 const BreathingBubble: React.FC<BreathingBubbleProps> = ({ 
@@ -16,7 +17,8 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
   currentStep, 
   progress, 
   size,
-  instruction = ''
+  instruction = '',
+  stepDuration = 4000 // Valeur par défaut si non spécifiée
 }) => {
   const theme = useTheme();
   const [previousStepType, setPreviousStepType] = useState<'inhale' | 'exhale' | 'hold'>('hold');
@@ -152,7 +154,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       Animated.loop(
         Animated.timing(waveAnimation, {
           toValue: 1,
-          duration: stepType === 'inhale' ? 4000 * 0.8 : 6000 * 0.6, // Durées par défaut
+          duration: stepDuration * 0.8, // Utiliser la durée de l'étape
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -168,7 +170,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         // Animation d'inspiration: expansion progressive avec accélération au début et décélération à la fin
         Animated.timing(scaleValue, {
           toValue: 1.3,  // Réduit pour éviter les débordements
-          duration: 4000, // Durée par défaut
+          duration: stepDuration, // Utiliser exactement la durée de l'étape
           easing: Easing.bezier(0.2, 0.0, 0.4, 1.0), // Courbe d'accélération plus naturelle
           useNativeDriver: true,
         }).start();
@@ -176,7 +178,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         // Augmentation de l'opacité avec une courbe naturelle
         Animated.timing(opacityValue, {
           toValue: 0.95,
-          duration: 4000 * 0.6, // Légèrement plus rapide pour donner une sensation de plénitude
+          duration: stepDuration, // Utiliser exactement la durée de l'étape
           easing: Easing.bezier(0.4, 0.0, 0.2, 1),
           useNativeDriver: true,
         }).start();
@@ -186,7 +188,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         // Animation d'expiration: contraction progressive avec une courbe naturelle
         Animated.timing(scaleValue, {
           toValue: 0.7,  // Augmenté pour éviter une contraction excessive
-          duration: 6000, // Durée par défaut
+          duration: stepDuration, // Utiliser exactement la durée de l'étape
           easing: Easing.bezier(0.4, 0.0, 0.6, 1.0), // Courbe adaptée pour l'expiration (plus lente à la fin)
           useNativeDriver: true,
         }).start();
@@ -194,59 +196,56 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
         // Diminution de l'opacité avec une courbe naturelle
         Animated.timing(opacityValue, {
           toValue: 0.8,
-          duration: 6000 * 0.8, // Plus lente pour accompagner l'expiration complète
+          duration: stepDuration, // Utiliser exactement la durée de l'étape
           easing: Easing.bezier(0.4, 0.0, 0.6, 1),
           useNativeDriver: true,
         }).start();
         break;
         
       case 'hold':
-        // Pour la rétention du souffle, maintenir la bulle immobile
-        // Déterminer la taille de la bulle en fonction de l'étape précédente
-        let holdScale = 1.0; // Valeur par défaut
-        
-        if (previousStepType === 'inhale') {
-          // Après une inspiration, maintenir légèrement gonflé
-          holdScale = 1.15;
-        } else if (previousStepType === 'exhale') {
-          // Après une expiration, maintenir légèrement contracté
-          holdScale = 0.85;
-        }
-        
-        // Légère animation de pulsation pour indiquer que la phase est active
+        // Pour la rétention, animation subtile de pulsation pour indiquer que l'app est toujours active
         Animated.sequence([
+          // Légère expansion
           Animated.timing(scaleValue, {
-            toValue: holdScale,
-            duration: 300,
+            toValue: previousStepType === 'inhale' ? 1.32 : 0.72, // Légèrement plus que la position actuelle
+            duration: stepDuration * 0.2, // 20% de la durée totale
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
             useNativeDriver: true,
           }),
+          // Légère contraction
           Animated.timing(scaleValue, {
-            toValue: holdScale * 0.97,
-            duration: 2000 / 2,
+            toValue: previousStepType === 'inhale' ? 1.28 : 0.68, // Légèrement moins que la position actuelle
+            duration: stepDuration * 0.6, // 60% de la durée totale
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
             useNativeDriver: true,
           }),
+          // Retour à la position initiale
           Animated.timing(scaleValue, {
-            toValue: holdScale,
-            duration: 2000 / 2,
+            toValue: previousStepType === 'inhale' ? 1.3 : 0.7, // Position initiale
+            duration: stepDuration * 0.2, // 20% de la durée totale
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
             useNativeDriver: true,
           })
         ]).start();
         
-        // Légère pulsation de l'opacité pour indiquer que la phase est active
+        // Légère pulsation de l'opacité pour indiquer la rétention
         Animated.sequence([
           Animated.timing(opacityValue, {
-            toValue: 0.92,
-            duration: 2000 * 0.3,
+            toValue: previousStepType === 'inhale' ? 0.97 : 0.82, // Légèrement plus opaque
+            duration: stepDuration * 0.3, // 30% de la durée totale
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
             useNativeDriver: true,
           }),
           Animated.timing(opacityValue, {
-            toValue: 0.85,
-            duration: 2000 * 0.4,
+            toValue: previousStepType === 'inhale' ? 0.93 : 0.78, // Légèrement moins opaque
+            duration: stepDuration * 0.4, // 40% de la durée totale
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
             useNativeDriver: true,
           }),
           Animated.timing(opacityValue, {
-            toValue: 0.92,
-            duration: 2000 * 0.3,
+            toValue: previousStepType === 'inhale' ? 0.95 : 0.8, // Retour à la valeur initiale
+            duration: stepDuration * 0.3, // 30% de la durée totale
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1),
             useNativeDriver: true,
           })
         ]).start();
@@ -275,7 +274,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       })
     ]).start();
     
-  }, [currentStep, isActive, theme, previousStepType]);
+  }, [currentStep, isActive, theme, previousStepType, stepDuration]);
 
   // Calcul pour l'anneau de progression
   const stepType = getStepType(currentStep);
