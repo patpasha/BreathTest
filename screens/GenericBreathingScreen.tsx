@@ -151,11 +151,48 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     if (!stepName) return 'hold'; // Valeur par défaut si le nom est vide
     
     const name = stepName.toLowerCase();
-    if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+    
+    // Détection plus précise pour l'inspiration
+    if (
+      name.includes('inspiration') || 
+      name.includes('inhale') || 
+      name.includes('inhalation') || 
+      name.includes('inspir') ||
+      name.startsWith('première') ||  // Pour le soupir physiologique
+      name.startsWith('seconde') ||   // Pour le soupir physiologique
+      name.includes('respirations profondes') ||
+      name.includes('respirations rapides')
+    ) {
       return 'inhale';
-    } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+    } 
+    // Détection plus précise pour l'expiration
+    else if (
+      name.includes('expiration') || 
+      name.includes('exhale') || 
+      name.includes('exhalation') || 
+      name.includes('expir') ||
+      name.includes('souffl')
+    ) {
       return 'exhale';
-    } else {
+    } 
+    // Détection plus précise pour la rétention
+    else if (
+      name.includes('hold') || 
+      name.includes('retention') || 
+      name.includes('rétention') || 
+      name.includes('pause') || 
+      name.includes('attente') ||
+      name.includes('repos')
+    ) {
+      return 'hold';
+    }
+    // Cas spécial pour la répétition dans la méthode Wim Hof
+    else if (name.includes('repeat')) {
+      return 'hold';
+    }
+    // Par défaut, considérer comme une rétention
+    else {
+      console.log(`Type d'étape non reconnu: "${stepName}", considéré comme 'hold'`);
       return 'hold';
     }
   };
@@ -549,6 +586,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               stepIcon = 'pause-outline';
           }
           
+          // Calculer la durée en secondes pour l'affichage
+          const durationInSeconds = Math.round(step.duration / 1000);
+          
           return (
             <View 
               key={index} 
@@ -570,8 +610,14 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                   }
                 ]}
               >
-                {index + 1}
+                {durationInSeconds}s
               </Text>
+              
+              {isActive && (
+                <View style={styles.activeStepIndicator}>
+                  <Ionicons name={stepIcon as any} size={12} color="#FFFFFF" />
+                </View>
+              )}
             </View>
           );
         })}
@@ -1065,6 +1111,17 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 80, // Espace pour éviter que le contenu ne soit caché par le bouton fixe
+  },
+  activeStepIndicator: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

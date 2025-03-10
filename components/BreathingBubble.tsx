@@ -33,11 +33,48 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     if (!stepName) return 'hold'; // Valeur par défaut si le nom est vide
     
     const name = stepName.toLowerCase();
-    if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
+    
+    // Détection plus précise pour l'inspiration
+    if (
+      name.includes('inspiration') || 
+      name.includes('inhale') || 
+      name.includes('inhalation') || 
+      name.includes('inspir') ||
+      name.startsWith('première') ||  // Pour le soupir physiologique
+      name.startsWith('seconde') ||   // Pour le soupir physiologique
+      name.includes('respirations profondes') ||
+      name.includes('respirations rapides')
+    ) {
       return 'inhale';
-    } else if (name.includes('expiration') || name.includes('exhale') || name.includes('exhalation')) {
+    } 
+    // Détection plus précise pour l'expiration
+    else if (
+      name.includes('expiration') || 
+      name.includes('exhale') || 
+      name.includes('exhalation') || 
+      name.includes('expir') ||
+      name.includes('souffl')
+    ) {
       return 'exhale';
-    } else {
+    } 
+    // Détection plus précise pour la rétention
+    else if (
+      name.includes('hold') || 
+      name.includes('retention') || 
+      name.includes('rétention') || 
+      name.includes('pause') || 
+      name.includes('attente') ||
+      name.includes('repos')
+    ) {
+      return 'hold';
+    }
+    // Cas spécial pour la répétition dans la méthode Wim Hof
+    else if (name.includes('repeat')) {
+      return 'hold';
+    }
+    // Par défaut, considérer comme une rétention
+    else {
+      console.log(`Type d'étape non reconnu: "${stepName}", considéré comme 'hold'`);
       return 'hold';
     }
   };
@@ -53,12 +90,24 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
 
   // Obtenir le texte d'instruction basé sur le type d'étape
   const getInstructionText = (stepType: 'inhale' | 'exhale' | 'hold') => {
+    // Si une instruction spécifique est fournie, l'utiliser
     if (instruction) return instruction;
     
+    // Sinon, utiliser des instructions par défaut basées sur le type d'étape
     switch (stepType) {
-      case 'inhale': return 'Inspirez';
-      case 'exhale': return 'Expirez';
-      case 'hold': return 'Retenez';
+      case 'inhale':
+        return 'Inspirez profondément';
+      case 'exhale':
+        return 'Expirez lentement';
+      case 'hold':
+        // Adapter l'instruction en fonction de l'étape précédente
+        if (previousStepType === 'inhale') {
+          return 'Retenez (poumons pleins)';
+        } else if (previousStepType === 'exhale') {
+          return 'Retenez (poumons vides)';
+        } else {
+          return 'Retenez votre souffle';
+        }
     }
   };
 
@@ -134,63 +183,95 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       waveAnimation.setValue(0);
     }
     
-    if (stepType === 'inhale') {
-      // Animation d'inspiration: expansion progressive avec accélération au début et décélération à la fin
-      Animated.timing(scaleValue, {
-        toValue: 1.3,  // Augmenté pour une animation plus visible
-        duration: stepDuration,
-        easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération plus naturelle
-        useNativeDriver: true,
-      }).start();
-      
-      // Augmentation de l'opacité avec une courbe naturelle
-      Animated.timing(opacityValue, {
-        toValue: 1,
-        duration: stepDuration * 0.6, // Légèrement plus rapide pour donner une sensation de plénitude
-        easing: Easing.bezier(0.4, 0.0, 0.2, 1),
-        useNativeDriver: true,
-      }).start();
-      
-    } else if (stepType === 'exhale') {
-      // Animation d'expiration: contraction progressive avec une courbe naturelle
-      Animated.timing(scaleValue, {
-        toValue: 0.7,  // Diminué pour une animation plus visible
-        duration: stepDuration,
-        easing: Easing.bezier(0.4, 0.0, 0.6, 1), // Courbe adaptée pour l'expiration (plus lente à la fin)
-        useNativeDriver: true,
-      }).start();
-      
-      // Diminution de l'opacité avec une courbe naturelle
-      Animated.timing(opacityValue, {
-        toValue: 0.8,
-        duration: stepDuration * 0.8, // Plus lente pour accompagner l'expiration complète
-        easing: Easing.bezier(0.4, 0.0, 0.6, 1),
-        useNativeDriver: true,
-      }).start();
-      
-    } else {
-      // Pour la rétention du souffle, maintenir la bulle immobile
-      // Pas d'animation de taille pour éviter de confondre l'utilisateur
-      // pendant la phase de rétention
-      
-      // Légère pulsation de l'opacité pour indiquer que la phase est active
-      Animated.sequence([
-        Animated.timing(opacityValue, {
-          toValue: 0.95,
-          duration: stepDuration * 0.3,
+    // Animations spécifiques pour chaque type d'étape
+    switch (stepType) {
+      case 'inhale':
+        // Animation d'inspiration: expansion progressive avec accélération au début et décélération à la fin
+        Animated.timing(scaleValue, {
+          toValue: 1.4,  // Augmenté pour une animation plus visible
+          duration: stepDuration,
+          easing: Easing.bezier(0.2, 0.0, 0.4, 1.0), // Courbe d'accélération plus naturelle
           useNativeDriver: true,
-        }),
+        }).start();
+        
+        // Augmentation de l'opacité avec une courbe naturelle
         Animated.timing(opacityValue, {
-          toValue: 0.9,
-          duration: stepDuration * 0.4,
+          toValue: 1,
+          duration: stepDuration * 0.6, // Légèrement plus rapide pour donner une sensation de plénitude
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1),
           useNativeDriver: true,
-        }),
+        }).start();
+        break;
+        
+      case 'exhale':
+        // Animation d'expiration: contraction progressive avec une courbe naturelle
+        Animated.timing(scaleValue, {
+          toValue: 0.65,  // Diminué pour une animation plus visible
+          duration: stepDuration,
+          easing: Easing.bezier(0.4, 0.0, 0.6, 1.0), // Courbe adaptée pour l'expiration (plus lente à la fin)
+          useNativeDriver: true,
+        }).start();
+        
+        // Diminution de l'opacité avec une courbe naturelle
         Animated.timing(opacityValue, {
-          toValue: 0.95,
-          duration: stepDuration * 0.3,
+          toValue: 0.75,
+          duration: stepDuration * 0.8, // Plus lente pour accompagner l'expiration complète
+          easing: Easing.bezier(0.4, 0.0, 0.6, 1),
           useNativeDriver: true,
-        })
-      ]).start();
+        }).start();
+        break;
+        
+      case 'hold':
+        // Pour la rétention du souffle, maintenir la bulle immobile
+        // Déterminer la taille de la bulle en fonction de l'étape précédente
+        let holdScale = 1.0; // Valeur par défaut
+        
+        if (previousStepType === 'inhale') {
+          // Après une inspiration, maintenir légèrement gonflé
+          holdScale = 1.2;
+        } else if (previousStepType === 'exhale') {
+          // Après une expiration, maintenir légèrement contracté
+          holdScale = 0.8;
+        }
+        
+        // Légère animation de pulsation pour indiquer que la phase est active
+        Animated.sequence([
+          Animated.timing(scaleValue, {
+            toValue: holdScale,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleValue, {
+            toValue: holdScale * 0.95,
+            duration: stepDuration / 2,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleValue, {
+            toValue: holdScale,
+            duration: stepDuration / 2,
+            useNativeDriver: true,
+          })
+        ]).start();
+        
+        // Légère pulsation de l'opacité pour indiquer que la phase est active
+        Animated.sequence([
+          Animated.timing(opacityValue, {
+            toValue: 0.95,
+            duration: stepDuration * 0.3,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityValue, {
+            toValue: 0.85,
+            duration: stepDuration * 0.4,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityValue, {
+            toValue: 0.95,
+            duration: stepDuration * 0.3,
+            useNativeDriver: true,
+          })
+        ]).start();
+        break;
     }
     
     // Animation de l'instruction avec timing amélioré
@@ -215,7 +296,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       })
     ]).start();
     
-  }, [currentStep, isActive, theme]);
+  }, [currentStep, isActive, theme, previousStepType]);
 
   // Calcul pour l'anneau de progression
   const stepType = getStepType(currentStep);
