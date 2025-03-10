@@ -464,14 +464,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     countdownTimerRef.current = setInterval(() => {
       setCountdownValue(prev => {
         if (prev <= 1) {
-          // Quand le compte à rebours atteint 0, attendre un peu avant de démarrer la session
+          // Quand le compte à rebours atteint 0, arrêter l'intervalle
           clearInterval(countdownTimerRef.current as NodeJS.Timeout);
-          
-          // Afficher "0" pendant un moment avant de démarrer la session
-          setTimeout(() => {
-            startSession();
-          }, 800); // Attendre 800ms pour que l'utilisateur voie le "0"
-          
           return 0;
         }
         return prev - 1;
@@ -734,11 +728,16 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         // Animation de sortie progressive
         Animated.timing(finalAnim, {
           toValue: 0,
-          duration: 800,
-          delay: 300,
+          duration: 1200,
+          delay: 800,
           useNativeDriver: true,
           easing: Easing.in(Easing.cubic),
-        }).start();
+        }).start(({ finished }) => {
+          // Seulement démarrer la session quand l'animation est terminée
+          if (finished) {
+            startSession();
+          }
+        });
       }
       
       // Vibration légère pour chaque seconde du compte à rebours
