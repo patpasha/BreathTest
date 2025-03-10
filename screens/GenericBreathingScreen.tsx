@@ -464,9 +464,14 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     countdownTimerRef.current = setInterval(() => {
       setCountdownValue(prev => {
         if (prev <= 1) {
-          // Quand le compte à rebours atteint 0, démarrer la session
+          // Quand le compte à rebours atteint 0, attendre un peu avant de démarrer la session
           clearInterval(countdownTimerRef.current as NodeJS.Timeout);
-          startSession();
+          
+          // Afficher "0" pendant un moment avant de démarrer la session
+          setTimeout(() => {
+            startSession();
+          }, 800); // Attendre 800ms pour que l'utilisateur voie le "0"
+          
           return 0;
         }
         return prev - 1;
@@ -677,6 +682,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
+    const finalAnim = useRef(new Animated.Value(1)).current;
     
     // Créer un composant Circle animé
     const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -707,9 +713,42 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         easing: Easing.linear,
       }).start();
       
+      // Animation spéciale pour le "0"
+      if (countdownValue === 0) {
+        // Animation de pulsation pour le "0" final
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.3,
+            duration: 300,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.cubic),
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1.1,
+            duration: 500,
+            useNativeDriver: true,
+            easing: Easing.inOut(Easing.cubic),
+          }),
+        ]).start();
+        
+        // Animation de sortie progressive
+        Animated.timing(finalAnim, {
+          toValue: 0,
+          duration: 800,
+          delay: 300,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }).start();
+      }
+      
       // Vibration légère pour chaque seconde du compte à rebours
       if (settings.hapticsEnabled) {
-        lightImpact();
+        if (countdownValue === 0) {
+          // Vibration plus forte pour le début de la session
+          mediumImpact();
+        } else {
+          lightImpact();
+        }
       }
     }, [countdownValue]);
     
@@ -734,8 +773,10 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           return "Installez-vous confortablement";
         case 1:
           return "Respirez profondément";
-        default:
+        case 0:
           return "C'est parti !";
+        default:
+          return "Préparation...";
       }
     };
     
@@ -743,7 +784,10 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       <Animated.View 
         style={[
           styles.countdownOverlay,
-          { opacity: opacityAnim }
+          { 
+            opacity: Animated.multiply(opacityAnim, finalAnim),
+            transform: countdownValue === 0 ? [{ scale: finalAnim }] : undefined
+          }
         ]}
       >
         <View style={[
@@ -755,7 +799,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         ]}>
           <View style={styles.countdownHeader}>
             <Text style={[styles.countdownTitle, { color: theme.textPrimary }]}>
-              Votre session commence dans
+              {countdownValue > 0 
+                ? "Votre session commence dans" 
+                : "Début de la session"}
             </Text>
           </View>
           
@@ -799,7 +845,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               style={[
                 styles.countdownText, 
                 { 
-                  color: theme.primary,
+                  color: countdownValue === 0 ? theme.success : theme.primary,
                   transform: [{ scale: scaleAnim }]
                 }
               ]}
@@ -813,23 +859,34 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           </Text>
           
           <View style={[styles.countdownInstructions, { backgroundColor: theme.surfaceLight }]}>
-            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
-            <Text style={[styles.countdownInstructionsText, { color: theme.textSecondary }]}>
-              Détendez-vous et concentrez-vous
+            <Ionicons 
+              name={countdownValue === 0 ? "checkmark-circle-outline" : "information-circle-outline"} 
+              size={20} 
+              color={countdownValue === 0 ? theme.success : theme.textSecondary} 
+            />
+            <Text style={[
+              styles.countdownInstructionsText, 
+              { color: countdownValue === 0 ? theme.success : theme.textSecondary }
+            ]}>
+              {countdownValue === 0 
+                ? "Suivez le rythme de la bulle" 
+                : "Détendez-vous et concentrez-vous"}
             </Text>
           </View>
           
-          <TouchableOpacity 
-            style={[styles.countdownSkipButton, { backgroundColor: theme.surfaceLight }]}
-            onPress={() => {
-              clearInterval(countdownTimerRef.current as NodeJS.Timeout);
-              startSession();
-            }}
-          >
-            <Text style={[styles.countdownSkipText, { color: theme.textSecondary }]}>
-              Passer
-            </Text>
-          </TouchableOpacity>
+          {countdownValue > 0 && (
+            <TouchableOpacity 
+              style={[styles.countdownSkipButton, { backgroundColor: theme.surfaceLight }]}
+              onPress={() => {
+                clearInterval(countdownTimerRef.current as NodeJS.Timeout);
+                startSession();
+              }}
+            >
+              <Text style={[styles.countdownSkipText, { color: theme.textSecondary }]}>
+                Passer
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </Animated.View>
     );
