@@ -392,31 +392,41 @@ const SettingsScreen = () => {
               <Text style={[styles.reminderSectionTitle, { color: theme.textPrimary }]}>Heures de rappel</Text>
               
               {localReminderSettings.reminderTimes.map((time, index) => (
-                <View key={`time-${index}`} style={styles.timeRow}>
-                  <View style={styles.timeSelector}>
-                    <TimeSelector
-                      time={time}
-                      onTimeChange={(newTime) => handleTimeChange(index, newTime)}
-                      label={`Rappel ${index + 1}`}
-                    />
+                <View key={`time-${index}`} style={[styles.reminderCard, { backgroundColor: theme.cardBackground }]}>
+                  <View style={styles.reminderCardHeader}>
+                    <Text style={[styles.reminderCardTitle, { color: theme.textPrimary }]}>
+                      Rappel {index + 1}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.reminderCardAction, { opacity: localReminderSettings.reminderTimes.length > 1 ? 1 : 0.5 }]}
+                      onPress={() => removeReminderTime(index)}
+                      disabled={localReminderSettings.reminderTimes.length <= 1}
+                    >
+                      <Ionicons 
+                        name="trash-outline" 
+                        size={18} 
+                        color={localReminderSettings.reminderTimes.length > 1 ? theme.error : theme.textTertiary} 
+                      />
+                    </TouchableOpacity>
                   </View>
                   
-                  <TouchableOpacity
-                    style={[styles.removeButton, { backgroundColor: theme.error }]}
-                    onPress={() => removeReminderTime(index)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="white" />
-                  </TouchableOpacity>
+                  <TimeSelector
+                    time={time}
+                    onTimeChange={(newTime) => handleTimeChange(index, newTime)}
+                    label=""
+                  />
                 </View>
               ))}
               
               <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: theme.primary }]}
+                style={[styles.addReminderButton, { borderColor: theme.primary, borderStyle: 'dashed' }]}
                 onPress={addReminderTime}
               >
-                <Ionicons name="add" size={20} color="white" />
-                <Text style={styles.addButtonText}>Ajouter un rappel</Text>
+                <Ionicons name="add-circle-outline" size={22} color={theme.primary} />
+                <Text style={[styles.addReminderText, { color: theme.primary }]}>Ajouter un rappel</Text>
               </TouchableOpacity>
+              
+              <View style={styles.reminderSeparator} />
               
               <DaySelector
                 selectedDays={localReminderSettings.reminderDays}
@@ -428,11 +438,11 @@ const SettingsScreen = () => {
                 {hasReminderChanges && (
                   <>
                     <TouchableOpacity
-                      style={[styles.reminderButton, { backgroundColor: theme.error }]}
+                      style={[styles.reminderButton, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
                       onPress={cancelReminderChanges}
                       disabled={isSaving}
                     >
-                      <Text style={styles.reminderButtonText}>Annuler</Text>
+                      <Text style={[styles.reminderButtonText, { color: theme.textPrimary }]}>Annuler</Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity
@@ -443,7 +453,7 @@ const SettingsScreen = () => {
                       {isSaving ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
-                        <Text style={styles.reminderButtonText}>Enregistrer</Text>
+                        <Text style={[styles.reminderButtonText, { color: 'white' }]}>Enregistrer</Text>
                       )}
                     </TouchableOpacity>
                   </>
@@ -551,34 +561,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 15,
   },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  reminderCard: {
+    padding: 10,
+    borderRadius: 10,
     marginBottom: 10,
   },
-  timeSelector: {
-    flex: 1,
-  },
-  removeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  addButton: {
+  reminderCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginVertical: 15,
+    justifyContent: 'space-between',
+    marginBottom: 5,
   },
-  addButtonText: {
-    color: 'white',
+  reminderCardTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  reminderCardAction: {
+    padding: 5,
+  },
+  addReminderButton: {
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addReminderText: {
+    fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
+    marginLeft: 5,
+  },
+  reminderSeparator: {
+    height: 1,
+    marginVertical: 10,
   },
   reminderButtonsContainer: {
     flexDirection: 'row',
