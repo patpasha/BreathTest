@@ -1,18 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, RefreshControl, Alert, Animated } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { RootStackParamList, MainTabParamList } from '../App';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { useStats } from '../contexts/StatsContext';
 import ActivityCalendar from '../components/ActivityCalendar';
-
-type StatsScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'StatsTab'>,
-  NativeStackNavigationProp<RootStackParamList>
->;
 
 // Composant pour afficher une statistique
 const StatCard = ({ title, value, subtitle, color, icon }: { title: string; value: string; subtitle?: string; color: string; icon?: string }) => {
@@ -47,36 +39,22 @@ const StatCard = ({ title, value, subtitle, color, icon }: { title: string; valu
 // Composant pour afficher une barre dans le graphique
 const BarGraph = ({ data }: { data: { label: string; value: number; maxValue: number }[] }) => {
   const theme = useTheme();
-  const [animationProgress, setAnimationProgress] = useState(0);
   
-  useEffect(() => {
-    // Animation simple en utilisant setTimeout
-    let progress = 0;
-    const animationStep = 0.05;
-    const animationDuration = 20; // ms par étape
-    
-    const animate = () => {
-      progress += animationStep;
-      setAnimationProgress(progress);
-      
-      if (progress < 1) {
-        setTimeout(animate, animationDuration);
-      }
-    };
-    
-    animate();
-    
-    return () => {
-      // Nettoyer l'animation si le composant est démonté
-      progress = 1;
-    };
-  }, [data]);
+  if (!data || data.length === 0) {
+    return (
+      <View style={styles.emptyGraphContainer}>
+        <Text style={[styles.emptyGraphText, { color: theme.textSecondary }]}>
+          Aucune donnée disponible pour cette période
+        </Text>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.barGraph}>
       {data.map((item, index) => {
-        // Calculer la largeur animée de la barre (en pourcentage)
-        const widthPercentage = (item.value / item.maxValue) * 100 * animationProgress;
+        // Calculer la largeur de la barre (en pourcentage)
+        const widthPercentage = item.maxValue > 0 ? (item.value / item.maxValue) * 100 : 0;
         
         return (
           <View key={index} style={styles.barContainer}>
@@ -126,53 +104,17 @@ const TechniqueItem = ({
   maxCount: number;
 }) => {
   const theme = useTheme();
-  const [animationProgress, setAnimationProgress] = useState(0);
   
-  useEffect(() => {
-    // Animation simple en utilisant setTimeout
-    let progress = 0;
-    const animationStep = 0.05;
-    const animationDuration = 20; // ms par étape
-    
-    const animate = () => {
-      progress += animationStep;
-      setAnimationProgress(progress);
-      
-      if (progress < 1) {
-        setTimeout(animate, animationDuration);
-      }
-    };
-    
-    animate();
-    
-    return () => {
-      // Nettoyer l'animation si le composant est démonté
-      progress = 1;
-    };
-  }, []);
-  
-  // Calculer la largeur animée de la barre (en pourcentage)
-  const widthPercentage = (technique.count / maxCount) * 100 * animationProgress;
+  // Calculer la largeur de la barre (en pourcentage)
+  const widthPercentage = maxCount > 0 ? (technique.count / maxCount) * 100 : 0;
   
   return (
     <View style={styles.techniqueItem}>
-      <View style={styles.techniqueHeader}>
-        <View style={styles.techniqueNameContainer}>
-          <View 
-            style={[
-              styles.techniqueColorDot, 
-              { backgroundColor: color }
-            ]} 
-          />
-          <Text style={[styles.techniqueName, { color: theme.textPrimary }]}>
-            {technique.name}
-          </Text>
-        </View>
-        <Text style={[styles.techniqueCount, { color: theme.textSecondary }]}>
-          {technique.count} ({Math.round(technique.percentage)}%)
+      <View style={styles.techniqueNameContainer}>
+        <Text style={[styles.techniqueName, { color: theme.textPrimary }]}>
+          {technique.name}
         </Text>
       </View>
-      
       <View style={styles.techniqueBarContainer}>
         <View 
           style={[
@@ -195,59 +137,62 @@ const TechniqueItem = ({
           />
         </View>
       </View>
+      <View style={styles.techniqueStatsContainer}>
+        <Text style={[styles.techniqueCount, { color: theme.textSecondary }]}>
+          {technique.count}
+        </Text>
+        <Text style={[styles.techniquePercentage, { color: theme.textTertiary }]}>
+          {Math.round(technique.percentage)}%
+        </Text>
+      </View>
     </View>
   );
 };
 
+// Composant principal
 const StatsScreen = () => {
   const theme = useTheme();
   const { stats, getWeeklyStats, getTechniqueDistribution, loadStatsFromStorage, resetStats, syncDailyStats } = useStats();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Charger les statistiques à chaque fois que l'écran devient actif
   useFocusEffect(
     useCallback(() => {
       const loadStats = async () => {
-        setRefreshing(true);
+        setIsLoading(true);
         try {
           await loadStatsFromStorage();
-          console.log('Statistiques chargées automatiquement au focus de l\'écran');
+          await syncDailyStats();
+          console.log('Statistiques chargées et synchronisées au focus de l\'écran');
         } catch (error) {
-          console.error('Erreur lors du chargement automatique des statistiques:', error);
+          console.error('Erreur lors du chargement des statistiques:', error);
         } finally {
-          setRefreshing(false);
+          setIsLoading(false);
         }
       };
       
       loadStats();
-      
-      return () => {
-        // Nettoyage si nécessaire
-      };
-    }, [loadStatsFromStorage])
+    }, [loadStatsFromStorage, syncDailyStats])
   );
   
+  // Fonction pour rafraîchir manuellement les statistiques
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Charger les statistiques depuis AsyncStorage
       await loadStatsFromStorage();
-      
-      // Synchroniser les statistiques quotidiennes avec les sessions
       await syncDailyStats();
-      
-      console.log('Statistiques rafraîchies et synchronisées');
-      console.log('Sessions enregistrées:', stats.sessions.length);
+      console.log('Statistiques rafraîchies manuellement');
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des statistiques:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [loadStatsFromStorage, syncDailyStats, stats.sessions.length]);
+  }, [loadStatsFromStorage, syncDailyStats]);
   
   // Formater la durée en heures et minutes
-  const formatDuration = (seconds: number) => {
+  const formatDuration = useCallback((seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     
@@ -255,79 +200,33 @@ const StatsScreen = () => {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
-  };
+  }, []);
   
-  // Déterminer le nombre de jours à afficher en fonction de la période sélectionnée
-  const getPeriodData = () => {
-    console.log('getPeriodData appelé avec période:', selectedPeriod);
-    let result;
+  // Obtenir les données pour la période sélectionnée
+  const periodData = useMemo(() => {
+    if (!stats) return [];
+    
+    let numWeeks;
     switch (selectedPeriod) {
-      case 'week':
-        console.log('Récupération des données pour la semaine');
-        result = getWeeklyStats(1); // 7 derniers jours
-        break;
-      case 'month':
-        console.log('Récupération des données pour le mois');
-        result = getWeeklyStats(5); // ~30 derniers jours (4 semaines complètes + quelques jours)
-        break;
-      case 'year':
-        console.log('Récupération des données pour l\'année');
-        result = getWeeklyStats(53); // ~365 derniers jours (52 semaines complètes + quelques jours)
-        break;
-      default:
-        console.log('Période non reconnue, utilisation de la semaine par défaut');
-        result = getWeeklyStats(1);
+      case 'week': numWeeks = 1; break;
+      case 'month': numWeeks = 5; break;
+      case 'year': numWeeks = 53; break;
+      default: numWeeks = 1;
     }
-    console.log('Résultat getPeriodData:', result.length, 'jours, dont', 
-                result.filter(d => d.duration > 0).length, 'avec activité');
-    return result;
-  };
-  
-  // Générer les données pour le graphique
-  const [periodData, setPeriodData] = useState<{ date: string; duration: number }[]>([]);
-  
-  // Initialiser les données au chargement et les mettre à jour quand les stats changent
-  useEffect(() => {
-    console.log('StatsScreen: Initialisation/mise à jour des données suite à changement de stats ou de période');
-    if (stats) {
-      const data = getPeriodData();
-      console.log('periodData mis à jour:', data.length, 'jours, dont', data.filter(d => d.duration > 0).length, 'avec activité');
-      console.log('Détail des données de période:', JSON.stringify(data.filter(d => d.duration > 0)));
-      setPeriodData(data);
-    }
-  }, [stats, selectedPeriod]); // Dépend de stats ET selectedPeriod pour garantir la mise à jour
-  
-  // Mettre à jour les données du graphique lorsque les données de période changent
-  useEffect(() => {
-    console.log(`StatsScreen: Mise à jour des graphiques avec ${periodData.length} jours`);
-    if (periodData.length > 0) {
-      try {
-        const data = getBarData();
-        console.log(`StatsScreen: ${data.length} barres générées pour le graphique`);
-        setBarData(data);
-      } catch (error) {
-        console.error('Erreur lors de la génération des données du graphique:', error);
-        // En cas d'erreur, on réinitialise les données du graphique
-        setBarData([]);
-      }
-    } else {
-      console.log('StatsScreen: Aucune donnée disponible pour les graphiques');
-      setBarData([]);
-    }
-  }, [periodData]); // Dépend uniquement de periodData
+    
+    return getWeeklyStats(numWeeks);
+  }, [stats, selectedPeriod, getWeeklyStats]);
   
   // Formater les données pour l'affichage dans le graphique
-  const getBarData = () => {
+  const barData = useMemo(() => {
+    if (!periodData || periodData.length === 0) return [];
+    
     // Définir une valeur minimale pour maxValue (10 minutes = 600 secondes)
     const MIN_MAX_VALUE = 600;
     
     if (selectedPeriod === 'week') {
       // Afficher les 7 derniers jours avec le nom du jour
-      // Assurons-nous d'avoir des données pour les 7 derniers jours
-      if (periodData.length < 7) {
-        console.log('Pas assez de données pour la semaine');
-        return [];
-      }
+      if (periodData.length < 7) return [];
       
       const weekData = periodData.slice(-7).map(day => {
         // Formater le jour de la semaine
@@ -338,11 +237,9 @@ const StatsScreen = () => {
           label: dayName,
           value: day.duration,
           maxValue: 0, // Sera calculé après
-          date: day.date, // Conserver la date pour le débogage
+          date: day.date,
         };
       });
-      
-      console.log('Données de la semaine:', JSON.stringify(weekData));
       
       // Calculer la valeur maximale
       const maxValue = Math.max(...weekData.map(d => d.value), MIN_MAX_VALUE);
@@ -350,38 +247,22 @@ const StatsScreen = () => {
       
     } else if (selectedPeriod === 'month') {
       // Regrouper par semaine pour le mois
+      if (periodData.length < 28) return [];
+      
+      const monthData = periodData.slice(-28); // 4 semaines = 28 jours
       const weeklyData = [];
       
-      // Assurons-nous d'avoir des données pour les 28 derniers jours
-      if (periodData.length < 28) {
-        console.log('Pas assez de données pour le mois');
-        return [];
-      }
-      
-      // Utiliser les 4 dernières semaines
-      const monthData = periodData.slice(-28); // 4 semaines = 28 jours
-      const numWeeks = 4;
-      const daysPerWeek = 7;
-      
-      for (let i = 0; i < numWeeks; i++) {
-        const weekStart = i * daysPerWeek;
-        const weekEnd = weekStart + daysPerWeek;
-        const weekSlice = monthData.slice(weekStart, weekEnd);
+      for (let i = 0; i < 4; i++) {
+        const weekStart = i * 7;
+        const weekSlice = monthData.slice(weekStart, weekStart + 7);
         const totalDuration = weekSlice.reduce((sum, day) => sum + day.duration, 0);
         
-        // Trouver la date de début de la semaine pour l'affichage
-        const weekStartDate = weekSlice[0]?.date ? new Date(weekSlice[0].date) : new Date();
-        const weekLabel = `S${i+1}`;
-        
         weeklyData.push({
-          label: weekLabel,
+          label: `S${i+1}`,
           value: totalDuration,
-          maxValue: 0, // Sera calculé après
-          startDate: weekSlice[0]?.date, // Pour le débogage
+          maxValue: 0,
         });
       }
-      
-      console.log('Données du mois:', JSON.stringify(weeklyData));
       
       // Calculer la valeur maximale
       const maxValue = Math.max(...weeklyData.map(w => w.value), MIN_MAX_VALUE);
@@ -389,16 +270,7 @@ const StatsScreen = () => {
       
     } else { // année
       // Regrouper par mois pour l'année
-      const monthlyData = [];
       const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-      
-      // Assurons-nous d'avoir des données pour l'année
-      if (periodData.length < 30) {
-        console.log('Pas assez de données pour l\'année');
-        return [];
-      }
-      
-      // Créer un objet pour stocker les données par mois
       const monthTotals: { [key: number]: number } = {};
       
       // Parcourir les données et les regrouper par mois
@@ -413,42 +285,47 @@ const StatsScreen = () => {
         }
       });
       
-      console.log('Totaux par mois:', JSON.stringify(monthTotals));
-      
       // Convertir en tableau pour l'affichage
-      for (let i = 0; i < 12; i++) {
-        monthlyData.push({
-          label: monthNames[i],
-          value: monthTotals[i] || 0,
-          maxValue: 0, // Sera calculé après
-          monthIndex: i, // Pour le débogage
-        });
-      }
+      const monthlyData = monthNames.map((name, i) => ({
+        label: name,
+        value: monthTotals[i] || 0,
+        maxValue: 0,
+      }));
       
       // Calculer la valeur maximale
       const maxValue = Math.max(...monthlyData.map(m => m.value), MIN_MAX_VALUE);
       return monthlyData.map(month => ({ ...month, maxValue }));
     }
-  };
+  }, [periodData, selectedPeriod]);
   
-  // Générer les données pour les graphiques
-  const [barData, setBarData] = useState<{ label: string; value: number; maxValue: number }[]>([]);
-  const weeklyData = periodData; // Pour le calendrier d'activité
+  // Obtenir la distribution des techniques
+  const techniqueDistribution = useMemo(() => {
+    return getTechniqueDistribution();
+  }, [getTechniqueDistribution, stats]);
   
-  // Générer les données pour le graphique de distribution des techniques
-  const techniqueDistribution = getTechniqueDistribution();
-  
-  // Couleurs pour le graphique circulaire
-  const pieColors = [
-    theme.primary,
-    theme.secondary,
-    theme.accent,
-    theme.info,
-    theme.warning,
-  ];
+  // Préparer les données pour le calendrier d'activité
+  const calendarData = useMemo(() => {
+    return periodData.map(day => {
+      // Trouver les sessions pour cette date
+      const daySessions = stats.sessions.filter(session => {
+        try {
+          const sessionDate = new Date(session.date).toISOString().split('T')[0];
+          return sessionDate === day.date;
+        } catch (error) {
+          return false;
+        }
+      });
+      
+      return {
+        date: day.date,
+        duration: day.duration,
+        sessions: daySessions
+      };
+    });
+  }, [periodData, stats.sessions]);
   
   // Fonction pour réinitialiser les statistiques
-  const handleResetStats = async () => {
+  const handleResetStats = useCallback(() => {
     Alert.alert(
       "Réinitialiser les statistiques",
       "Êtes-vous sûr de vouloir supprimer toutes vos statistiques ? Cette action est irréversible.",
@@ -460,17 +337,29 @@ const StatsScreen = () => {
           onPress: async () => {
             try {
               await resetStats();
-              console.log('Statistiques réinitialisées avec succès');
               Alert.alert("Succès", "Vos statistiques ont été réinitialisées.");
             } catch (error) {
-              console.error('Erreur lors de la réinitialisation des statistiques:', error);
               Alert.alert("Erreur", "Une erreur est survenue lors de la réinitialisation des statistiques.");
             }
           } 
         }
       ]
     );
-  };
+  }, [resetStats]);
+  
+  // Afficher un indicateur de chargement si les données sont en cours de chargement
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textPrimary }]}>
+            Chargement des statistiques...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -486,12 +375,20 @@ const StatsScreen = () => {
         }>
         <View style={styles.headerContainer}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Statistiques</Text>
-          <TouchableOpacity 
-            style={[styles.resetButton, { backgroundColor: theme.error }]}
-            onPress={handleResetStats}
-          >
-            <Text style={styles.resetButtonText}>Réinitialiser</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity 
+              style={[styles.refreshButton, { backgroundColor: theme.primary }]}
+              onPress={onRefresh}
+            >
+              <Text style={styles.buttonText}>Rafraîchir</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.resetButton, { backgroundColor: theme.error }]}
+              onPress={handleResetStats}
+            >
+              <Text style={styles.resetButtonText}>Réinitialiser</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         
         {/* Section des statistiques principales */}
@@ -616,7 +513,7 @@ const StatsScreen = () => {
         {/* Section des techniques les plus pratiquées */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-            Techniques
+            Techniques les plus pratiquées
           </Text>
           <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
             Découvrez vos techniques de respiration préférées
@@ -637,45 +534,41 @@ const StatsScreen = () => {
               }
             ]}
           >
-            <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>Techniques les plus pratiquées</Text>
-            
-            <View style={styles.techniquesList}>
-              {techniqueDistribution.length > 0 ? (
-                techniqueDistribution.slice(0, 5).map((technique, index) => {
-                  // Trouver la valeur maximale pour dimensionner les barres
-                  const maxCount = Math.max(...techniqueDistribution.map(t => t.count));
-                  
-                  return (
-                    <TechniqueItem 
-                      key={index}
-                      technique={technique}
-                      color={pieColors[index % pieColors.length]}
-                      index={index}
-                      maxCount={maxCount}
-                    />
-                  );
-                })
-              ) : (
-                <Text style={[styles.emptyMessage, { color: theme.textTertiary }]}>
+            {techniqueDistribution.length > 0 ? (
+              <View style={styles.techniqueList}>
+                {techniqueDistribution.map((technique, index) => (
+                  <TechniqueItem 
+                    key={index}
+                    technique={technique}
+                    color={[theme.primary, theme.secondary, theme.accent, theme.info, theme.warning][index % 5]}
+                    index={index}
+                    maxCount={Math.max(...techniqueDistribution.map(t => t.count))}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyTechniquesContainer}>
+                <Text style={[styles.emptyTechniquesText, { color: theme.textSecondary }]}>
                   Aucune technique pratiquée pour le moment
                 </Text>
-              )}
-            </View>
+              </View>
+            )}
           </View>
         </View>
         
-        {/* Calendrier d'activité */}
+        {/* Section du calendrier d'activité */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-            Calendrier
+            Calendrier d'activité
           </Text>
           <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-            Visualisez votre pratique quotidienne
+            Visualisez votre régularité au fil du temps
           </Text>
           
+          {/* Calendrier d'activité */}
           <View 
             style={[
-              styles.graphCard, 
+              styles.calendarCard, 
               { 
                 backgroundColor: theme.surface,
                 borderRadius: theme.borderRadiusMedium,
@@ -688,41 +581,9 @@ const StatsScreen = () => {
             ]}
           >
             <ActivityCalendar 
-              data={periodData.map(day => {
-                // Récupérer les sessions pour ce jour
-                const daySessions = stats.sessions.filter(session => {
-                  try {
-                    const sessionDate = new Date(session.date);
-                    const dayDate = new Date(day.date);
-                    return sessionDate.getFullYear() === dayDate.getFullYear() &&
-                          sessionDate.getMonth() === dayDate.getMonth() &&
-                          sessionDate.getDate() === dayDate.getDate();
-                  } catch (error) {
-                    console.error(`Erreur lors du filtrage des sessions pour ${day.date}:`, error);
-                    return false;
-                  }
-                });
-                
-                // Vérifier si la durée est cohérente avec les sessions
-                let totalSessionsDuration = 0;
-                if (daySessions.length > 0) {
-                  totalSessionsDuration = daySessions.reduce((sum, session) => sum + session.duration, 0);
-                  
-                  // Si la durée des sessions est différente de la durée du jour, utiliser la plus grande
-                  if (totalSessionsDuration > day.duration) {
-                    console.log(`Correction de la durée pour ${day.date}: ${day.duration}s -> ${totalSessionsDuration}s`);
-                  }
-                }
-                
-                return {
-                  date: day.date,
-                  duration: Math.max(day.duration, totalSessionsDuration),
-                  sessions: daySessions
-                };
-              })}
+              data={calendarData}
               onMonthChange={(month, year) => {
                 console.log(`Changement de mois: ${month + 1}/${year}`);
-                // Ici on pourrait charger des données spécifiques pour ce mois
               }}
             />
           </View>
@@ -746,16 +607,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  refreshButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   resetButton: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   resetButtonText: {
@@ -769,7 +646,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
@@ -779,24 +656,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   statCard: {
     width: '48%',
-    padding: 15,
-    marginBottom: 15,
+    padding: 16,
+    marginBottom: 16,
   },
   statContent: {
     alignItems: 'flex-start',
   },
   statTitle: {
     fontSize: 14,
-    marginBottom: 5,
+    marginBottom: 8,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   statSubtitle: {
     fontSize: 12,
@@ -806,44 +682,42 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   periodButton: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    marginRight: 10,
+    marginRight: 8,
   },
   periodButtonText: {
     fontSize: 14,
   },
   graphCard: {
-    padding: 20,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 16,
   },
   graphTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  graphSubtitle: {
-    fontSize: 14,
-    marginBottom: 15,
+    marginBottom: 16,
   },
   barGraph: {
-    marginTop: 10,
+    marginTop: 8,
   },
   barContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   barLabelContainer: {
     width: 40,
+    marginRight: 8,
   },
   barLabel: {
     fontSize: 12,
+    textAlign: 'center',
   },
   barBackground: {
-    height: 10,
     flex: 1,
-    marginHorizontal: 10,
+    height: 12,
+    overflow: 'hidden',
   },
   barFill: {
     height: '100%',
@@ -852,54 +726,79 @@ const styles = StyleSheet.create({
     width: 50,
     fontSize: 12,
     textAlign: 'right',
+    marginLeft: 8,
   },
-  techniquesList: {
-    marginTop: 15,
+  techniqueList: {
+    marginTop: 8,
   },
   techniqueItem: {
-    marginBottom: 16,
-  },
-  techniqueHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 12,
   },
   techniqueNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  techniqueColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 120,
     marginRight: 8,
   },
   techniqueName: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  techniqueCount: {
     fontSize: 14,
   },
   techniqueBarContainer: {
-    marginTop: 2,
+    flex: 1,
+    height: 12,
+    overflow: 'hidden',
   },
   techniqueBarBackground: {
-    height: 8,
     width: '100%',
+    height: '100%',
   },
   techniqueBarFill: {
     height: '100%',
   },
-  emptyMessage: {
-    marginTop: 15,
-    fontSize: 15,
-    textAlign: 'center',
-    fontStyle: 'italic',
+  techniqueStatsContainer: {
+    width: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginLeft: 8,
+  },
+  techniqueCount: {
+    fontSize: 12,
+  },
+  techniquePercentage: {
+    fontSize: 12,
+  },
+  calendarCard: {
+    padding: 16,
   },
   footer: {
-    height: 20,
+    height: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+  },
+  emptyGraphContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyGraphText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  emptyTechniquesContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTechniquesText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 
