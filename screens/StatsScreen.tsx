@@ -105,7 +105,6 @@ const StatsScreen = () => {
     resetStats
   } = useStats();
   
-  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
   // Charger les statistiques lorsque l'écran devient actif
@@ -113,17 +112,15 @@ const StatsScreen = () => {
     useCallback(() => {
       const loadData = async () => {
         try {
-          setIsLoading(true);
           await loadStatsFromStorage();
-          setIsLoading(false);
+          await syncDailyStats();
         } catch (error) {
           console.error('Erreur lors du chargement des statistiques:', error);
-          setIsLoading(false);
         }
       };
       
       loadData();
-    }, [loadStatsFromStorage])
+    }, [loadStatsFromStorage, syncDailyStats])
   );
   
   // Fonction pour rafraîchir les données
@@ -132,9 +129,9 @@ const StatsScreen = () => {
       setRefreshing(true);
       await loadStatsFromStorage();
       await syncDailyStats();
-      setRefreshing(false);
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des statistiques:', error);
+    } finally {
       setRefreshing(false);
     }
   }, [loadStatsFromStorage, syncDailyStats]);
@@ -151,14 +148,11 @@ const StatsScreen = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              setIsLoading(true);
               await resetStats();
               Alert.alert("Succès", "Vos statistiques ont été réinitialisées.");
-              setIsLoading(false);
             } catch (error) {
               console.error('Erreur lors de la réinitialisation des statistiques:', error);
               Alert.alert("Erreur", "Une erreur est survenue lors de la réinitialisation des statistiques.");
-              setIsLoading(false);
             }
           }
         }
@@ -216,20 +210,6 @@ const StatsScreen = () => {
       return [];
     }
   };
-  
-  // Afficher un indicateur de chargement
-  if (isLoading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={[styles.loadingText, { color: theme.textPrimary }]}>
-            Chargement...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
   
   // Vérifier si des données sont disponibles
   const hasData = stats && stats.totalSessions > 0;
@@ -414,15 +394,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
   },
   header: {
     flexDirection: 'row',
