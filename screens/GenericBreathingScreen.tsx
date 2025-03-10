@@ -676,36 +676,68 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     // Animation pour le compte à rebours
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    
+    // Créer un composant Circle animé
+    const AnimatedCircle = Animated.createAnimatedComponent(Circle);
     
     useEffect(() => {
-      // Animation d'entrée
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 300,
+      // Animation d'entrée (une seule fois)
+      if (countdownValue === 3) {
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      }
+      
+      // Animation douce de l'échelle sans clignotement
+      Animated.timing(scaleAnim, {
+        toValue: 1.05,
+        duration: 1000,
         useNativeDriver: true,
+        easing: Easing.inOut(Easing.sin),
       }).start();
       
-      // Animation de pulsation pour chaque seconde du compte à rebours
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.5,
-          duration: 300,
-          useNativeDriver: true,
-          easing: Easing.out(Easing.ease),
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-          easing: Easing.in(Easing.ease),
-        }),
-      ]).start();
+      // Animation de progression circulaire
+      Animated.timing(progressAnim, {
+        toValue: (4 - countdownValue) / 3, // Progression de 0 à 1 (3, 2, 1, 0)
+        duration: 1000,
+        useNativeDriver: false,
+        easing: Easing.linear,
+      }).start();
       
       // Vibration légère pour chaque seconde du compte à rebours
       if (settings.hapticsEnabled) {
         lightImpact();
       }
     }, [countdownValue]);
+    
+    // Calculer les propriétés du cercle de progression
+    const circleSize = 150;
+    const strokeWidth = 6;
+    const radius = (circleSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    
+    // Interpoler la valeur de progression pour l'animation du cercle
+    const strokeDashoffset = progressAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [circumference, 0],
+    });
+    
+    // Déterminer le message en fonction de la valeur du compte à rebours
+    const getMessage = () => {
+      switch(countdownValue) {
+        case 3:
+          return "Préparez-vous...";
+        case 2:
+          return "Installez-vous confortablement";
+        case 1:
+          return "Respirez profondément";
+        default:
+          return "C'est parti !";
+      }
+    };
     
     return (
       <Animated.View 
@@ -714,39 +746,91 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           { opacity: opacityAnim }
         ]}
       >
-        <LinearGradient
-          colors={[`${theme.primary}20`, `${theme.primary}10`]}
-          style={styles.countdownGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Animated.View 
-            style={[
-              styles.countdownContainer,
-              { 
-                backgroundColor: theme.surface,
-                borderColor: theme.primary,
-                shadowColor: theme.primary,
-                transform: [{ scale: scaleAnim }]
-              }
-            ]}
-          >
-            <Text style={[styles.countdownText, { color: theme.primary }]}>
-              {countdownValue}
-            </Text>
-          </Animated.View>
-          
-          <Text style={[styles.countdownLabel, { color: theme.textPrimary }]}>
-            Préparez-vous...
-          </Text>
-          
-          <View style={styles.countdownInstructions}>
-            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
-            <Text style={[styles.countdownInstructionsText, { color: theme.textSecondary }]}>
-              Trouvez une position confortable
+        <View style={[
+          styles.countdownCard,
+          {
+            backgroundColor: theme.surface,
+            shadowColor: theme.shadowColor,
+          }
+        ]}>
+          <View style={styles.countdownHeader}>
+            <Text style={[styles.countdownTitle, { color: theme.textPrimary }]}>
+              Votre session commence dans
             </Text>
           </View>
-        </LinearGradient>
+          
+          <View style={styles.countdownProgressContainer}>
+            <Svg width={circleSize} height={circleSize}>
+              {/* Cercle de fond */}
+              <Circle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                strokeWidth={strokeWidth}
+                stroke={`${theme.primary}30`}
+                fill="transparent"
+              />
+              
+              {/* Cercle de progression */}
+              <AnimatedCircle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                strokeWidth={strokeWidth}
+                stroke={theme.primary}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                rotation="-90"
+                origin={`${circleSize / 2}, ${circleSize / 2}`}
+              />
+              
+              {/* Fond du nombre */}
+              <Circle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius - strokeWidth - 5}
+                fill={theme.surface}
+              />
+            </Svg>
+            
+            <Animated.Text 
+              style={[
+                styles.countdownText, 
+                { 
+                  color: theme.primary,
+                  transform: [{ scale: scaleAnim }]
+                }
+              ]}
+            >
+              {countdownValue}
+            </Animated.Text>
+          </View>
+          
+          <Text style={[styles.countdownLabel, { color: theme.textPrimary }]}>
+            {getMessage()}
+          </Text>
+          
+          <View style={[styles.countdownInstructions, { backgroundColor: theme.surfaceLight }]}>
+            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
+            <Text style={[styles.countdownInstructionsText, { color: theme.textSecondary }]}>
+              Détendez-vous et concentrez-vous
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.countdownSkipButton, { backgroundColor: theme.surfaceLight }]}
+            onPress={() => {
+              clearInterval(countdownTimerRef.current as NodeJS.Timeout);
+              startSession();
+            }}
+          >
+            <Text style={[styles.countdownSkipText, { color: theme.textSecondary }]}>
+              Passer
+            </Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     );
   };
@@ -1353,35 +1437,43 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
-  countdownGradient: {
-    width: width * 0.8,
-    maxWidth: 350,
-    padding: 30,
-    borderRadius: 20,
+  countdownCard: {
+    width: width * 0.85,
+    maxWidth: 380,
+    padding: 25,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
   },
-  countdownContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'white',
-    justifyContent: 'center',
+  countdownHeader: {
+    marginBottom: 20,
     alignItems: 'center',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-    borderWidth: 2,
+  },
+  countdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  countdownProgressContainer: {
+    position: 'relative',
+    width: 150,
+    height: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   countdownText: {
-    fontSize: 60,
+    position: 'absolute',
+    fontSize: 64,
     fontWeight: 'bold',
   },
   countdownLabel: {
@@ -1394,15 +1486,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderRadius: 30,
     maxWidth: '90%',
+    marginBottom: 20,
   },
   countdownInstructionsText: {
     marginLeft: 8,
     fontSize: 16,
+    fontWeight: '500',
+  },
+  countdownSkipButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  countdownSkipText: {
+    fontSize: 14,
     fontWeight: '500',
   },
 });
