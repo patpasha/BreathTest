@@ -156,18 +156,21 @@ const StatsScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Charger les statistiques à chaque fois que l'écran devient actif
   useFocusEffect(
     useCallback(() => {
       const loadStats = async () => {
         setIsLoading(true);
+        setError(null);
         try {
           await loadStatsFromStorage();
           await syncDailyStats();
           console.log('Statistiques chargées et synchronisées au focus de l\'écran');
         } catch (error) {
           console.error('Erreur lors du chargement des statistiques:', error);
+          setError('Impossible de charger les statistiques. Veuillez réessayer.');
         } finally {
           setIsLoading(false);
         }
@@ -180,12 +183,14 @@ const StatsScreen = () => {
   // Fonction pour rafraîchir manuellement les statistiques
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setError(null);
     try {
       await loadStatsFromStorage();
       await syncDailyStats();
       console.log('Statistiques rafraîchies manuellement');
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des statistiques:', error);
+      setError('Impossible de rafraîchir les statistiques. Veuillez réessayer.');
     } finally {
       setRefreshing(false);
     }
@@ -204,7 +209,10 @@ const StatsScreen = () => {
   
   // Obtenir les données pour la période sélectionnée
   const periodData = useMemo(() => {
-    if (!stats) return [];
+    if (!stats || !stats.sessions || stats.sessions.length === 0) {
+      console.log('Aucune session disponible pour calculer les données de période');
+      return [];
+    }
     
     let numWeeks;
     switch (selectedPeriod) {
@@ -214,115 +222,214 @@ const StatsScreen = () => {
       default: numWeeks = 1;
     }
     
-    return getWeeklyStats(numWeeks);
+    try {
+      return getWeeklyStats(numWeeks);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données hebdomadaires:', error);
+      return [];
+    }
   }, [stats, selectedPeriod, getWeeklyStats]);
   
   // Formater les données pour l'affichage dans le graphique
   const barData = useMemo(() => {
-    if (!periodData || periodData.length === 0) return [];
+    if (!periodData || periodData.length === 0) {
+      console.log('Aucune donnée de période disponible pour le graphique');
+      return [];
+    }
     
-    // Définir une valeur minimale pour maxValue (10 minutes = 600 secondes)
-    const MIN_MAX_VALUE = 600;
-    
-    if (selectedPeriod === 'week') {
-      // Afficher les 7 derniers jours avec le nom du jour
-      if (periodData.length < 7) return [];
+    try {
+      // Définir une valeur minimale pour maxValue (10 minutes = 600 secondes)
+      const MIN_MAX_VALUE = 600;
       
-      const weekData = periodData.slice(-7).map(day => {
-        // Formater le jour de la semaine
-        const date = new Date(day.date);
-        const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-        
-        return {
-          label: dayName,
-          value: day.duration,
-          maxValue: 0, // Sera calculé après
-          date: day.date,
-        };
-      });
-      
-      // Calculer la valeur maximale
-      const maxValue = Math.max(...weekData.map(d => d.value), MIN_MAX_VALUE);
-      return weekData.map(day => ({ ...day, maxValue }));
-      
-    } else if (selectedPeriod === 'month') {
-      // Regrouper par semaine pour le mois
-      if (periodData.length < 28) return [];
-      
-      const monthData = periodData.slice(-28); // 4 semaines = 28 jours
-      const weeklyData = [];
-      
-      for (let i = 0; i < 4; i++) {
-        const weekStart = i * 7;
-        const weekSlice = monthData.slice(weekStart, weekStart + 7);
-        const totalDuration = weekSlice.reduce((sum, day) => sum + day.duration, 0);
-        
-        weeklyData.push({
-          label: `S${i+1}`,
-          value: totalDuration,
-          maxValue: 0,
-        });
-      }
-      
-      // Calculer la valeur maximale
-      const maxValue = Math.max(...weeklyData.map(w => w.value), MIN_MAX_VALUE);
-      return weeklyData.map(week => ({ ...week, maxValue }));
-      
-    } else { // année
-      // Regrouper par mois pour l'année
-      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-      const monthTotals: { [key: number]: number } = {};
-      
-      // Parcourir les données et les regrouper par mois
-      periodData.forEach(day => {
-        if (day.date && day.duration > 0) {
-          const date = new Date(day.date);
-          const monthKey = date.getMonth();
-          if (!monthTotals[monthKey]) {
-            monthTotals[monthKey] = 0;
+      if (selectedPeriod === 'week') {
+        // Afficher les 7 derniers jours avec le nom du jour
+        if (periodData.length < 7) {
+          console.log('Pas assez de données pour afficher la semaine complète');
+          // Compléter avec des jours vides si nécessaire
+          const result = [...periodData];
+          const lastDate = periodData.length > 0 
+            ? new Date(periodData[periodData.length - 1].date)
+            : new Date();
+          
+          while (result.length < 7) {
+            const nextDate = new Date(lastDate);
+            nextDate.setDate(nextDate.getDate() + (result.length - periodData.length + 1));
+            result.push({
+              date: nextDate.toISOString().split('T')[0],
+              duration: 0
+            });
           }
-          monthTotals[monthKey] += day.duration;
+          
+          const weekData = result.slice(-7).map(day => {
+            // Formater le jour de la semaine
+            const date = new Date(day.date);
+            const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
+            
+            return {
+              label: dayName,
+              value: day.duration,
+              maxValue: 0,
+              date: day.date,
+            };
+          });
+          
+          // Calculer la valeur maximale (avec vérification pour éviter les erreurs)
+          const values = weekData.map(d => d.value);
+          const maxValue = values.length > 0 ? Math.max(...values, MIN_MAX_VALUE) : MIN_MAX_VALUE;
+          return weekData.map(day => ({ ...day, maxValue }));
         }
-      });
-      
-      // Convertir en tableau pour l'affichage
-      const monthlyData = monthNames.map((name, i) => ({
-        label: name,
-        value: monthTotals[i] || 0,
-        maxValue: 0,
-      }));
-      
-      // Calculer la valeur maximale
-      const maxValue = Math.max(...monthlyData.map(m => m.value), MIN_MAX_VALUE);
-      return monthlyData.map(month => ({ ...month, maxValue }));
+        
+        const weekData = periodData.slice(-7).map(day => {
+          // Formater le jour de la semaine
+          const date = new Date(day.date);
+          const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
+          
+          return {
+            label: dayName,
+            value: day.duration,
+            maxValue: 0,
+            date: day.date,
+          };
+        });
+        
+        // Calculer la valeur maximale (avec vérification pour éviter les erreurs)
+        const values = weekData.map(d => d.value);
+        const maxValue = values.length > 0 ? Math.max(...values, MIN_MAX_VALUE) : MIN_MAX_VALUE;
+        return weekData.map(day => ({ ...day, maxValue }));
+        
+      } else if (selectedPeriod === 'month') {
+        // Regrouper par semaine pour le mois
+        if (periodData.length < 28) {
+          console.log('Pas assez de données pour afficher le mois complet, utilisation des données disponibles');
+          // Utiliser les données disponibles
+        }
+        
+        // Assurer que nous avons au moins 28 jours de données
+        const monthData = [];
+        const lastDate = periodData.length > 0 
+          ? new Date(periodData[periodData.length - 1].date)
+          : new Date();
+        
+        // Copier les données existantes
+        for (let i = 0; i < Math.min(periodData.length, 28); i++) {
+          monthData.push(periodData[periodData.length - 1 - i]);
+        }
+        
+        // Compléter avec des jours vides si nécessaire
+        while (monthData.length < 28) {
+          const nextDate = new Date(lastDate);
+          nextDate.setDate(nextDate.getDate() - monthData.length);
+          monthData.unshift({
+            date: nextDate.toISOString().split('T')[0],
+            duration: 0
+          });
+        }
+        
+        // Inverser pour avoir l'ordre chronologique
+        monthData.reverse();
+        
+        const weeklyData = [];
+        
+        for (let i = 0; i < 4; i++) {
+          const weekStart = i * 7;
+          const weekSlice = monthData.slice(weekStart, weekStart + 7);
+          const totalDuration = weekSlice.reduce((sum, day) => sum + day.duration, 0);
+          
+          weeklyData.push({
+            label: `S${i+1}`,
+            value: totalDuration,
+            maxValue: 0,
+          });
+        }
+        
+        // Calculer la valeur maximale (avec vérification pour éviter les erreurs)
+        const values = weeklyData.map(w => w.value);
+        const maxValue = values.length > 0 ? Math.max(...values, MIN_MAX_VALUE) : MIN_MAX_VALUE;
+        return weeklyData.map(week => ({ ...week, maxValue }));
+        
+      } else { // année
+        // Regrouper par mois pour l'année
+        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        const monthTotals: { [key: number]: number } = {};
+        
+        // Parcourir les données et les regrouper par mois
+        periodData.forEach(day => {
+          if (day.date && day.duration > 0) {
+            try {
+              const date = new Date(day.date);
+              const monthKey = date.getMonth();
+              if (!monthTotals[monthKey]) {
+                monthTotals[monthKey] = 0;
+              }
+              monthTotals[monthKey] += day.duration;
+            } catch (error) {
+              console.error('Erreur lors du traitement de la date:', day.date, error);
+            }
+          }
+        });
+        
+        // Convertir en tableau pour l'affichage
+        const monthlyData = monthNames.map((name, i) => ({
+          label: name,
+          value: monthTotals[i] || 0,
+          maxValue: 0,
+        }));
+        
+        // Calculer la valeur maximale (avec vérification pour éviter les erreurs)
+        const values = monthlyData.map(m => m.value);
+        const maxValue = values.length > 0 ? Math.max(...values, MIN_MAX_VALUE) : MIN_MAX_VALUE;
+        return monthlyData.map(month => ({ ...month, maxValue }));
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération des données du graphique:', error);
+      return [];
     }
   }, [periodData, selectedPeriod]);
   
   // Obtenir la distribution des techniques
   const techniqueDistribution = useMemo(() => {
-    return getTechniqueDistribution();
+    if (!stats || !stats.sessions || stats.sessions.length === 0) {
+      return [];
+    }
+    
+    try {
+      return getTechniqueDistribution();
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la distribution des techniques:', error);
+      return [];
+    }
   }, [getTechniqueDistribution, stats]);
   
   // Préparer les données pour le calendrier d'activité
   const calendarData = useMemo(() => {
-    return periodData.map(day => {
-      // Trouver les sessions pour cette date
-      const daySessions = stats.sessions.filter(session => {
-        try {
-          const sessionDate = new Date(session.date).toISOString().split('T')[0];
-          return sessionDate === day.date;
-        } catch (error) {
-          return false;
-        }
+    if (!stats || !stats.sessions || !periodData || periodData.length === 0) {
+      return [];
+    }
+    
+    try {
+      return periodData.map(day => {
+        // Trouver les sessions pour cette date
+        const daySessions = stats.sessions.filter(session => {
+          try {
+            const sessionDate = new Date(session.date).toISOString().split('T')[0];
+            return sessionDate === day.date;
+          } catch (error) {
+            console.error('Erreur lors du filtrage des sessions:', error);
+            return false;
+          }
+        });
+        
+        return {
+          date: day.date,
+          duration: day.duration,
+          sessions: daySessions
+        };
       });
-      
-      return {
-        date: day.date,
-        duration: day.duration,
-        sessions: daySessions
-      };
-    });
-  }, [periodData, stats.sessions]);
+    } catch (error) {
+      console.error('Erreur lors de la préparation des données du calendrier:', error);
+      return [];
+    }
+  }, [periodData, stats]);
   
   // Fonction pour réinitialiser les statistiques
   const handleResetStats = useCallback(() => {
@@ -355,6 +462,45 @@ const StatsScreen = () => {
           <ActivityIndicator size="large" color={theme.primary} />
           <Text style={[styles.loadingText, { color: theme.textPrimary }]}>
             Chargement des statistiques...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  // Afficher un message d'erreur si une erreur s'est produite
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: theme.error }]}>
+            {error}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.retryButton, { backgroundColor: theme.primary }]}
+            onPress={onRefresh}
+          >
+            <Text style={styles.buttonText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  // Afficher un message si aucune donnée n'est disponible
+  const hasData = stats && stats.sessions && stats.sessions.length > 0;
+  if (!hasData) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.headerContainer}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Statistiques</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            Aucune statistique disponible.
+          </Text>
+          <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
+            Pratiquez des techniques de respiration pour voir apparaître des statistiques.
           </Text>
         </View>
       </SafeAreaView>
@@ -782,6 +928,33 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+  },
+  // Styles pour les conteneurs vides dans les graphiques et listes
   emptyGraphContainer: {
     padding: 20,
     alignItems: 'center',
