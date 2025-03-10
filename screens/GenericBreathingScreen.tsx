@@ -46,6 +46,10 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   // Récupérer l'ID de la technique depuis les paramètres de route
   const techniqueId = route.params?.techniqueId;
 
+  // Ajout d'un état pour l'animation de transition
+  const [isStarting, setIsStarting] = useState(false);
+  const startTransitionAnim = useRef(new Animated.Value(0)).current;
+
   // Charger les données de la technique
   useEffect(() => {
     const loadTechnique = async () => {
@@ -451,12 +455,31 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   }, [currentStep, isActive, currentAnimValue, technique]);
 
   const handleStart = () => {
-    // Démarrer directement la session sans compte à rebours
-    startSession();
+    // Démarrer l'animation de transition
+    setIsStarting(true);
     
-    // Vibration légère pour indiquer le début de la session
+    // Animation de transition fluide - durée augmentée
+    Animated.timing(startTransitionAnim, {
+      toValue: 1,
+      duration: 1500, // Augmenté de 800ms à 1500ms
+      useNativeDriver: true,
+      easing: Easing.out(Easing.cubic),
+    }).start(({ finished }) => {
+      if (finished) {
+        // Démarrer la session une fois l'animation terminée
+        startSession();
+        
+        // Réinitialiser l'animation pour la prochaine fois
+        setTimeout(() => {
+          setIsStarting(false);
+          startTransitionAnim.setValue(0);
+        }, 100);
+      }
+    });
+    
+    // Vibration légère pour indiquer le début de la transition
     if (settings.hapticsEnabled) {
-      mediumImpact();
+      lightImpact();
     }
   };
   
@@ -922,6 +945,60 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             <View style={styles.bottomSpacer} />
           </ScrollView>
           
+          {/* Animation de transition au démarrage */}
+          {isStarting && (
+            <Animated.View 
+              style={[
+                styles.startTransitionOverlay,
+                {
+                  opacity: startTransitionAnim.interpolate({
+                    inputRange: [0, 0.3, 0.8, 1],  // Ajusté pour une transition plus lente
+                    outputRange: [0, 0.8, 0.8, 0], // Opacité plus élevée et maintenue plus longtemps
+                  }),
+                }
+              ]}
+            >
+              <Animated.View 
+                style={[
+                  styles.startTransitionCircle,
+                  {
+                    backgroundColor: theme.primary,
+                    transform: [
+                      { 
+                        scale: startTransitionAnim.interpolate({
+                          inputRange: [0, 0.3, 0.8, 1],  // Ajusté pour une transition plus lente
+                          outputRange: [0.3, 1.5, 1.8, 2], // Expansion plus progressive
+                        }) 
+                      }
+                    ],
+                  }
+                ]}
+              />
+              
+              <Animated.Text 
+                style={[
+                  styles.startTransitionText,
+                  {
+                    opacity: startTransitionAnim.interpolate({
+                      inputRange: [0, 0.2, 0.7, 0.9],  // Ajusté pour une transition plus lente
+                      outputRange: [0, 1, 1, 0],       // Texte visible plus longtemps
+                    }),
+                    transform: [
+                      { 
+                        scale: startTransitionAnim.interpolate({
+                          inputRange: [0, 0.2, 0.7, 0.9],  // Ajusté pour une transition plus lente
+                          outputRange: [0.5, 1.2, 1.2, 0.8],
+                        }) 
+                      }
+                    ],
+                  }
+                ]}
+              >
+                Préparez-vous...
+              </Animated.Text>
+            </Animated.View>
+          )}
+          
           {/* Bouton fixe en bas de l'écran */}
           <View style={[
             styles.fixedButtonContainer, 
@@ -939,7 +1016,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                 style={[
                   styles.startButton, 
                   { 
-                    backgroundColor: theme.primary,
+                    backgroundColor: isStarting ? theme.primaryLight : theme.primary,
                     shadowColor: theme.primary,
                     shadowOpacity: 0.3,
                     shadowRadius: 10,
@@ -948,6 +1025,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                   }
                 ]} 
                 onPress={handleStart}
+                disabled={isStarting}
               >
                 <Text style={styles.buttonText}>Commencer</Text>
               </TouchableOpacity>
@@ -1219,6 +1297,32 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  startTransitionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)', // Légère teinte de fond pour améliorer la visibilité
+  },
+  startTransitionCircle: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.3,
+  },
+  startTransitionText: {
+    position: 'absolute',
+    color: 'white',
+    fontSize: 30,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
 });
 
