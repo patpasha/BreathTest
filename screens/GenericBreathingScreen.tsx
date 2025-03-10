@@ -38,10 +38,15 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   const [stepProgress, setStepProgress] = useState(0);
   const [showGuide, setShowGuide] = useState(true);
   
+  // État pour le compte à rebours
+  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [countdownValue, setCountdownValue] = useState(3);
+  
   const animatedValue = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressAnimation = useRef(new Animated.Value(0)).current;
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Récupérer l'ID de la technique depuis les paramètres de route
   const techniqueId = route.params?.techniqueId;
@@ -451,9 +456,36 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   }, [currentStep, isActive, currentAnimValue, technique]);
 
   const handleStart = () => {
+    // Démarrer le compte à rebours
+    setIsCountingDown(true);
+    setCountdownValue(3);
+    
+    // Utiliser un intervalle pour mettre à jour le compte à rebours
+    countdownTimerRef.current = setInterval(() => {
+      setCountdownValue(prev => {
+        if (prev <= 1) {
+          // Quand le compte à rebours atteint 0, démarrer la session
+          clearInterval(countdownTimerRef.current as NodeJS.Timeout);
+          startSession();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Vibration légère pour indiquer le début du compte à rebours
+    if (settings.hapticsEnabled) {
+      lightImpact();
+    }
+  };
+  
+  // Fonction pour démarrer la session après le compte à rebours
+  const startSession = () => {
+    setIsCountingDown(false);
     setIsActive(true);
     setCurrentStep(0);
     setCurrentCycle(1);
+    
     // Vérification que duration est un nombre valide
     if (isNaN(duration) || duration <= 0) {
       // Si duration est invalide, utiliser 5 minutes par défaut
@@ -462,11 +494,23 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     } else {
       setTimeRemaining(duration);
     }
+    
     setCurrentAnimValue(0);
     setSessionStartTime(new Date());
+    
+    // Vibration moyenne pour indiquer le début de la session
+    if (settings.hapticsEnabled) {
+      mediumImpact();
+    }
   };
 
   const handleStop = async () => {
+    // Arrêter le compte à rebours s'il est en cours
+    if (isCountingDown && countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      setIsCountingDown(false);
+    }
+    
     setIsActive(false);
     setCurrentStep(0);
     animatedValue.setValue(0);
@@ -622,6 +666,88 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           );
         })}
       </View>
+    );
+  };
+
+  // Composant pour afficher le compte à rebours
+  const CountdownOverlay = () => {
+    const theme = useTheme();
+    
+    // Animation pour le compte à rebours
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const opacityAnim = useRef(new Animated.Value(0)).current;
+    
+    useEffect(() => {
+      // Animation d'entrée
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      
+      // Animation de pulsation pour chaque seconde du compte à rebours
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.5,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.ease),
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.ease),
+        }),
+      ]).start();
+      
+      // Vibration légère pour chaque seconde du compte à rebours
+      if (settings.hapticsEnabled) {
+        lightImpact();
+      }
+    }, [countdownValue]);
+    
+    return (
+      <Animated.View 
+        style={[
+          styles.countdownOverlay,
+          { opacity: opacityAnim }
+        ]}
+      >
+        <LinearGradient
+          colors={[`${theme.primary}20`, `${theme.primary}10`]}
+          style={styles.countdownGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Animated.View 
+            style={[
+              styles.countdownContainer,
+              { 
+                backgroundColor: theme.surface,
+                borderColor: theme.primary,
+                shadowColor: theme.primary,
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            <Text style={[styles.countdownText, { color: theme.primary }]}>
+              {countdownValue}
+            </Text>
+          </Animated.View>
+          
+          <Text style={[styles.countdownLabel, { color: theme.textPrimary }]}>
+            Préparez-vous...
+          </Text>
+          
+          <View style={styles.countdownInstructions}>
+            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
+            <Text style={[styles.countdownInstructionsText, { color: theme.textSecondary }]}>
+              Trouvez une position confortable
+            </Text>
+          </View>
+        </LinearGradient>
+      </Animated.View>
     );
   };
 
@@ -860,6 +986,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             <View style={styles.bottomSpacer} />
           </ScrollView>
           
+          {/* Overlay du compte à rebours */}
+          {isCountingDown && <CountdownOverlay />}
+          
           {/* Bouton fixe en bas de l'écran */}
           <View style={[
             styles.fixedButtonContainer, 
@@ -872,7 +1001,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               elevation: 10,
             }
           ]}>
-            {!isActive ? (
+            {!isActive && !isCountingDown ? (
               <TouchableOpacity 
                 style={[
                   styles.startButton, 
@@ -1122,6 +1251,64 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  countdownOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  countdownGradient: {
+    width: width * 0.8,
+    maxWidth: 350,
+    padding: 30,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countdownContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+    borderWidth: 2,
+    marginBottom: 20,
+  },
+  countdownText: {
+    fontSize: 60,
+    fontWeight: 'bold',
+  },
+  countdownLabel: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  countdownInstructions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 30,
+    maxWidth: '90%',
+  },
+  countdownInstructionsText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
