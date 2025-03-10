@@ -781,6 +781,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={['left', 'right', 'bottom']} // Ne pas appliquer la safe area en haut
     >
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -1099,7 +1100,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerGradient: {
-    paddingTop: 0, // Élimine complètement l'espace en haut
+    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0, // Espace pour la barre de statut
     paddingBottom: 15,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
@@ -1107,14 +1108,14 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 40 : 30, // Ajusté pour tenir compte de la barre de statut
+    paddingTop: 10,
     paddingBottom: 5,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: Platform.OS === 'ios' ? 40 : 30, // Aligné avec le paddingTop du headerContainer
+    top: 10,
     zIndex: 10,
     padding: 8,
     borderRadius: 20,
