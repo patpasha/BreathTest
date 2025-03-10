@@ -677,6 +677,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
     const finalAnim = useRef(new Animated.Value(1)).current;
+    const blurAnim = useRef(new Animated.Value(0)).current;
     
     // Créer un composant Circle animé
     const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -684,16 +685,24 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     useEffect(() => {
       // Animation d'entrée (une seule fois)
       if (countdownValue === 3) {
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }).start();
+        Animated.parallel([
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.cubic),
+          }),
+          Animated.timing(blurAnim, {
+            toValue: 5,
+            duration: 500,
+            useNativeDriver: false,
+          })
+        ]).start();
       }
       
       // Animation douce de l'échelle sans clignotement
       Animated.timing(scaleAnim, {
-        toValue: 1.05,
+        toValue: countdownValue === 0 ? 1.2 : 1.05,
         duration: 1000,
         useNativeDriver: true,
         easing: Easing.inOut(Easing.sin),
@@ -712,13 +721,13 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         // Animation de pulsation pour le "0" final
         Animated.sequence([
           Animated.timing(scaleAnim, {
-            toValue: 1.3,
+            toValue: 1.4,
             duration: 300,
             useNativeDriver: true,
             easing: Easing.out(Easing.cubic),
           }),
           Animated.timing(scaleAnim, {
-            toValue: 1.1,
+            toValue: 1.2,
             duration: 500,
             useNativeDriver: true,
             easing: Easing.inOut(Easing.cubic),
@@ -726,13 +735,21 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         ]).start();
         
         // Animation de sortie progressive
-        Animated.timing(finalAnim, {
-          toValue: 0,
-          duration: 1200,
-          delay: 800,
-          useNativeDriver: true,
-          easing: Easing.in(Easing.cubic),
-        }).start(({ finished }) => {
+        Animated.parallel([
+          Animated.timing(finalAnim, {
+            toValue: 0,
+            duration: 1200,
+            delay: 800,
+            useNativeDriver: true,
+            easing: Easing.in(Easing.cubic),
+          }),
+          Animated.timing(blurAnim, {
+            toValue: 0,
+            duration: 1200,
+            delay: 800,
+            useNativeDriver: false,
+          })
+        ]).start(({ finished }) => {
           // Seulement démarrer la session quand l'animation est terminée
           if (finished) {
             startSession();
@@ -752,8 +769,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     }, [countdownValue]);
     
     // Calculer les propriétés du cercle de progression
-    const circleSize = 150;
-    const strokeWidth = 6;
+    const circleSize = 180;
+    const strokeWidth = 8;
     const radius = (circleSize - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     
@@ -779,6 +796,28 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       }
     };
     
+    // Déterminer la couleur en fonction de la valeur du compte à rebours
+    const getColor = () => {
+      switch(countdownValue) {
+        case 3:
+          return theme.primary;
+        case 2:
+          return theme.primary;
+        case 1:
+          return theme.primary;
+        case 0:
+          return theme.success;
+        default:
+          return theme.primary;
+      }
+    };
+    
+    const currentColor = getColor();
+    const blurRadius = blurAnim.interpolate({
+      inputRange: [0, 5],
+      outputRange: [0, 5],
+    });
+    
     return (
       <Animated.View 
         style={[
@@ -789,11 +828,25 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           }
         ]}
       >
+        <Animated.View 
+          style={[
+            styles.countdownBlurBackground,
+            {
+              backgroundColor: `${currentColor}10`,
+              borderColor: `${currentColor}30`,
+              shadowColor: currentColor,
+              transform: [{ scale: Animated.add(1, Animated.multiply(scaleAnim, 0.05)) }]
+            }
+          ]}
+        />
+        
         <View style={[
           styles.countdownCard,
           {
             backgroundColor: theme.surface,
-            shadowColor: theme.shadowColor,
+            shadowColor: currentColor,
+            borderColor: `${currentColor}30`,
+            borderWidth: 1,
           }
         ]}>
           <View style={styles.countdownHeader}>
@@ -812,7 +865,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                 cy={circleSize / 2}
                 r={radius}
                 strokeWidth={strokeWidth}
-                stroke={`${theme.primary}30`}
+                stroke={`${currentColor}30`}
                 fill="transparent"
               />
               
@@ -822,7 +875,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                 cy={circleSize / 2}
                 r={radius}
                 strokeWidth={strokeWidth}
-                stroke={theme.primary}
+                stroke={currentColor}
                 fill="transparent"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
@@ -844,7 +897,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               style={[
                 styles.countdownText, 
                 { 
-                  color: countdownValue === 0 ? theme.success : theme.primary,
+                  color: currentColor,
                   transform: [{ scale: scaleAnim }]
                 }
               ]}
@@ -857,15 +910,15 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             {getMessage()}
           </Text>
           
-          <View style={[styles.countdownInstructions, { backgroundColor: theme.surfaceLight }]}>
+          <View style={[styles.countdownInstructions, { backgroundColor: `${currentColor}15` }]}>
             <Ionicons 
               name={countdownValue === 0 ? "checkmark-circle-outline" : "information-circle-outline"} 
               size={20} 
-              color={countdownValue === 0 ? theme.success : theme.textSecondary} 
+              color={currentColor} 
             />
             <Text style={[
               styles.countdownInstructionsText, 
-              { color: countdownValue === 0 ? theme.success : theme.textSecondary }
+              { color: theme.textSecondary }
             ]}>
               {countdownValue === 0 
                 ? "Suivez le rythme de la bulle" 
@@ -1477,10 +1530,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+  },
+  countdownBlurBackground: {
+    position: 'absolute',
+    width: width * 1.5,
+    height: width * 1.5,
+    borderRadius: width * 0.75,
+    opacity: 0.8,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 50,
+    elevation: 10,
   },
   countdownCard: {
     width: width * 0.85,
@@ -1490,30 +1555,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   countdownHeader: {
     marginBottom: 20,
     alignItems: 'center',
   },
   countdownTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     textAlign: 'center',
   },
   countdownProgressContainer: {
     position: 'relative',
-    width: 150,
-    height: 150,
+    width: 180,
+    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
   countdownText: {
     position: 'absolute',
-    fontSize: 64,
+    fontSize: 72,
     fontWeight: 'bold',
   },
   countdownLabel: {
@@ -1526,10 +1591,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 30,
-    maxWidth: '90%',
+    width: '100%',
     marginBottom: 20,
   },
   countdownInstructionsText: {
@@ -1539,7 +1604,7 @@ const styles = StyleSheet.create({
   },
   countdownSkipButton: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
   },
   countdownSkipText: {
