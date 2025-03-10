@@ -144,32 +144,11 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
       }).start();
       
     } else {
-      // Animation de rétention: légère pulsation pour indiquer la vie et maintenir l'attention
-      Animated.sequence([
-        // Légère expansion initiale
-        Animated.timing(scaleValue, {
-          toValue: 1.02,
-          duration: stepDuration * 0.2,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        // Maintien avec très légère pulsation
-        Animated.timing(scaleValue, {
-          toValue: 1.0,
-          duration: stepDuration * 0.6,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        // Préparation à l'étape suivante
-        Animated.timing(scaleValue, {
-          toValue: stepType === 'hold' && getStepType(currentStep) === 'inhale' ? 1.02 : 0.98,
-          duration: stepDuration * 0.2,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        })
-      ]).start();
+      // Pour la rétention du souffle, maintenir la bulle immobile
+      // Pas d'animation de taille pour éviter de confondre l'utilisateur
+      // pendant la phase de rétention
       
-      // Opacité stable pendant la rétention avec légère variation
+      // Légère pulsation de l'opacité pour indiquer que la phase est active
       Animated.sequence([
         Animated.timing(opacityValue, {
           toValue: 0.95,
@@ -177,7 +156,7 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
           useNativeDriver: true,
         }),
         Animated.timing(opacityValue, {
-          toValue: 0.92,
+          toValue: 0.9,
           duration: stepDuration * 0.4,
           useNativeDriver: true,
         }),

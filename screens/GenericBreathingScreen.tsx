@@ -247,20 +247,26 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       } else if (stepType === 'exhale') {
         toValue = 0; // Contraction pour l'expiration
       } else {
-        // Pour les phases de rétention, adapter en fonction de l'étape précédente
-        // pour une transition plus naturelle
-        const prevStep = currentStep > 0 ? steps[currentStep - 1] : steps[steps.length - 1];
-        const prevStepType = getStepType(prevStep.name);
+        // Pour les phases de rétention, maintenir la position actuelle
+        // pour éviter de confondre l'utilisateur
+        toValue = currentAnimValue;
         
-        if (prevStepType === 'inhale') {
-          // Après une inspiration, maintenir légèrement gonflé
-          toValue = 0.9;
-        } else if (prevStepType === 'exhale') {
-          // Après une expiration, maintenir légèrement contracté
-          toValue = 0.2;
-        } else {
-          // Si on ne peut pas déterminer, utiliser la valeur actuelle
-          toValue = currentAnimValue;
+        // Si nous venons de commencer la session, définir une valeur par défaut
+        // basée sur l'étape précédente
+        if (currentAnimValue === 0 || currentStep === 0) {
+          const prevStep = currentStep > 0 ? steps[currentStep - 1] : steps[steps.length - 1];
+          const prevStepType = getStepType(prevStep.name);
+          
+          if (prevStepType === 'inhale') {
+            // Après une inspiration, maintenir légèrement gonflé
+            toValue = 0.9;
+          } else if (prevStepType === 'exhale') {
+            // Après une expiration, maintenir légèrement contracté
+            toValue = 0.2;
+          } else {
+            // Valeur neutre par défaut
+            toValue = 0.5;
+          }
         }
       }
       
@@ -273,77 +279,75 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
         // Courbe d'accélération pour l'expiration: démarrage rapide puis ralentissement progressif
         easingFunction = Easing.bezier(0.4, 0.0, 0.6, 1.0);
       } else {
-        // Courbe d'accélération pour la rétention: transition douce
-        easingFunction = Easing.bezier(0.25, 0.1, 0.25, 1.0);
+        // Pour la rétention, pas d'animation de taille
+        // Nous allons simplement maintenir la valeur actuelle
+        setCurrentAnimValue(toValue);
+        
+        // Passer directement à la gestion de la progression sans animer la taille
+        setStepProgress(0);
+        progressAnimation.setValue(0);
+        
+        // Utiliser une animation plus précise pour la progression
+        Animated.timing(progressAnimation, {
+          toValue: 1,
+          duration: currentStepObj.duration,
+          useNativeDriver: false,
+          easing: Easing.linear,
+        }).start();
+        
+        // Utiliser requestAnimationFrame pour une animation plus fluide
+        let startTime = Date.now();
+        let animationFrameId: number;
+        
+        const updateProgress = () => {
+          const elapsedTime = Date.now() - startTime;
+          const progress = Math.min(100, (elapsedTime / currentStepObj.duration) * 100);
+          
+          setStepProgress(progress);
+          
+          if (progress < 100 && isActive) {
+            animationFrameId = requestAnimationFrame(updateProgress);
+          }
+        };
+        
+        // Démarrer l'animation
+        animationFrameId = requestAnimationFrame(updateProgress);
+        
+        // Programmer le passage à l'étape suivante
+        cycleTimerRef.current = setTimeout(() => {
+          // Annuler l'animation frame si elle est toujours en cours
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+          }
+          
+          // Passer à l'étape suivante
+          const nextStep = (currentStep + 1) % steps.length;
+          setCurrentStep(nextStep);
+          
+          // Incrémenter le compteur de cycles si on revient à la première étape
+          if (nextStep === 0) {
+            setCurrentCycle(prev => prev + 1);
+          }
+        }, currentStepObj.duration);
+        
+        // Nettoyer les timers lors du démontage ou du changement d'étape
+        return () => {
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+          }
+          if (cycleTimerRef.current) {
+            clearTimeout(cycleTimerRef.current);
+          }
+        };
       }
       
-      // Animation adaptée au type de respiration
+      // Animation adaptée au type de respiration (seulement pour inhale et exhale)
       Animated.timing(animatedValue, {
         toValue,
         duration: currentStepObj.duration * 0.95, // Légèrement plus court pour éviter les saccades
         useNativeDriver: true,
         easing: easingFunction,
       }).start();
-      
-      // Réinitialiser la progression et démarrer l'animation
-      setStepProgress(0);
-      progressAnimation.setValue(0);
-      
-      // Utiliser une animation plus précise pour la progression
-      Animated.timing(progressAnimation, {
-        toValue: 1,
-        duration: currentStepObj.duration,
-        useNativeDriver: false,
-        easing: Easing.linear, // Progression linéaire pour le cercle de progression
-      }).start();
-      
-      setCurrentAnimValue(toValue);
-
-      // Utiliser requestAnimationFrame pour une animation plus fluide
-      let startTime = Date.now();
-      let animationFrameId: number;
-      
-      const updateProgress = () => {
-        const elapsedTime = Date.now() - startTime;
-        const progress = Math.min(100, (elapsedTime / currentStepObj.duration) * 100);
-        
-        setStepProgress(progress);
-        
-        if (progress < 100 && isActive) {
-          animationFrameId = requestAnimationFrame(updateProgress);
-        }
-      };
-      
-      // Démarrer l'animation
-      animationFrameId = requestAnimationFrame(updateProgress);
-
-      // Programmer le passage à l'étape suivante avec une légère anticipation
-      // pour une transition plus fluide entre les étapes
-      cycleTimerRef.current = setTimeout(() => {
-        // Annuler l'animation frame si elle est toujours en cours
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-        
-        // Passer à l'étape suivante
-        const nextStep = (currentStep + 1) % steps.length;
-        setCurrentStep(nextStep);
-        
-        // Incrémenter le compteur de cycles si on revient à la première étape
-        if (nextStep === 0) {
-          setCurrentCycle(prev => prev + 1);
-        }
-      }, currentStepObj.duration);
-
-      // Nettoyer les timers lors du démontage ou du changement d'étape
-      return () => {
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-        if (cycleTimerRef.current) {
-          clearTimeout(cycleTimerRef.current);
-        }
-      };
     } else if (cycleTimerRef.current) {
       clearTimeout(cycleTimerRef.current);
     }
