@@ -201,7 +201,7 @@ const TechniqueItem = ({
 
 const StatsScreen = () => {
   const theme = useTheme();
-  const { stats, getWeeklyStats, getTechniqueDistribution, loadStatsFromStorage, resetStats } = useStats();
+  const { stats, getWeeklyStats, getTechniqueDistribution, loadStatsFromStorage, resetStats, syncDailyStats } = useStats();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
   
@@ -231,16 +231,20 @@ const StatsScreen = () => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      // Charger les statistiques depuis AsyncStorage
       await loadStatsFromStorage();
-      console.log('Statistiques rafraîchies');
+      
+      // Synchroniser les statistiques quotidiennes avec les sessions
+      await syncDailyStats();
+      
+      console.log('Statistiques rafraîchies et synchronisées');
       console.log('Sessions enregistrées:', stats.sessions.length);
-      console.log('Détail des sessions:', JSON.stringify(stats.sessions));
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des statistiques:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [loadStatsFromStorage, stats.sessions]);
+  }, [loadStatsFromStorage, syncDailyStats, stats.sessions.length]);
   
   // Formater la durée en heures et minutes
   const formatDuration = (seconds: number) => {
