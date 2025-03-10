@@ -38,15 +38,10 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   const [stepProgress, setStepProgress] = useState(0);
   const [showGuide, setShowGuide] = useState(true);
   
-  // État pour le compte à rebours
-  const [isCountingDown, setIsCountingDown] = useState(false);
-  const [countdownValue, setCountdownValue] = useState(3);
-  
   const animatedValue = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressAnimation = useRef(new Animated.Value(0)).current;
-  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Récupérer l'ID de la technique depuis les paramètres de route
   const techniqueId = route.params?.techniqueId;
@@ -456,31 +451,17 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   }, [currentStep, isActive, currentAnimValue, technique]);
 
   const handleStart = () => {
-    // Démarrer le compte à rebours
-    setIsCountingDown(true);
-    setCountdownValue(3);
+    // Démarrer directement la session sans compte à rebours
+    startSession();
     
-    // Utiliser un intervalle pour mettre à jour le compte à rebours
-    countdownTimerRef.current = setInterval(() => {
-      setCountdownValue(prev => {
-        if (prev <= 1) {
-          // Quand le compte à rebours atteint 0, arrêter l'intervalle
-          clearInterval(countdownTimerRef.current as NodeJS.Timeout);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    // Vibration légère pour indiquer le début du compte à rebours
+    // Vibration légère pour indiquer le début de la session
     if (settings.hapticsEnabled) {
-      lightImpact();
+      mediumImpact();
     }
   };
   
   // Fonction pour démarrer la session après le compte à rebours
   const startSession = () => {
-    setIsCountingDown(false);
     setIsActive(true);
     setCurrentStep(0);
     setCurrentCycle(1);
@@ -504,12 +485,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   };
 
   const handleStop = async () => {
-    // Arrêter le compte à rebours s'il est en cours
-    if (isCountingDown && countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-      setIsCountingDown(false);
-    }
-    
     setIsActive(false);
     setCurrentStep(0);
     animatedValue.setValue(0);
@@ -665,282 +640,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
           );
         })}
       </View>
-    );
-  };
-
-  // Composant pour afficher le compte à rebours
-  const CountdownOverlay = () => {
-    const theme = useTheme();
-    
-    // Animation pour le compte à rebours
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-    const opacityAnim = useRef(new Animated.Value(0)).current;
-    const progressAnim = useRef(new Animated.Value(0)).current;
-    const finalAnim = useRef(new Animated.Value(1)).current;
-    const blurAnim = useRef(new Animated.Value(0)).current;
-    
-    // Créer un composant Circle animé
-    const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-    
-    useEffect(() => {
-      // Animation d'entrée (une seule fois)
-      if (countdownValue === 3) {
-        Animated.parallel([
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-            easing: Easing.out(Easing.cubic),
-          }),
-          Animated.timing(blurAnim, {
-            toValue: 5,
-            duration: 500,
-            useNativeDriver: false,
-          })
-        ]).start();
-      }
-      
-      // Animation douce de l'échelle sans clignotement
-      Animated.timing(scaleAnim, {
-        toValue: countdownValue === 0 ? 1.2 : 1.05,
-        duration: 1000,
-        useNativeDriver: true,
-        easing: Easing.inOut(Easing.sin),
-      }).start();
-      
-      // Animation de progression circulaire
-      Animated.timing(progressAnim, {
-        toValue: (4 - countdownValue) / 3, // Progression de 0 à 1 (3, 2, 1, 0)
-        duration: 1000,
-        useNativeDriver: false,
-        easing: Easing.linear,
-      }).start();
-      
-      // Animation spéciale pour le "0"
-      if (countdownValue === 0) {
-        // Animation de pulsation pour le "0" final
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.4,
-            duration: 300,
-            useNativeDriver: true,
-            easing: Easing.out(Easing.cubic),
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1.2,
-            duration: 500,
-            useNativeDriver: true,
-            easing: Easing.inOut(Easing.cubic),
-          }),
-        ]).start();
-        
-        // Animation de sortie progressive
-        Animated.parallel([
-          Animated.timing(finalAnim, {
-            toValue: 0,
-            duration: 1200,
-            delay: 800,
-            useNativeDriver: true,
-            easing: Easing.in(Easing.cubic),
-          }),
-          Animated.timing(blurAnim, {
-            toValue: 0,
-            duration: 1200,
-            delay: 800,
-            useNativeDriver: false,
-          })
-        ]).start(({ finished }) => {
-          // Seulement démarrer la session quand l'animation est terminée
-          if (finished) {
-            startSession();
-          }
-        });
-      }
-      
-      // Vibration légère pour chaque seconde du compte à rebours
-      if (settings.hapticsEnabled) {
-        if (countdownValue === 0) {
-          // Vibration plus forte pour le début de la session
-          mediumImpact();
-        } else {
-          lightImpact();
-        }
-      }
-    }, [countdownValue]);
-    
-    // Calculer les propriétés du cercle de progression
-    const circleSize = 180;
-    const strokeWidth = 8;
-    const radius = (circleSize - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    
-    // Interpoler la valeur de progression pour l'animation du cercle
-    const strokeDashoffset = progressAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [circumference, 0],
-    });
-    
-    // Déterminer le message en fonction de la valeur du compte à rebours
-    const getMessage = () => {
-      switch(countdownValue) {
-        case 3:
-          return "Préparez-vous...";
-        case 2:
-          return "Installez-vous confortablement";
-        case 1:
-          return "Respirez profondément";
-        case 0:
-          return "C'est parti !";
-        default:
-          return "Préparation...";
-      }
-    };
-    
-    // Déterminer la couleur en fonction de la valeur du compte à rebours
-    const getColor = () => {
-      switch(countdownValue) {
-        case 3:
-          return theme.primary;
-        case 2:
-          return theme.primary;
-        case 1:
-          return theme.primary;
-        case 0:
-          return theme.success;
-        default:
-          return theme.primary;
-      }
-    };
-    
-    const currentColor = getColor();
-    const blurRadius = blurAnim.interpolate({
-      inputRange: [0, 5],
-      outputRange: [0, 5],
-    });
-    
-    return (
-      <Animated.View 
-        style={[
-          styles.countdownOverlay,
-          { 
-            opacity: Animated.multiply(opacityAnim, finalAnim),
-            transform: countdownValue === 0 ? [{ scale: finalAnim }] : undefined
-          }
-        ]}
-      >
-        <Animated.View 
-          style={[
-            styles.countdownBlurBackground,
-            {
-              backgroundColor: `${currentColor}10`,
-              borderColor: `${currentColor}30`,
-              shadowColor: currentColor,
-              transform: [{ scale: Animated.add(1, Animated.multiply(scaleAnim, 0.05)) }]
-            }
-          ]}
-        />
-        
-        <View style={[
-          styles.countdownCard,
-          {
-            backgroundColor: theme.surface,
-            shadowColor: currentColor,
-            borderColor: `${currentColor}30`,
-            borderWidth: 1,
-          }
-        ]}>
-          <View style={styles.countdownHeader}>
-            <Text style={[styles.countdownTitle, { color: theme.textPrimary }]}>
-              {countdownValue > 0 
-                ? "Votre session commence dans" 
-                : "Début de la session"}
-            </Text>
-          </View>
-          
-          <View style={styles.countdownProgressContainer}>
-            <Svg width={circleSize} height={circleSize}>
-              {/* Cercle de fond */}
-              <Circle
-                cx={circleSize / 2}
-                cy={circleSize / 2}
-                r={radius}
-                strokeWidth={strokeWidth}
-                stroke={`${currentColor}30`}
-                fill="transparent"
-              />
-              
-              {/* Cercle de progression */}
-              <AnimatedCircle
-                cx={circleSize / 2}
-                cy={circleSize / 2}
-                r={radius}
-                strokeWidth={strokeWidth}
-                stroke={currentColor}
-                fill="transparent"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                rotation="-90"
-                origin={`${circleSize / 2}, ${circleSize / 2}`}
-              />
-              
-              {/* Fond du nombre */}
-              <Circle
-                cx={circleSize / 2}
-                cy={circleSize / 2}
-                r={radius - strokeWidth - 5}
-                fill={theme.surface}
-              />
-            </Svg>
-            
-            <Animated.Text 
-              style={[
-                styles.countdownText, 
-                { 
-                  color: currentColor,
-                  transform: [{ scale: scaleAnim }]
-                }
-              ]}
-            >
-              {countdownValue}
-            </Animated.Text>
-          </View>
-          
-          <Text style={[styles.countdownLabel, { color: theme.textPrimary }]}>
-            {getMessage()}
-          </Text>
-          
-          <View style={[styles.countdownInstructions, { backgroundColor: `${currentColor}15` }]}>
-            <Ionicons 
-              name={countdownValue === 0 ? "checkmark-circle-outline" : "information-circle-outline"} 
-              size={20} 
-              color={currentColor} 
-            />
-            <Text style={[
-              styles.countdownInstructionsText, 
-              { color: theme.textSecondary }
-            ]}>
-              {countdownValue === 0 
-                ? "Suivez le rythme de la bulle" 
-                : "Détendez-vous et concentrez-vous"}
-            </Text>
-          </View>
-          
-          {countdownValue > 0 && (
-            <TouchableOpacity 
-              style={[styles.countdownSkipButton, { backgroundColor: theme.surfaceLight }]}
-              onPress={() => {
-                clearInterval(countdownTimerRef.current as NodeJS.Timeout);
-                startSession();
-              }}
-            >
-              <Text style={[styles.countdownSkipText, { color: theme.textSecondary }]}>
-                Passer
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Animated.View>
     );
   };
 
@@ -1223,9 +922,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             <View style={styles.bottomSpacer} />
           </ScrollView>
           
-          {/* Overlay du compte à rebours */}
-          {isCountingDown && <CountdownOverlay />}
-          
           {/* Bouton fixe en bas de l'écran */}
           <View style={[
             styles.fixedButtonContainer, 
@@ -1238,7 +934,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
               elevation: 10,
             }
           ]}>
-            {!isActive && !isCountingDown ? (
+            {!isActive ? (
               <TouchableOpacity 
                 style={[
                   styles.startButton, 
@@ -1523,93 +1219,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  countdownOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  countdownBlurBackground: {
-    position: 'absolute',
-    width: width * 1.5,
-    height: width * 1.5,
-    borderRadius: width * 0.75,
-    opacity: 0.8,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 50,
-    elevation: 10,
-  },
-  countdownCard: {
-    width: width * 0.85,
-    maxWidth: 380,
-    padding: 25,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  countdownHeader: {
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  countdownTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  countdownProgressContainer: {
-    position: 'relative',
-    width: 180,
-    height: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  countdownText: {
-    position: 'absolute',
-    fontSize: 72,
-    fontWeight: 'bold',
-  },
-  countdownLabel: {
-    fontSize: 22,
-    fontWeight: '600',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  countdownInstructions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 30,
-    width: '100%',
-    marginBottom: 20,
-  },
-  countdownInstructionsText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  countdownSkipButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  countdownSkipText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
 });
 
