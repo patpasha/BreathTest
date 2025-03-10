@@ -338,92 +338,121 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addSession = async (sessionData: Omit<SessionData, 'id'>) => {
     console.log('Ajout d\'une nouvelle session:', sessionData); // Debug
     
-    const sessionId = Date.now().toString();
-    const newSession: SessionData = {
-      ...sessionData,
-      id: sessionId,
-    };
-    
-    // Extraire la date (YYYY-MM-DD) de la date ISO
-    const sessionDate = new Date(sessionData.date).toISOString().split('T')[0];
-    console.log('Date de la session:', sessionDate);
-    
-    // Mettre à jour les statistiques quotidiennes
-    const updatedDailyStats = { ...stats.dailyStats };
-    if (!updatedDailyStats[sessionDate]) {
-      console.log('Création d\'une nouvelle entrée pour la date:', sessionDate);
-      updatedDailyStats[sessionDate] = {
-        date: sessionDate,
-        totalDuration: 0,
-        sessionsCount: 0,
-        techniques: {},
-      };
-    }
-    
-    updatedDailyStats[sessionDate].totalDuration += sessionData.duration;
-    updatedDailyStats[sessionDate].sessionsCount += 1;
-    
-    if (!updatedDailyStats[sessionDate].techniques[sessionData.techniqueId]) {
-      updatedDailyStats[sessionDate].techniques[sessionData.techniqueId] = 0;
-    }
-    updatedDailyStats[sessionDate].techniques[sessionData.techniqueId] += 1;
-    
-    // Mettre à jour les techniques favorites
-    const updatedFavoriteTechniques = { ...stats.favoriteTechniques };
-    if (!updatedFavoriteTechniques[sessionData.techniqueId]) {
-      updatedFavoriteTechniques[sessionData.techniqueId] = 0;
-    }
-    updatedFavoriteTechniques[sessionData.techniqueId] += 1;
-    
-    // Calculer le nouveau streak
-    const previousStreak = stats.streak;
-    const newStreak = calculateStreak(sessionData.date, updatedDailyStats);
-    
-    // Vérifier si un jalon de streak a été atteint
-    const milestone = checkStreakMilestone(newStreak, previousStreak);
-    let milestoneMessage = null;
-    if (milestone) {
-      milestoneMessage = getStreakMilestoneMessage(milestone);
-      console.log(`Nouveau jalon de streak atteint: ${milestone} jours - ${milestoneMessage}`);
-    }
-    
-    // Mettre à jour les statistiques
-    const updatedStats: Stats = {
-      totalSessions: stats.totalSessions + 1,
-      totalDuration: stats.totalDuration + sessionData.duration,
-      lastSessionDate: sessionData.date,
-      streak: newStreak,
-      sessions: [...stats.sessions, newSession],
-      dailyStats: updatedDailyStats,
-      favoriteTechniques: updatedFavoriteTechniques,
-      // Stocker le dernier jalon atteint et le message associé
-      lastStreakMilestone: milestone || stats.lastStreakMilestone,
-      streakMilestoneMessage: milestoneMessage || stats.streakMilestoneMessage,
-      // Stocker le record de streak
-      maxStreak: Math.max(newStreak, stats.maxStreak || 0),
-    };
-    
-    console.log('Statistiques mises à jour:', JSON.stringify({
-      totalSessions: updatedStats.totalSessions,
-      totalDuration: updatedStats.totalDuration,
-      streak: updatedStats.streak,
-      maxStreak: updatedStats.maxStreak,
-      dailyStatsCount: Object.keys(updatedStats.dailyStats).length,
-      sessionsCount: updatedStats.sessions.length,
-    }));
-    
-    // Mettre à jour l'état
-    setStats(updatedStats);
-    
-    // Sauvegarder dans AsyncStorage
     try {
+      const sessionId = Date.now().toString();
+      const newSession: SessionData = {
+        ...sessionData,
+        id: sessionId,
+      };
+      
+      // Extraire la date (YYYY-MM-DD) de la date ISO
+      const sessionDate = new Date(sessionData.date).toISOString().split('T')[0];
+      console.log('Date de la session:', sessionDate);
+      
+      // Créer une copie des statistiques actuelles
+      const updatedStats = { ...stats };
+      
+      // Mettre à jour les statistiques quotidiennes
+      if (!updatedStats.dailyStats[sessionDate]) {
+        console.log('Création d\'une nouvelle entrée pour la date:', sessionDate);
+        updatedStats.dailyStats[sessionDate] = {
+          date: sessionDate,
+          totalDuration: 0,
+          sessionsCount: 0,
+          techniques: {},
+        };
+      }
+      
+      updatedStats.dailyStats[sessionDate].totalDuration += sessionData.duration;
+      updatedStats.dailyStats[sessionDate].sessionsCount += 1;
+      
+      if (!updatedStats.dailyStats[sessionDate].techniques[sessionData.techniqueId]) {
+        updatedStats.dailyStats[sessionDate].techniques[sessionData.techniqueId] = 0;
+      }
+      updatedStats.dailyStats[sessionDate].techniques[sessionData.techniqueId] += 1;
+      
+      // Mettre à jour les techniques favorites
+      if (!updatedStats.favoriteTechniques[sessionData.techniqueId]) {
+        updatedStats.favoriteTechniques[sessionData.techniqueId] = 0;
+      }
+      updatedStats.favoriteTechniques[sessionData.techniqueId] += 1;
+      
+      // Ajouter la session à la liste des sessions
+      updatedStats.sessions.push(newSession);
+      
+      // Mettre à jour les statistiques globales
+      updatedStats.totalSessions += 1;
+      updatedStats.totalDuration += sessionData.duration;
+      updatedStats.lastSessionDate = sessionData.date;
+      
+      // Calculer le nouveau streak
+      const previousStreak = updatedStats.streak;
+      const newStreak = calculateStreak(sessionData.date, updatedStats.dailyStats);
+      updatedStats.streak = newStreak;
+      
+      // Vérifier si un jalon de streak a été atteint
+      const milestone = checkStreakMilestone(newStreak, previousStreak);
+      let milestoneMessage = null;
+      if (milestone) {
+        milestoneMessage = getStreakMilestoneMessage(milestone);
+        console.log(`Nouveau jalon de streak atteint: ${milestone} jours - ${milestoneMessage}`);
+        
+        // Stocker le dernier jalon atteint et le message associé
+        updatedStats.lastStreakMilestone = milestone;
+        updatedStats.streakMilestoneMessage = milestoneMessage;
+      }
+      
+      // Stocker le record de streak
+      updatedStats.maxStreak = Math.max(newStreak, updatedStats.maxStreak || 0);
+      
+      console.log('Statistiques mises à jour:', JSON.stringify({
+        totalSessions: updatedStats.totalSessions,
+        totalDuration: updatedStats.totalDuration,
+        streak: updatedStats.streak,
+        maxStreak: updatedStats.maxStreak,
+        dailyStatsCount: Object.keys(updatedStats.dailyStats).length,
+        sessionsCount: updatedStats.sessions.length,
+      }));
+      
+      // Sauvegarder dans AsyncStorage
       await AsyncStorage.setItem('breathflow_stats', JSON.stringify(updatedStats));
       console.log('Statistiques sauvegardées avec succès'); // Debug
+      
+      // Mettre à jour l'état de manière sécurisée en utilisant une fonction
+      // Cela évite les problèmes de mise à jour pendant le rendu
+      setStats(currentStats => {
+        // Vérifier si les statistiques ont changé pendant la sauvegarde
+        if (currentStats.totalSessions !== stats.totalSessions) {
+          console.log('Les statistiques ont changé pendant la sauvegarde, fusion des données');
+          // Si les statistiques ont changé, fusionner les données
+          return {
+            ...currentStats,
+            sessions: [...currentStats.sessions, newSession],
+            totalSessions: currentStats.totalSessions + 1,
+            totalDuration: currentStats.totalDuration + sessionData.duration,
+            lastSessionDate: sessionData.date,
+            dailyStats: {
+              ...currentStats.dailyStats,
+              [sessionDate]: updatedStats.dailyStats[sessionDate]
+            },
+            favoriteTechniques: {
+              ...currentStats.favoriteTechniques,
+              [sessionData.techniqueId]: (currentStats.favoriteTechniques[sessionData.techniqueId] || 0) + 1
+            },
+            streak: newStreak,
+            lastStreakMilestone: milestone || currentStats.lastStreakMilestone,
+            streakMilestoneMessage: milestoneMessage || currentStats.streakMilestoneMessage,
+            maxStreak: Math.max(newStreak, currentStats.maxStreak || 0),
+          };
+        }
+        // Sinon, utiliser les statistiques mises à jour
+        return updatedStats;
+      });
       
       // Retourner le message de jalon si un nouveau jalon a été atteint
       return { success: true, milestone, milestoneMessage };
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des statistiques:', error);
+      console.error('Erreur lors de l\'ajout de la session:', error);
       return { success: false };
     }
   };
