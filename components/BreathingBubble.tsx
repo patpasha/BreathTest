@@ -109,88 +109,104 @@ const BreathingBubble: React.FC<BreathingBubbleProps> = ({
     opacityValue.stopAnimation();
     instructionOpacity.stopAnimation();
     
-    // Animation de progression
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: stepDuration,
-      easing: Easing.linear,
-      useNativeDriver: false
-    }).start();
-    
     if (stepType === 'inhale') {
-      // Animation d'inspiration: expansion douce
+      // Animation d'inspiration: expansion progressive avec accélération au début et décélération à la fin
       Animated.timing(scaleValue, {
         toValue: 1.15,
         duration: stepDuration,
-        easing: Easing.out(Easing.cubic),
+        easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération plus naturelle
         useNativeDriver: true,
       }).start();
       
-      // Augmentation de l'opacité
+      // Augmentation de l'opacité avec une courbe naturelle
       Animated.timing(opacityValue, {
         toValue: 1,
-        duration: stepDuration * 0.5,
-        easing: Easing.out(Easing.cubic),
+        duration: stepDuration * 0.6, // Légèrement plus rapide pour donner une sensation de plénitude
+        easing: Easing.bezier(0.4, 0.0, 0.2, 1),
         useNativeDriver: true,
       }).start();
       
     } else if (stepType === 'exhale') {
-      // Animation d'expiration: contraction douce
+      // Animation d'expiration: contraction progressive avec une courbe naturelle
       Animated.timing(scaleValue, {
         toValue: 0.85,
         duration: stepDuration,
-        easing: Easing.out(Easing.cubic),
+        easing: Easing.bezier(0.4, 0.0, 0.6, 1), // Courbe adaptée pour l'expiration (plus lente à la fin)
         useNativeDriver: true,
       }).start();
       
-      // Diminution de l'opacité
+      // Diminution de l'opacité avec une courbe naturelle
       Animated.timing(opacityValue, {
         toValue: 0.8,
-        duration: stepDuration * 0.7,
-        easing: Easing.out(Easing.cubic),
+        duration: stepDuration * 0.8, // Plus lente pour accompagner l'expiration complète
+        easing: Easing.bezier(0.4, 0.0, 0.6, 1),
         useNativeDriver: true,
       }).start();
       
     } else {
-      // Animation de rétention: légère pulsation
+      // Animation de rétention: légère pulsation pour indiquer la vie et maintenir l'attention
       Animated.sequence([
+        // Légère expansion initiale
         Animated.timing(scaleValue, {
-          toValue: 1.05,
-          duration: stepDuration * 0.3,
+          toValue: 1.02,
+          duration: stepDuration * 0.2,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
+        // Maintien avec très légère pulsation
         Animated.timing(scaleValue, {
-          toValue: 1,
-          duration: stepDuration * 0.7,
+          toValue: 1.0,
+          duration: stepDuration * 0.6,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        // Préparation à l'étape suivante
+        Animated.timing(scaleValue, {
+          toValue: stepType === 'hold' && getStepType(currentStep) === 'inhale' ? 1.02 : 0.98,
+          duration: stepDuration * 0.2,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         })
       ]).start();
       
-      // Opacité stable pendant la rétention
-      Animated.timing(opacityValue, {
-        toValue: 0.95,
-        duration: stepDuration * 0.3,
-        useNativeDriver: true,
-      }).start();
+      // Opacité stable pendant la rétention avec légère variation
+      Animated.sequence([
+        Animated.timing(opacityValue, {
+          toValue: 0.95,
+          duration: stepDuration * 0.3,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityValue, {
+          toValue: 0.92,
+          duration: stepDuration * 0.4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityValue, {
+          toValue: 0.95,
+          duration: stepDuration * 0.3,
+          useNativeDriver: true,
+        })
+      ]).start();
     }
     
-    // Animation de l'instruction
+    // Animation de l'instruction avec timing amélioré
     Animated.sequence([
+      // Apparition rapide de l'instruction
       Animated.timing(instructionOpacity, {
         toValue: 1,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }),
+      // Maintien de la visibilité pendant la majorité de l'étape
       Animated.timing(instructionOpacity, {
-        toValue: 0.9,
-        duration: stepDuration - 600,
+        toValue: 0.95,
+        duration: stepDuration - 400,
         useNativeDriver: true,
       }),
+      // Diminution progressive pour préparer à la prochaine instruction
       Animated.timing(instructionOpacity, {
-        toValue: 0.7,
-        duration: 300,
+        toValue: 0.8,
+        duration: 200,
         useNativeDriver: true,
       })
     ]).start();

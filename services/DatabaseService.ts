@@ -320,53 +320,53 @@ export const getDefaultStepsForTechnique = (techniqueId: string): BreathingStep[
       ];
     case '4-7-8-technique':
       return [
-        { name: 'Inhale', duration: 4000, instruction: 'Inspirez par le nez' },
-        { name: 'Hold', duration: 7000, instruction: 'Retenez votre souffle' },
+        { name: 'Inhale', duration: 4000, instruction: 'Inspirez profondément par le nez' },
+        { name: 'Hold', duration: 7000, instruction: 'Retenez votre souffle calmement' },
         { name: 'Exhale', duration: 8000, instruction: 'Expirez lentement par la bouche' }
       ];
     case 'physiological-sigh':
       return [
-        { name: 'Inhale', duration: 2000, instruction: 'Inspirez profondément par le nez' },
-        { name: 'Inhale', duration: 1000, instruction: 'Inspirez encore un peu' },
-        { name: 'Exhale', duration: 4000, instruction: 'Expirez lentement par la bouche' }
+        { name: 'Inhale', duration: 2500, instruction: 'Inspirez profondément par le nez' },
+        { name: 'Inhale', duration: 1500, instruction: 'Inspirez encore un peu' },
+        { name: 'Exhale', duration: 5000, instruction: 'Expirez lentement et complètement' }
       ];
     case 'coherent-breathing':
       return [
-        { name: 'Inhale', duration: 5500, instruction: 'Inspirez lentement par le nez' },
-        { name: 'Exhale', duration: 5500, instruction: 'Expirez lentement par la bouche' }
+        { name: 'Inhale', duration: 5500, instruction: 'Inspirez lentement et régulièrement' },
+        { name: 'Exhale', duration: 5500, instruction: 'Expirez lentement et régulièrement' }
       ];
     case 'alternate-nostril':
       return [
         { name: 'Inhale Right', duration: 4000, instruction: 'Inspirez par la narine droite' },
         { name: 'Hold', duration: 2000, instruction: 'Retenez votre souffle' },
-        { name: 'Exhale Left', duration: 4000, instruction: 'Expirez par la narine gauche' },
+        { name: 'Exhale Left', duration: 4500, instruction: 'Expirez par la narine gauche' },
         { name: 'Inhale Left', duration: 4000, instruction: 'Inspirez par la narine gauche' },
         { name: 'Hold', duration: 2000, instruction: 'Retenez votre souffle' },
-        { name: 'Exhale Right', duration: 4000, instruction: 'Expirez par la narine droite' }
+        { name: 'Exhale Right', duration: 4500, instruction: 'Expirez par la narine droite' }
       ];
     case 'diaphragmatic-breathing':
       return [
-        { name: 'Inhale', duration: 4000, instruction: 'Inspirez profondément par le nez en gonflant le ventre' },
-        { name: 'Exhale', duration: 6000, instruction: 'Expirez lentement par la bouche en rentrant le ventre' }
+        { name: 'Inhale', duration: 4500, instruction: 'Inspirez en gonflant le ventre' },
+        { name: 'Exhale', duration: 6500, instruction: 'Expirez en rentrant le ventre' }
       ];
     case 'ujjayi-breathing':
       return [
-        { name: 'Inhale', duration: 5000, instruction: 'Inspirez par le nez avec un léger bruit de gorge' },
-        { name: 'Exhale', duration: 5000, instruction: 'Expirez par le nez avec un léger bruit de gorge' }
+        { name: 'Inhale', duration: 5000, instruction: 'Inspirez par le nez avec un son de gorge' },
+        { name: 'Exhale', duration: 6000, instruction: 'Expirez par le nez avec un son de gorge' }
       ];
     case 'wim-hof-method':
       return [
         { name: 'Inhale', duration: 2000, instruction: 'Inspirez profondément' },
         { name: 'Exhale', duration: 2000, instruction: 'Expirez complètement' },
         { name: 'Repeat', duration: 1000, instruction: 'Répétez 30-40 fois' },
-        { name: 'Hold', duration: 15000, instruction: 'Retenez votre souffle après une expiration' }
+        { name: 'Hold', duration: 15000, instruction: 'Retenez après expiration complète' }
       ];
     default:
       // Étapes génériques pour toute autre technique
       return [
         { name: 'Inhale', duration: 4000, instruction: 'Inspirez lentement' },
         { name: 'Hold', duration: 2000, instruction: 'Retenez votre souffle' },
-        { name: 'Exhale', duration: 4000, instruction: 'Expirez lentement' },
+        { name: 'Exhale', duration: 5000, instruction: 'Expirez lentement et complètement' },
         { name: 'Hold', duration: 2000, instruction: 'Retenez votre souffle' }
       ];
   }

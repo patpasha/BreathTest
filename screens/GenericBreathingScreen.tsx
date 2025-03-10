@@ -147,7 +147,7 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
   };
 
   // Fonction pour déterminer le type d'étape
-  const getStepType = (stepName: string) => {
+  const getStepType = (stepName: string): 'inhale' | 'exhale' | 'hold' => {
     const name = stepName.toLowerCase();
     if (name.includes('inspiration') || name.includes('inhale') || name.includes('inhalation')) {
       return 'inhale';
@@ -237,26 +237,52 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       // Jouer le retour haptique et sonore au début de chaque étape
       playFeedback(currentStepObj.name);
       
+      // Déterminer le type d'étape pour des animations adaptées
+      const stepType = getStepType(currentStepObj.name);
+      
       // Déterminer la valeur cible pour l'animation
       let toValue;
-      if (currentStepObj.name.toLowerCase().includes('inspiration') || 
-          currentStepObj.name.toLowerCase().includes('inhale') || 
-          currentStepObj.name.toLowerCase().includes('inhalation')) {
+      if (stepType === 'inhale') {
         toValue = 1; // Expansion pour l'inspiration
-      } else if (currentStepObj.name.toLowerCase().includes('expiration') || 
-                currentStepObj.name.toLowerCase().includes('exhale') || 
-                currentStepObj.name.toLowerCase().includes('exhalation')) {
+      } else if (stepType === 'exhale') {
         toValue = 0; // Contraction pour l'expiration
       } else {
-        toValue = currentAnimValue; // Maintien pour les pauses
+        // Pour les phases de rétention, adapter en fonction de l'étape précédente
+        // pour une transition plus naturelle
+        const prevStep = currentStep > 0 ? steps[currentStep - 1] : steps[steps.length - 1];
+        const prevStepType = getStepType(prevStep.name);
+        
+        if (prevStepType === 'inhale') {
+          // Après une inspiration, maintenir légèrement gonflé
+          toValue = 0.9;
+        } else if (prevStepType === 'exhale') {
+          // Après une expiration, maintenir légèrement contracté
+          toValue = 0.2;
+        } else {
+          // Si on ne peut pas déterminer, utiliser la valeur actuelle
+          toValue = currentAnimValue;
+        }
       }
       
-      // Animation plus fluide avec easeInOut et une durée légèrement plus longue
+      // Animation plus fluide avec une courbe d'accélération adaptée au type d'étape
+      let easingFunction;
+      if (stepType === 'inhale') {
+        // Courbe d'accélération pour l'inspiration: démarrage lent, accélération, puis ralentissement
+        easingFunction = Easing.bezier(0.2, 0.0, 0.4, 1.0);
+      } else if (stepType === 'exhale') {
+        // Courbe d'accélération pour l'expiration: démarrage rapide puis ralentissement progressif
+        easingFunction = Easing.bezier(0.4, 0.0, 0.6, 1.0);
+      } else {
+        // Courbe d'accélération pour la rétention: transition douce
+        easingFunction = Easing.bezier(0.25, 0.1, 0.25, 1.0);
+      }
+      
+      // Animation adaptée au type de respiration
       Animated.timing(animatedValue, {
         toValue,
-        duration: currentStepObj.duration * 0.95, // Légèrement plus court pour éviter les saccades entre les transitions
+        duration: currentStepObj.duration * 0.95, // Légèrement plus court pour éviter les saccades
         useNativeDriver: true,
-        easing: Easing.bezier(0.4, 0.0, 0.2, 1), // Courbe d'accélération plus douce
+        easing: easingFunction,
       }).start();
       
       // Réinitialiser la progression et démarrer l'animation
@@ -291,7 +317,8 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       // Démarrer l'animation
       animationFrameId = requestAnimationFrame(updateProgress);
 
-      // Programmer le passage à l'étape suivante
+      // Programmer le passage à l'étape suivante avec une légère anticipation
+      // pour une transition plus fluide entre les étapes
       cycleTimerRef.current = setTimeout(() => {
         // Annuler l'animation frame si elle est toujours en cours
         if (animationFrameId) {
