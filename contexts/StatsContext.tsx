@@ -313,9 +313,12 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       sessionsCount: updatedStats.sessions.length,
     }));
     
-    // IMPORTANT: Mettre à jour l'état AVANT de sauvegarder dans AsyncStorage
-    // pour garantir que l'interface utilisateur est mise à jour immédiatement
-    setStats(updatedStats);
+    // IMPORTANT: Utiliser setTimeout pour éviter de mettre à jour l'état pendant le rendu
+    // Cela résout l'erreur "Cannot update a component while rendering a different component"
+    setTimeout(() => {
+      // Mettre à jour l'état
+      setStats(updatedStats);
+    }, 0);
     
     // Sauvegarder dans AsyncStorage
     try {
@@ -423,7 +426,8 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       });
       
-      // Si des mises à jour ont été effectuées, mettre à jour l'état et sauvegarder
+      // Si des mises à jour ont été effectuées, planifier une mise à jour de l'état
+      // IMPORTANT: Utiliser setTimeout pour éviter de mettre à jour l'état pendant le rendu
       if (statsUpdated) {
         console.log('Mise à jour des statistiques quotidiennes suite à des incohérences détectées');
         
@@ -432,13 +436,16 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           dailyStats: updatedDailyStats
         };
         
-        // Mettre à jour l'état immédiatement
-        setStats(updatedStats);
-        
-        // Sauvegarder dans AsyncStorage
-        AsyncStorage.setItem('breathflow_stats', JSON.stringify(updatedStats))
-          .then(() => console.log('Statistiques mises à jour sauvegardées avec succès'))
-          .catch((error: Error) => console.error('Erreur lors de la sauvegarde des statistiques mises à jour:', error));
+        // Utiliser setTimeout pour éviter l'erreur "Cannot update a component while rendering a different component"
+        setTimeout(() => {
+          // Mettre à jour l'état
+          setStats(updatedStats);
+          
+          // Sauvegarder dans AsyncStorage
+          AsyncStorage.setItem('breathflow_stats', JSON.stringify(updatedStats))
+            .then(() => console.log('Statistiques mises à jour sauvegardées avec succès'))
+            .catch((error: Error) => console.error('Erreur lors de la sauvegarde des statistiques mises à jour:', error));
+        }, 0);
       }
       
       // Générer les dates de la période
