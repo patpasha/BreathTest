@@ -807,6 +807,60 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
             </View>
           </LinearGradient>
 
+          {/* Sélecteur de durée - affiché uniquement si la session n'est pas active */}
+          {!isActive && (
+            <View style={styles.durationSelectorWrapper}>
+              <View style={[
+                styles.durationSelectorCard, 
+                { 
+                  backgroundColor: theme.surfaceLight,
+                  borderColor: theme.border,
+                }
+              ]}>
+                <View style={styles.durationDisplay}>
+                  <Text style={[styles.durationValue, { color: theme.primary }]}>
+                    {sessionDurationMinutes}
+                  </Text>
+                  <Text style={[styles.durationUnit, { color: theme.textSecondary }]}>
+                    min
+                  </Text>
+                </View>
+                
+                <View style={styles.durationControls}>
+                  <TouchableOpacity 
+                    style={[styles.durationButton, { opacity: sessionDurationMinutes <= 1 ? 0.3 : 1 }]}
+                    onPress={() => {
+                      if (sessionDurationMinutes > 1) {
+                        handleDurationChange(sessionDurationMinutes - 1);
+                      }
+                    }}
+                    disabled={sessionDurationMinutes <= 1}
+                  >
+                    <Ionicons name="remove" size={20} color={theme.textPrimary} />
+                  </TouchableOpacity>
+                  
+                  <View style={styles.durationDivider} />
+                  
+                  <TouchableOpacity 
+                    style={[styles.durationButton, { opacity: sessionDurationMinutes >= 30 ? 0.3 : 1 }]}
+                    onPress={() => {
+                      if (sessionDurationMinutes < 30) {
+                        handleDurationChange(sessionDurationMinutes + 1);
+                      }
+                    }}
+                    disabled={sessionDurationMinutes >= 30}
+                  >
+                    <Ionicons name="add" size={20} color={theme.textPrimary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <Text style={[styles.durationLabel, { color: theme.textTertiary }]}>
+                Durée de la session
+              </Text>
+            </View>
+          )}
+
           <ScrollView 
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
@@ -965,22 +1019,6 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                 )}
               </View>
             )}
-
-            {/* Sélecteur de durée - affiché uniquement si la session n'est pas active */}
-            {!isActive && (
-              <View style={styles.durationSelectorContainer}>
-                <Text style={[styles.durationTitle, { color: theme.textPrimary }]}>
-                  Durée de la session
-                </Text>
-                <DurationSelector 
-                  duration={sessionDurationMinutes} 
-                  onDurationChange={handleDurationChange}
-                  minDuration={1}
-                  maxDuration={30}
-                  step={1}
-                />
-              </View>
-            )}
             
             {/* Espace en bas pour éviter que le contenu ne soit caché par le bouton fixe */}
             <View style={styles.bottomSpacer} />
@@ -1124,16 +1162,57 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'left',
   },
-  durationSelectorContainer: {
-    marginVertical: 20,
-    width: '100%',
-    paddingHorizontal: 20,
+  durationSelectorWrapper: {
+    alignItems: 'center',
+    marginVertical: 15,
   },
-  durationTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 15,
-    textAlign: 'center',
+  durationSelectorCard: {
+    flexDirection: 'row',
+    borderRadius: 30,
+    height: 50,
+    width: 160,
+    overflow: 'hidden',
+    borderWidth: 0,
+  },
+  durationDisplay: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 5,
+  },
+  durationValue: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  durationUnit: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 2,
+    marginTop: 2,
+  },
+  durationControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopLeftRadius: 25,
+    borderBottomLeftRadius: 25,
+    overflow: 'hidden',
+  },
+  durationButton: {
+    width: 36,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  durationDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  durationLabel: {
+    fontSize: 13,
+    marginTop: 6,
+    fontWeight: '500',
   },
   buttonContainer: {
     marginTop: 20,
