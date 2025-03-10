@@ -310,15 +310,17 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       streak: updatedStats.streak,
       maxStreak: updatedStats.maxStreak,
       dailyStatsCount: Object.keys(updatedStats.dailyStats).length,
+      sessionsCount: updatedStats.sessions.length,
     }));
     
-    // Sauvegarder immédiatement dans AsyncStorage
+    // IMPORTANT: Mettre à jour l'état AVANT de sauvegarder dans AsyncStorage
+    // pour garantir que l'interface utilisateur est mise à jour immédiatement
+    setStats(updatedStats);
+    
+    // Sauvegarder dans AsyncStorage
     try {
       await AsyncStorage.setItem('breathflow_stats', JSON.stringify(updatedStats));
       console.log('Statistiques sauvegardées avec succès'); // Debug
-      
-      // Mettre à jour l'état après la sauvegarde réussie
-      setStats(updatedStats);
       
       // Retourner le message de jalon si un nouveau jalon a été atteint
       return { success: true, milestone, milestoneMessage };
@@ -348,10 +350,6 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       sessionsCount: stats.sessions.length,
     }));
     
-    // Afficher les clés des statistiques quotidiennes pour le débogage
-    const dailyStatsKeys = Object.keys(stats.dailyStats);
-    console.log('Clés des statistiques quotidiennes:', dailyStatsKeys);
-    
     // Créer un tableau pour stocker les résultats
     const result: { date: string; duration: number }[] = [];
     
@@ -379,8 +377,69 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       });
       
-      // Afficher les dates des sessions pour le débogage
       console.log('Dates des sessions:', Object.keys(sessionsByDate));
+      
+      // Vérifier s'il y a des incohérences entre les sessions et dailyStats
+      let statsUpdated = false;
+      const updatedDailyStats = { ...stats.dailyStats };
+      
+      // Vérifier chaque date de session pour s'assurer qu'elle a une entrée dans dailyStats
+      Object.keys(sessionsByDate).forEach(dateString => {
+        if (sessionsByDate[dateString].length > 0) {
+          // Si nous n'avons pas d'entrée dans dailyStats pour cette date ou si la durée est différente
+          const sessionsForDate = sessionsByDate[dateString];
+          const totalSessionsDuration = sessionsForDate.reduce((sum, session) => sum + session.duration, 0);
+          
+          const needsUpdate = !updatedDailyStats[dateString] || 
+                             updatedDailyStats[dateString].totalDuration !== totalSessionsDuration ||
+                             updatedDailyStats[dateString].sessionsCount !== sessionsForDate.length;
+          
+          if (needsUpdate) {
+            console.log(`Mise à jour nécessaire pour ${dateString}: 
+              - Sessions: ${sessionsForDate.length}
+              - Durée totale des sessions: ${totalSessionsDuration}
+              - Entrée existante dans dailyStats: ${updatedDailyStats[dateString] ? 'Oui' : 'Non'}
+              - Durée dans dailyStats: ${updatedDailyStats[dateString]?.totalDuration || 0}
+              - Nombre de sessions dans dailyStats: ${updatedDailyStats[dateString]?.sessionsCount || 0}`);
+            
+            // Créer ou mettre à jour l'entrée dans dailyStats
+            updatedDailyStats[dateString] = {
+              date: dateString,
+              totalDuration: totalSessionsDuration,
+              sessionsCount: sessionsForDate.length,
+              techniques: {},
+            };
+            
+            // Mettre à jour les techniques utilisées ce jour-là
+            sessionsForDate.forEach(session => {
+              if (!updatedDailyStats[dateString].techniques[session.techniqueId]) {
+                updatedDailyStats[dateString].techniques[session.techniqueId] = 0;
+              }
+              updatedDailyStats[dateString].techniques[session.techniqueId] += 1;
+            });
+            
+            statsUpdated = true;
+          }
+        }
+      });
+      
+      // Si des mises à jour ont été effectuées, mettre à jour l'état et sauvegarder
+      if (statsUpdated) {
+        console.log('Mise à jour des statistiques quotidiennes suite à des incohérences détectées');
+        
+        const updatedStats = {
+          ...stats,
+          dailyStats: updatedDailyStats
+        };
+        
+        // Mettre à jour l'état immédiatement
+        setStats(updatedStats);
+        
+        // Sauvegarder dans AsyncStorage
+        AsyncStorage.setItem('breathflow_stats', JSON.stringify(updatedStats))
+          .then(() => console.log('Statistiques mises à jour sauvegardées avec succès'))
+          .catch((error: Error) => console.error('Erreur lors de la sauvegarde des statistiques mises à jour:', error));
+      }
       
       // Générer les dates de la période
       for (let i = 0; i < numWeeks * 7; i++) {
@@ -390,53 +449,10 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Formater la date au format YYYY-MM-DD
         const dateString = currentDate.toISOString().split('T')[0];
         
-        // Vérifier d'abord dans dailyStats
+        // Utiliser les données de dailyStats (qui ont été mises à jour si nécessaire)
         let duration = 0;
-        if (stats.dailyStats[dateString]) {
-          duration = stats.dailyStats[dateString].totalDuration;
-          console.log(`Durée trouvée dans dailyStats pour ${dateString}: ${duration}s`);
-        } 
-        // Si aucune durée n'est trouvée dans dailyStats, vérifier dans les sessions
-        else if (sessionsByDate[dateString]) {
-          duration = sessionsByDate[dateString].reduce((sum, session) => sum + session.duration, 0);
-          console.log(`Durée calculée à partir des sessions pour ${dateString}: ${duration}s`);
-          
-          // Si nous avons trouvé des sessions mais pas d'entrée dans dailyStats, créer une entrée
-          // Cela permet de s'assurer que les données sont cohérentes pour les futures requêtes
-          if (duration > 0 && !stats.dailyStats[dateString]) {
-            console.log(`Création d'une entrée manquante dans dailyStats pour ${dateString}`);
-            
-            // Mettre à jour les statistiques quotidiennes en mémoire
-            const updatedDailyStats = { ...stats.dailyStats };
-            updatedDailyStats[dateString] = {
-              date: dateString,
-              totalDuration: duration,
-              sessionsCount: sessionsByDate[dateString].length,
-              techniques: {},
-            };
-            
-            // Mettre à jour les techniques utilisées ce jour-là
-            sessionsByDate[dateString].forEach(session => {
-              if (!updatedDailyStats[dateString].techniques[session.techniqueId]) {
-                updatedDailyStats[dateString].techniques[session.techniqueId] = 0;
-              }
-              updatedDailyStats[dateString].techniques[session.techniqueId] += 1;
-            });
-            
-            // Mettre à jour l'état des statistiques
-            setStats(prevStats => ({
-              ...prevStats,
-              dailyStats: updatedDailyStats
-            }));
-            
-            // Sauvegarder les statistiques mises à jour dans AsyncStorage
-            AsyncStorage.setItem('breathflow_stats', JSON.stringify({
-              ...stats,
-              dailyStats: updatedDailyStats
-            })).catch(error => {
-              console.error('Erreur lors de la sauvegarde des statistiques mises à jour:', error);
-            });
-          }
+        if (updatedDailyStats[dateString]) {
+          duration = updatedDailyStats[dateString].totalDuration;
         }
         
         result.push({

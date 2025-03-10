@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, RefreshControl, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, RefreshControl, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from '../App';
@@ -44,72 +44,157 @@ const StatCard = ({ title, value, subtitle, color, icon }: { title: string; valu
   );
 };
 
-
-
 // Composant pour afficher une barre dans le graphique
 const BarGraph = ({ data }: { data: { label: string; value: number; maxValue: number }[] }) => {
   const theme = useTheme();
+  const [animationProgress, setAnimationProgress] = useState(0);
+  
+  useEffect(() => {
+    // Animation simple en utilisant setTimeout
+    let progress = 0;
+    const animationStep = 0.05;
+    const animationDuration = 20; // ms par étape
+    
+    const animate = () => {
+      progress += animationStep;
+      setAnimationProgress(progress);
+      
+      if (progress < 1) {
+        setTimeout(animate, animationDuration);
+      }
+    };
+    
+    animate();
+    
+    return () => {
+      // Nettoyer l'animation si le composant est démonté
+      progress = 1;
+    };
+  }, [data]);
   
   return (
     <View style={styles.barGraph}>
-      {data.map((item, index) => (
-        <View key={index} style={styles.barContainer}>
-          <View style={styles.barLabelContainer}>
-            <Text style={[styles.barLabel, { color: theme.textTertiary }]}>{item.label}</Text>
-          </View>
-          <View 
-            style={[
-              styles.barBackground, 
-              { 
-                backgroundColor: theme.border,
-                borderRadius: theme.borderRadiusRound,
-              }
-            ]}
-          >
+      {data.map((item, index) => {
+        // Calculer la largeur animée de la barre (en pourcentage)
+        const widthPercentage = (item.value / item.maxValue) * 100 * animationProgress;
+        
+        return (
+          <View key={index} style={styles.barContainer}>
+            <View style={styles.barLabelContainer}>
+              <Text style={[styles.barLabel, { color: theme.textTertiary }]}>{item.label}</Text>
+            </View>
             <View 
               style={[
-                styles.barFill, 
+                styles.barBackground, 
                 { 
-                  width: `${(item.value / item.maxValue) * 100}%`,
-                  backgroundColor: theme.primary,
+                  backgroundColor: theme.border,
                   borderRadius: theme.borderRadiusRound,
                 }
               ]}
-            />
+            >
+              <View 
+                style={[
+                  styles.barFill, 
+                  { 
+                    width: `${widthPercentage}%`,
+                    backgroundColor: theme.primary,
+                    borderRadius: theme.borderRadiusRound,
+                  }
+                ]}
+              />
+            </View>
+            <Text style={[styles.barValue, { color: theme.textSecondary }]}>
+              {Math.round(item.value / 60)} min
+            </Text>
           </View>
-          <Text style={[styles.barValue, { color: theme.textSecondary }]}>
-            {Math.round(item.value / 60)} min
-          </Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 };
 
-// Composant pour afficher un segment dans le graphique circulaire
-const PieSegment = ({ 
-  percentage, 
+// Composant pour afficher une technique dans la liste
+const TechniqueItem = ({ 
+  technique, 
   color, 
-  index, 
-  total 
+  index,
+  maxCount
 }: { 
-  percentage: number; 
-  color: string; 
-  index: number; 
-  total: number;
+  technique: { name: string; count: number; percentage: number }; 
+  color: string;
+  index: number;
+  maxCount: number;
 }) => {
+  const theme = useTheme();
+  const [animationProgress, setAnimationProgress] = useState(0);
+  
+  useEffect(() => {
+    // Animation simple en utilisant setTimeout
+    let progress = 0;
+    const animationStep = 0.05;
+    const animationDuration = 20; // ms par étape
+    
+    const animate = () => {
+      progress += animationStep;
+      setAnimationProgress(progress);
+      
+      if (progress < 1) {
+        setTimeout(animate, animationDuration);
+      }
+    };
+    
+    animate();
+    
+    return () => {
+      // Nettoyer l'animation si le composant est démonté
+      progress = 1;
+    };
+  }, []);
+  
+  // Calculer la largeur animée de la barre (en pourcentage)
+  const widthPercentage = (technique.count / maxCount) * 100 * animationProgress;
+  
   return (
-    <View style={styles.pieSegment}>
-      {/* Implémentation simplifiée - dans une vraie app, utiliser SVG ou une bibliothèque de graphiques */}
-      <View 
-        style={[
-          styles.pieSegmentColor, 
-          { 
-            backgroundColor: color,
-            width: `${percentage}%`,
-          }
-        ]} 
-      />
+    <View style={styles.techniqueItem}>
+      <View style={styles.techniqueHeader}>
+        <View style={styles.techniqueNameContainer}>
+          <View 
+            style={[
+              styles.techniqueColorDot, 
+              { backgroundColor: color }
+            ]} 
+          />
+          <Text style={[styles.techniqueName, { color: theme.textPrimary }]}>
+            {technique.name}
+          </Text>
+        </View>
+        <Text style={[styles.techniqueCount, { color: theme.textSecondary }]}>
+          {technique.count} ({Math.round(technique.percentage)}%)
+        </Text>
+      </View>
+      
+      <View style={styles.techniqueBarContainer}>
+        <View 
+          style={[
+            styles.techniqueBarBackground, 
+            { 
+              backgroundColor: theme.border,
+              borderRadius: theme.borderRadiusRound,
+            }
+          ]}
+        >
+          <View 
+            style={[
+              styles.techniqueBarFill, 
+              { 
+                width: `${widthPercentage}%`,
+                backgroundColor: color,
+                borderRadius: theme.borderRadiusRound,
+              }
+            ]}
+          />
+        </View>
+      </View>
     </View>
   );
 };
@@ -119,6 +204,29 @@ const StatsScreen = () => {
   const { stats, getWeeklyStats, getTechniqueDistribution, loadStatsFromStorage, resetStats } = useStats();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Charger les statistiques à chaque fois que l'écran devient actif
+  useFocusEffect(
+    useCallback(() => {
+      const loadStats = async () => {
+        setRefreshing(true);
+        try {
+          await loadStatsFromStorage();
+          console.log('Statistiques chargées automatiquement au focus de l\'écran');
+        } catch (error) {
+          console.error('Erreur lors du chargement automatique des statistiques:', error);
+        } finally {
+          setRefreshing(false);
+        }
+      };
+      
+      loadStats();
+      
+      return () => {
+        // Nettoyage si nécessaire
+      };
+    }, [loadStatsFromStorage])
+  );
   
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -176,23 +284,33 @@ const StatsScreen = () => {
   
   // Initialiser les données au chargement et les mettre à jour quand les stats changent
   useEffect(() => {
-    console.log('StatsScreen: Initialisation/mise à jour des données suite à changement de stats');
+    console.log('StatsScreen: Initialisation/mise à jour des données suite à changement de stats ou de période');
     if (stats) {
       const data = getPeriodData();
       console.log('periodData mis à jour:', data.length, 'jours, dont', data.filter(d => d.duration > 0).length, 'avec activité');
+      console.log('Détail des données de période:', JSON.stringify(data.filter(d => d.duration > 0)));
       setPeriodData(data);
     }
-  }, [stats]); // Dépend uniquement de stats pour l'initialisation
+  }, [stats, selectedPeriod]); // Dépend de stats ET selectedPeriod pour garantir la mise à jour
   
-  // Mettre à jour les données lorsque la période sélectionnée change
+  // Mettre à jour les données du graphique lorsque les données de période changent
   useEffect(() => {
-    console.log(`StatsScreen: Changement de période à ${selectedPeriod}`);
-    if (stats) {
-      const data = getPeriodData();
-      console.log('periodData mis à jour après changement de période:', data.length, 'jours, dont', data.filter(d => d.duration > 0).length, 'avec activité');
-      setPeriodData(data);
+    console.log(`StatsScreen: Mise à jour des graphiques avec ${periodData.length} jours`);
+    if (periodData.length > 0) {
+      try {
+        const data = getBarData();
+        console.log(`StatsScreen: ${data.length} barres générées pour le graphique`);
+        setBarData(data);
+      } catch (error) {
+        console.error('Erreur lors de la génération des données du graphique:', error);
+        // En cas d'erreur, on réinitialise les données du graphique
+        setBarData([]);
+      }
+    } else {
+      console.log('StatsScreen: Aucune donnée disponible pour les graphiques');
+      setBarData([]);
     }
-  }, [selectedPeriod]); // Dépend uniquement de selectedPeriod pour les mises à jour de période
+  }, [periodData]); // Dépend uniquement de periodData
   
   // Formater les données pour l'affichage dans le graphique
   const getBarData = () => {
@@ -311,25 +429,6 @@ const StatsScreen = () => {
   
   // Générer les données pour les graphiques
   const [barData, setBarData] = useState<{ label: string; value: number; maxValue: number }[]>([]);
-  
-  // Mettre à jour les données du graphique lorsque les données de période changent
-  useEffect(() => {
-    console.log(`StatsScreen: Mise à jour des graphiques avec ${periodData.length} jours`);
-    if (periodData.length > 0) {
-      try {
-        const data = getBarData();
-        console.log(`StatsScreen: ${data.length} barres générées pour le graphique`);
-        setBarData(data);
-      } catch (error) {
-        console.error('Erreur lors de la génération des données du graphique:', error);
-        // En cas d'erreur, on réinitialise les données du graphique
-        setBarData([]);
-      }
-    } else {
-      console.log('StatsScreen: Aucune donnée disponible pour les graphiques');
-      setBarData([]);
-    }
-  }, [periodData, selectedPeriod]); // Dépend de periodData et selectedPeriod
   const weeklyData = periodData; // Pour le calendrier d'activité
   
   // Générer les données pour le graphique de distribution des techniques
@@ -391,193 +490,238 @@ const StatsScreen = () => {
           </TouchableOpacity>
         </View>
         
-        {/* Cartes de statistiques principales */}
-        <View style={styles.statsGrid}>
-          <StatCard 
-            title="Temps total" 
-            value={formatDuration(stats.totalDuration)} 
-            color={theme.primary}
-          />
-          <StatCard 
-            title="Sessions" 
-            value={stats.totalSessions.toString()} 
-            color={theme.secondary}
-          />
-          <StatCard 
-            title="Série actuelle" 
-            value={`${stats.streak} jours`} 
-            color={theme.accent}
-          />
-          <StatCard 
-            title="Dernière session" 
-            value={stats.lastSessionDate ? new Date(stats.lastSessionDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'Aucune'} 
-            color={theme.info}
-          />
-        </View>
-        
-        {/* Sélecteur de période */}
-        <View style={styles.periodSelector}>
-          <TouchableOpacity
-            style={[
-              styles.periodButton,
-              selectedPeriod === 'week' && { backgroundColor: theme.primaryLight },
-              { borderRadius: theme.borderRadiusRound }
-            ]}
-            onPress={() => setSelectedPeriod('week')}
-          >
-            <Text 
-              style={[
-                styles.periodButtonText, 
-                { color: theme.primary },
-                selectedPeriod === 'week' && { fontWeight: '700' }
-              ]}
-            >
-              Semaine
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.periodButton,
-              selectedPeriod === 'month' && { backgroundColor: theme.primaryLight },
-              { borderRadius: theme.borderRadiusRound }
-            ]}
-            onPress={() => setSelectedPeriod('month')}
-          >
-            <Text 
-              style={[
-                styles.periodButtonText, 
-                { color: theme.primary },
-                selectedPeriod === 'month' && { fontWeight: '700' }
-              ]}
-            >
-              Mois
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.periodButton,
-              selectedPeriod === 'year' && { backgroundColor: theme.primaryLight },
-              { borderRadius: theme.borderRadiusRound }
-            ]}
-            onPress={() => setSelectedPeriod('year')}
-          >
-            <Text 
-              style={[
-                styles.periodButtonText, 
-                { color: theme.primary },
-                selectedPeriod === 'year' && { fontWeight: '700' }
-              ]}
-            >
-              Année
-            </Text>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Graphique d'activité */}
-        <View 
-          style={[
-            styles.graphCard, 
-            { 
-              backgroundColor: theme.surface,
-              borderRadius: theme.borderRadiusMedium,
-              shadowColor: theme.shadowColor,
-              shadowOpacity: theme.shadowOpacity,
-              shadowRadius: theme.shadowRadius / 2,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: theme.elevation / 2,
-            }
-          ]}
-        >
-          <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>
-            {selectedPeriod === 'week' ? 'Activité de la semaine' : 
-             selectedPeriod === 'month' ? 'Activité du mois' : 'Activité de l\'année'}
+        {/* Section des statistiques principales */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Aperçu de votre pratique
           </Text>
-          <BarGraph data={barData} />
+          <View style={styles.statsGrid}>
+            <StatCard 
+              title="Temps total" 
+              value={formatDuration(stats.totalDuration)} 
+              color={theme.primary}
+            />
+            <StatCard 
+              title="Sessions" 
+              value={stats.totalSessions.toString()} 
+              color={theme.secondary}
+            />
+            <StatCard 
+              title="Série actuelle" 
+              value={`${stats.streak} jours`} 
+              color={theme.accent}
+            />
+            <StatCard 
+              title="Dernière session" 
+              value={stats.lastSessionDate ? new Date(stats.lastSessionDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'Aucune'} 
+              color={theme.info}
+            />
+          </View>
         </View>
         
-        {/* Techniques les plus pratiquées */}
-        <View 
-          style={[
-            styles.graphCard, 
-            { 
-              backgroundColor: theme.surface,
-              borderRadius: theme.borderRadiusMedium,
-              shadowColor: theme.shadowColor,
-              shadowOpacity: theme.shadowOpacity,
-              shadowRadius: theme.shadowRadius / 2,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: theme.elevation / 2,
-            }
-          ]}
-        >
-          <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>Techniques les plus pratiquées</Text>
+        {/* Section du graphique d'activité */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Activité
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+            Suivez votre temps de pratique au fil du temps
+          </Text>
           
-          <View style={styles.techniquesList}>
-            {techniqueDistribution.length > 0 ? (
-              techniqueDistribution.slice(0, 5).map((technique, index) => (
-                <View key={index} style={styles.techniqueItem}>
-                  <View style={styles.techniqueNameContainer}>
-                    <View 
-                      style={[
-                        styles.techniqueColorDot, 
-                        { backgroundColor: pieColors[index % pieColors.length] }
-                      ]} 
-                    />
-                    <Text style={[styles.techniqueName, { color: theme.textPrimary }]}>
-                      {technique.name}
-                    </Text>
-                  </View>
-                  <Text style={[styles.techniqueCount, { color: theme.textSecondary }]}>
-                    {technique.count} ({Math.round(technique.percentage)}%)
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text style={[styles.emptyMessage, { color: theme.textTertiary }]}>
-                Aucune technique pratiquée pour le moment
+          {/* Sélecteur de période */}
+          <View style={styles.periodSelector}>
+            <TouchableOpacity
+              style={[
+                styles.periodButton,
+                selectedPeriod === 'week' && { backgroundColor: theme.primaryLight },
+                { borderRadius: theme.borderRadiusRound }
+              ]}
+              onPress={() => setSelectedPeriod('week')}
+            >
+              <Text 
+                style={[
+                  styles.periodButtonText, 
+                  { color: theme.primary },
+                  selectedPeriod === 'week' && { fontWeight: '700' }
+                ]}
+              >
+                Semaine
               </Text>
-            )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.periodButton,
+                selectedPeriod === 'month' && { backgroundColor: theme.primaryLight },
+                { borderRadius: theme.borderRadiusRound }
+              ]}
+              onPress={() => setSelectedPeriod('month')}
+            >
+              <Text 
+                style={[
+                  styles.periodButtonText, 
+                  { color: theme.primary },
+                  selectedPeriod === 'month' && { fontWeight: '700' }
+                ]}
+              >
+                Mois
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.periodButton,
+                selectedPeriod === 'year' && { backgroundColor: theme.primaryLight },
+                { borderRadius: theme.borderRadiusRound }
+              ]}
+              onPress={() => setSelectedPeriod('year')}
+            >
+              <Text 
+                style={[
+                  styles.periodButtonText, 
+                  { color: theme.primary },
+                  selectedPeriod === 'year' && { fontWeight: '700' }
+                ]}
+              >
+                Année
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Graphique d'activité */}
+          <View 
+            style={[
+              styles.graphCard, 
+              { 
+                backgroundColor: theme.surface,
+                borderRadius: theme.borderRadiusMedium,
+                shadowColor: theme.shadowColor,
+                shadowOpacity: theme.shadowOpacity,
+                shadowRadius: theme.shadowRadius / 2,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: theme.elevation / 2,
+              }
+            ]}
+          >
+            <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>
+              {selectedPeriod === 'week' ? 'Activité de la semaine' : 
+               selectedPeriod === 'month' ? 'Activité du mois' : 'Activité de l\'année'}
+            </Text>
+            <BarGraph data={barData} />
+          </View>
+        </View>
+        
+        {/* Section des techniques les plus pratiquées */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Techniques
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+            Découvrez vos techniques de respiration préférées
+          </Text>
+          
+          {/* Liste des techniques */}
+          <View 
+            style={[
+              styles.graphCard, 
+              { 
+                backgroundColor: theme.surface,
+                borderRadius: theme.borderRadiusMedium,
+                shadowColor: theme.shadowColor,
+                shadowOpacity: theme.shadowOpacity,
+                shadowRadius: theme.shadowRadius / 2,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: theme.elevation / 2,
+              }
+            ]}
+          >
+            <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>Techniques les plus pratiquées</Text>
+            
+            <View style={styles.techniquesList}>
+              {techniqueDistribution.length > 0 ? (
+                techniqueDistribution.slice(0, 5).map((technique, index) => {
+                  // Trouver la valeur maximale pour dimensionner les barres
+                  const maxCount = Math.max(...techniqueDistribution.map(t => t.count));
+                  
+                  return (
+                    <TechniqueItem 
+                      key={index}
+                      technique={technique}
+                      color={pieColors[index % pieColors.length]}
+                      index={index}
+                      maxCount={maxCount}
+                    />
+                  );
+                })
+              ) : (
+                <Text style={[styles.emptyMessage, { color: theme.textTertiary }]}>
+                  Aucune technique pratiquée pour le moment
+                </Text>
+              )}
+            </View>
           </View>
         </View>
         
         {/* Calendrier d'activité */}
-        <View 
-          style={[
-            styles.graphCard, 
-            { 
-              backgroundColor: theme.surface,
-              borderRadius: theme.borderRadiusMedium,
-              shadowColor: theme.shadowColor,
-              shadowOpacity: theme.shadowOpacity,
-              shadowRadius: theme.shadowRadius / 2,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: theme.elevation / 2,
-            }
-          ]}
-        >
-          <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>Calendrier d'activité</Text>
-          <Text style={[styles.graphSubtitle, { color: theme.textTertiary }]}>
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Calendrier
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
             Visualisez votre pratique quotidienne
           </Text>
           
-          <ActivityCalendar 
-            data={periodData.map(day => ({
-              date: day.date,
-              duration: day.duration,
-              // Récupérer les sessions pour ce jour
-              sessions: stats.sessions.filter(session => {
-                const sessionDate = new Date(session.date);
-                const dayDate = new Date(day.date);
-                return sessionDate.getFullYear() === dayDate.getFullYear() &&
-                       sessionDate.getMonth() === dayDate.getMonth() &&
-                       sessionDate.getDate() === dayDate.getDate();
-              })
-            }))}
-            onMonthChange={(month, year) => {
-              console.log(`Changement de mois: ${month + 1}/${year}`);
-              // Ici on pourrait charger des données spécifiques pour ce mois
-            }}
-          />
+          <View 
+            style={[
+              styles.graphCard, 
+              { 
+                backgroundColor: theme.surface,
+                borderRadius: theme.borderRadiusMedium,
+                shadowColor: theme.shadowColor,
+                shadowOpacity: theme.shadowOpacity,
+                shadowRadius: theme.shadowRadius / 2,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: theme.elevation / 2,
+              }
+            ]}
+          >
+            <ActivityCalendar 
+              data={periodData.map(day => {
+                // Récupérer les sessions pour ce jour
+                const daySessions = stats.sessions.filter(session => {
+                  try {
+                    const sessionDate = new Date(session.date);
+                    const dayDate = new Date(day.date);
+                    return sessionDate.getFullYear() === dayDate.getFullYear() &&
+                          sessionDate.getMonth() === dayDate.getMonth() &&
+                          sessionDate.getDate() === dayDate.getDate();
+                  } catch (error) {
+                    console.error(`Erreur lors du filtrage des sessions pour ${day.date}:`, error);
+                    return false;
+                  }
+                });
+                
+                // Vérifier si la durée est cohérente avec les sessions
+                let totalSessionsDuration = 0;
+                if (daySessions.length > 0) {
+                  totalSessionsDuration = daySessions.reduce((sum, session) => sum + session.duration, 0);
+                  
+                  // Si la durée des sessions est différente de la durée du jour, utiliser la plus grande
+                  if (totalSessionsDuration > day.duration) {
+                    console.log(`Correction de la durée pour ${day.date}: ${day.duration}s -> ${totalSessionsDuration}s`);
+                  }
+                }
+                
+                return {
+                  date: day.date,
+                  duration: Math.max(day.duration, totalSessionsDuration),
+                  sessions: daySessions
+                };
+              })}
+              onMonthChange={(month, year) => {
+                console.log(`Changement de mois: ${month + 1}/${year}`);
+                // Ici on pourrait charger des données spécifiques pour ce mois
+              }}
+            />
+          </View>
         </View>
         
         <View style={styles.footer} />
@@ -592,7 +736,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   headerContainer: {
     flexDirection: 'row',
@@ -615,11 +759,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  sectionContainer: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   statCard: {
     width: '48%',
@@ -643,7 +799,7 @@ const styles = StyleSheet.create({
   },
   periodSelector: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   periodButton: {
     paddingHorizontal: 15,
@@ -693,22 +849,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
   },
-  pieSegment: {
-    height: 20,
-    flexDirection: 'row',
-    marginBottom: 5,
-  },
-  pieSegmentColor: {
-    height: '100%',
-  },
   techniquesList: {
     marginTop: 15,
   },
   techniqueItem: {
+    marginBottom: 16,
+  },
+  techniqueHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   techniqueNameContainer: {
     flexDirection: 'row',
@@ -722,9 +873,20 @@ const styles = StyleSheet.create({
   },
   techniqueName: {
     fontSize: 15,
+    fontWeight: '500',
   },
   techniqueCount: {
     fontSize: 14,
+  },
+  techniqueBarContainer: {
+    marginTop: 2,
+  },
+  techniqueBarBackground: {
+    height: 8,
+    width: '100%',
+  },
+  techniqueBarFill: {
+    height: '100%',
   },
   emptyMessage: {
     marginTop: 15,
@@ -732,7 +894,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-
   footer: {
     height: 20,
   },
