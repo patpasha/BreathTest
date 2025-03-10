@@ -257,7 +257,9 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            handleComplete();
+            // Ne pas appeler handleComplete ici, car cela provoque une erreur
+            // "Cannot update a component while rendering a different component"
+            // À la place, on retourne 0 et on gère la fin de la session dans un autre useEffect
             return 0;
           }
           return prev - 1;
@@ -268,9 +270,19 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
     }
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
   }, [isActive]);
+
+  // Effet séparé pour gérer la fin de la session
+  useEffect(() => {
+    if (isActive && timeRemaining === 0) {
+      // La session est terminée, appeler handleComplete
+      handleComplete();
+    }
+  }, [isActive, timeRemaining]);
 
   useEffect(() => {
     if (isActive && technique?.steps) {
