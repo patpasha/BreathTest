@@ -961,6 +961,18 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                   borderColor: theme.border,
                 }
               ]}>
+                <TouchableOpacity 
+                  style={[styles.durationButton, { opacity: sessionDurationMinutes <= 1 ? 0.3 : 1 }]}
+                  onPress={() => {
+                    if (sessionDurationMinutes > 1) {
+                      handleDurationChange(sessionDurationMinutes - 1);
+                    }
+                  }}
+                  disabled={sessionDurationMinutes <= 1}
+                >
+                  <Ionicons name="remove" size={20} color={theme.textPrimary} />
+                </TouchableOpacity>
+                
                 <View style={styles.durationDisplay}>
                   <Text style={[styles.durationValue, { color: theme.primary }]}>
                     {sessionDurationMinutes}
@@ -970,33 +982,17 @@ const GenericBreathingScreen = ({ route, navigation }: BreathingScreenProps) => 
                   </Text>
                 </View>
                 
-                <View style={styles.durationControls}>
-                  <TouchableOpacity 
-                    style={[styles.durationButton, { opacity: sessionDurationMinutes <= 1 ? 0.3 : 1 }]}
-                    onPress={() => {
-                      if (sessionDurationMinutes > 1) {
-                        handleDurationChange(sessionDurationMinutes - 1);
-                      }
-                    }}
-                    disabled={sessionDurationMinutes <= 1}
-                  >
-                    <Ionicons name="remove" size={20} color={theme.textPrimary} />
-                  </TouchableOpacity>
-                  
-                  <View style={styles.durationDivider} />
-                  
-                  <TouchableOpacity 
-                    style={[styles.durationButton, { opacity: sessionDurationMinutes >= 30 ? 0.3 : 1 }]}
-                    onPress={() => {
-                      if (sessionDurationMinutes < 30) {
-                        handleDurationChange(sessionDurationMinutes + 1);
-                      }
-                    }}
-                    disabled={sessionDurationMinutes >= 30}
-                  >
-                    <Ionicons name="add" size={20} color={theme.textPrimary} />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity 
+                  style={[styles.durationButton, { opacity: sessionDurationMinutes >= 30 ? 0.3 : 1 }]}
+                  onPress={() => {
+                    if (sessionDurationMinutes < 30) {
+                      handleDurationChange(sessionDurationMinutes + 1);
+                    }
+                  }}
+                  disabled={sessionDurationMinutes >= 30}
+                >
+                  <Ionicons name="add" size={20} color={theme.textPrimary} />
+                </TouchableOpacity>
               </View>
               
               <Text style={[styles.durationLabel, { color: theme.textTertiary }]}>
@@ -1329,13 +1325,13 @@ const styles = StyleSheet.create({
     width: 160,
     overflow: 'hidden',
     borderWidth: 0,
+    justifyContent: 'space-between',
   },
   durationDisplay: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingLeft: 5,
+    paddingHorizontal: 5,
   },
   durationValue: {
     fontSize: 22,
@@ -1347,23 +1343,11 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     marginTop: 2,
   },
-  durationControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopLeftRadius: 25,
-    borderBottomLeftRadius: 25,
-    overflow: 'hidden',
-  },
   durationButton: {
-    width: 36,
+    width: 40,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  durationDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   durationLabel: {
     fontSize: 13,
